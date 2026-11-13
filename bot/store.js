@@ -33,6 +33,7 @@ function crearStore(archivo) {
     pausar(tel, motivo, horas = PAUSA_HORAS) {
       const c = chat(tel); c.pausadoHasta = Date.now() + horas * 3600e3; c.motivoPausa = motivo; guardar();
     },
+    borrar(tel) { delete db.chats[tel]; guardar(); },
     reanudar(tel) { const c = chat(tel); c.pausadoHasta = 0; c.motivoPausa = null; guardar(); },
     estaPausado: (tel) => chat(tel).pausadoHasta > Date.now(),
     guardarLead(tel, datos) {

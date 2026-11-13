@@ -141,3 +141,12 @@ test('agrupa mensajes seguidos del cliente y responde una sola vez', async () =>
   assert.strictEqual(vistos, 'quiero traer\nzapatillas');
   assert.strictEqual(llamadas.whatsapp.length, 1);
 });
+
+test('#borrar desde el número de Gustavo limpia su conversación', async () => {
+  const store = crearStore(null);
+  store.agregar('5491100000000', 'user', 'zapatillas 20 kg');
+  const { fetchImpl } = mock([]);
+  const out = await procesar(msg('5491100000000', '#borrar'), { fetchImpl, store, debounceMs: 0 });
+  assert.strictEqual(store.historial('5491100000000').length, 0);
+  assert.ok(/borré/.test(out[0].body));
+});
