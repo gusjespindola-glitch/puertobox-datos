@@ -53,3 +53,5 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - Mostrar claves en capturas: avisar antes de la pantalla que la muestra.
 - Aprobar (merge) un PR mientras todavía se suben commits: terminar todo y recién después pasar el link.
 - Cotizar sin revisar marca, intervenciones ni régimen.
+
+- 13/11/2026: Gustavo: "Cotizá gratis" no puede llevar a un cotizador de la web; tiene que ir directo al WhatsApp del bot. Sacar de la web todo lo innecesario (formulario, sección repetida, links muertos). La web se sirve desde el repo con un Worker que lee `web/sitio/index.html`, para no tener que subirla a mano.
