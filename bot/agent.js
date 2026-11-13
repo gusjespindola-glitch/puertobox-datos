@@ -38,13 +38,22 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
   }
   const ctx = { telefono, store, derivaciones };
 
-  for (let vuelta = 0; vuelta < 6; vuelta++) {
+  let pedidoTexto = false;
+  for (let vuelta = 0; vuelta < 7; vuelta++) {
     const res = await llamarClaude(messages, fetchImpl);
     messages.push({ role: 'assistant', content: res.content });
     if (res.stop_reason !== 'tool_use') {
       const respuesta = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
-      if (respuesta) store.agregar(telefono, 'assistant', respuesta);
-      return respuesta || null;
+      if (respuesta) { store.agregar(telefono, 'assistant', respuesta); return respuesta; }
+      // Nunca dejar al cliente sin respuesta: si la IA terminó sin texto, se le pide que conteste.
+      if (!pedidoTexto) {
+        pedidoTexto = true;
+        messages.push({ role: 'user', content: '[Sistema: respondele al cliente ahora con un mensaje de texto corto. Nunca lo dejes sin respuesta.]' });
+        continue;
+      }
+      const resp = derivaciones.length ? 'Listo, ya le pasé tu consulta a Gustavo y te escribe en un rato.' : 'Perdón, ¿me lo repetís? Así te ayudo bien.';
+      store.agregar(telefono, 'assistant', resp);
+      return resp;
     }
     const resultados = res.content.filter((b) => b.type === 'tool_use').map((b) => ({
       type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(ejecutar(b.name, b.input, ctx)),

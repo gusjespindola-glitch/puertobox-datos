@@ -168,3 +168,28 @@ test('el nomenclador pide clave y la recuerda con cookie', async () => {
     assert.ok(!(await fuera.text()).includes('"scripts"'));
   } finally { srv.closeAllConnections(); srv.close(); delete process.env.ADMIN_KEY; }
 });
+
+test('si la IA termina sin texto, igual le responde al cliente', async () => {
+  const store = crearStore(null);
+  const { fetchImpl, llamadas } = mock([{ stop_reason: 'end_turn', content: [] }, txt('¿Qué querés traer?')]);
+  const out = await procesar(msg('5480', 'hola?'), { fetchImpl, store, debounceMs: 0 });
+  assert.strictEqual(out[0].body, '¿Qué querés traer?');
+  assert.strictEqual(llamadas.claude.length, 2);
+});
+
+test('derivar por duda no pausa el bot', async () => {
+  const store = crearStore(null);
+  const { fetchImpl } = mock([tool('derivar_a_gustavo', { motivo: 'duda', resumen: 'termo para revender' }), txt('Eso lo confirma Gustavo. ¿Cuántas cajas son?')]);
+  await procesar(msg('5481', 'termos para vender'), { fetchImpl, store, debounceMs: 0 });
+  assert.ok(!store.estaPausado('5481'));
+});
+
+test('chat derivado: si el cliente escribe, recibe aviso de espera (no visto)', async () => {
+  const store = crearStore(null);
+  store.pausar('5482', 'derivado');
+  const { fetchImpl } = mock([]);
+  const out = await procesar(msg('5482', '¿y?'), { fetchImpl, store, debounceMs: 0 });
+  assert.ok(/Gustavo/.test(out[0].body));
+  const out2 = await procesar(msg('5482', 'hola??'), { fetchImpl, store, debounceMs: 0 });
+  assert.strictEqual(out2.length, 0);
+});

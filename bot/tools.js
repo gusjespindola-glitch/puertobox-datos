@@ -95,9 +95,12 @@ function ejecutar(nombre, input, ctx) {
       return { ok: true };
     case 'derivar_a_gustavo':
       ctx.store.guardarLead(ctx.telefono, { estado: input.motivo === 'listo_para_cerrar' ? 'listo_para_cerrar' : 'derivado', notas: input.resumen });
-      ctx.store.pausar(ctx.telefono, 'derivado');
+      // Solo se pausa el bot cuando Gustavo tiene que tomar el chat. En "duda" el bot sigue atendiendo.
+      if (input.motivo !== 'duda') ctx.store.pausar(ctx.telefono, 'derivado');
       ctx.derivaciones.push({ telefono: ctx.telefono, ...input });
-      return { ok: true, instruccion: 'Decile al cliente que Gustavo le escribe enseguida.' };
+      return input.motivo === 'duda'
+        ? { ok: true, instruccion: 'Decile que ese punto lo confirma Gustavo y seguí atendiendo vos el resto.' }
+        : { ok: true, instruccion: 'Decile al cliente que Gustavo le escribe enseguida.' };
     default:
       return { error: `Herramienta desconocida: ${nombre}` };
   }
