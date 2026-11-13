@@ -4,6 +4,7 @@ const fs = require('fs');
 
 const HISTORIAL_MAX = 30; // mensajes por chat que se mandan a la IA
 const PAUSA_HORAS = Number(process.env.PAUSA_HORAS || 24);
+const RESET_HORAS = Number(process.env.RESET_HORAS || 48); // conversación nueva si el cliente vuelve después de 48 h
 
 function crearStore(archivo) {
   let db = { chats: {}, leads: {}, vistos: [] };
@@ -21,7 +22,10 @@ function crearStore(archivo) {
     },
     historial: (tel) => chat(tel).mensajes,
     agregar(tel, role, content) {
-      const c = chat(tel); c.mensajes.push({ role, content });
+      const c = chat(tel);
+      if (role === 'user' && c.ultimo && Date.now() - c.ultimo > RESET_HORAS * 3600e3) c.mensajes = [];
+      c.ultimo = Date.now();
+      c.mensajes.push({ role, content });
       if (c.mensajes.length > HISTORIAL_MAX) c.mensajes = c.mensajes.slice(-HISTORIAL_MAX);
       while (c.mensajes.length && c.mensajes[0].role !== 'user') c.mensajes.shift();
       guardar();
