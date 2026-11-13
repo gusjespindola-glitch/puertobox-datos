@@ -5,7 +5,7 @@ Estado: ✅ leído y resumido · ⏳ pendiente · ➖ no aplica a PuertoBox (exp
 
 ## Módulo II (exportación y regímenes)
 - ✅ COURIER 2025 - IMPO II → [courier-2025.md](courier-2025.md)
-- ⏳ SIDIP - Fraude Marcario - Intervenciones Previas
+- ✅ SIDIP - Fraude Marcario - Intervenciones Previas → [sidip-fraude-marcario-intervenciones.md](sidip-fraude-marcario-intervenciones.md) (⚠️ falta definir regla SIDIP)
 - ⏳ Régimen de Muestras
 - ➖ Exporta Simple / Courier de exportación 2025
 - ➖ Estímulos fiscales, Expo suspensiva, Exportación en consignación (x2), Exportación a consumo, Exportación I y II
