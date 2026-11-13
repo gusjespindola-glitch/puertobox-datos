@@ -7,7 +7,16 @@ const { definiciones, ejecutar } = require('./tools');
 const SYSTEM = fs.readFileSync(path.join(__dirname, 'prompt.md'), 'utf8');
 const MODELO = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 
-async function llamarClaude(messages, fetchImpl) {
+async function llamarClaude(messages, fetchImpl, intentos = 3) {
+  for (let i = 1; ; i++) {
+    try { return await llamarUnaVez(messages, fetchImpl); } catch (e) {
+      if (i >= intentos || /\b(400|401|403)\b/.test(e.message)) throw e;
+      await new Promise((r) => setTimeout(r, (process.env.NODE_ENV === 'test' ? 1 : 1500) * i));
+    }
+  }
+}
+
+async function llamarUnaVez(messages, fetchImpl) {
   const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },

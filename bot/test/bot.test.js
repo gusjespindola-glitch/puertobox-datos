@@ -113,3 +113,19 @@ test('Gustavo pausa y reactiva un chat desde su número personal', async () => {
   await procesar(msg('5496', 'sigo acá'), { fetchImpl, store });
   assert.strictEqual(llamadas.claude.length, 1);
 });
+
+test('si la IA falla, reintenta y si no puede pide repetir, sin avisar a Gustavo ni pausar', async () => {
+  const store = crearStore(null);
+  process.env.OWNER_NUMBER = '5499999999999'; process.env.NODE_ENV = 'test';
+  let llamadas = 0;
+  const fetchImpl = async (url, opts) => {
+    if (String(url).includes('anthropic')) { llamadas++; return { ok: false, status: 529, text: async () => 'overloaded' }; }
+    return { ok: true, json: async () => ({}), text: async () => '' };
+  };
+  const out = await procesar(msg('5497', 'hola'), { fetchImpl, store });
+  assert.strictEqual(llamadas, 3);
+  assert.ok(out.some((o) => o.to === '5497' && /repet/.test(o.body)));
+  assert.ok(!out.some((o) => o.to === '5499999999999'));
+  assert.ok(!store.estaPausado('5497'));
+  delete process.env.OWNER_NUMBER;
+});

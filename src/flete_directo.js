@@ -13,8 +13,8 @@ const r2 = (n) => Math.round(n * 100) / 100;
 const M = precios.flete_directo;
 
 /** Kg cobrable: mayor entre real y volumétrico, redondeado hacia arriba a 0,5 kg, mínimo 1. */
-function kgCobrable({ kg, largo, ancho, alto }) {
-  const vol = largo && ancho && alto ? (largo * ancho * alto) / M.divisor_volumetrico : 0;
+function kgCobrable({ kg, largo, ancho, alto, cajas = 1 }) {
+  const vol = largo && ancho && alto ? ((largo * ancho * alto) / M.divisor_volumetrico) * (cajas || 1) : 0;
   return Math.max(Math.ceil(Math.max(kg, vol) * 2) / 2, 1);
 }
 
@@ -62,8 +62,8 @@ function estimarImpuestos({ valorFactura, flete, die, internos = 0, regimen = 'c
 }
 
 /** Presupuesto estimado para el cliente (flete final = peso de balanza). */
-function presupuesto({ kg, largo, ancho, alto, valorFactura, die = 0, internos = 0, regimen = 'comercial' }) {
-  const declarado = kgCobrable({ kg, largo, ancho, alto });
+function presupuesto({ kg, largo, ancho, alto, cajas = 1, valorFactura, die = 0, internos = 0, regimen = 'comercial' }) {
+  const declarado = kgCobrable({ kg, largo, ancho, alto, cajas });
   const kgPres = Math.ceil(declarado * (1 + (M.tolerancia || 0)) * 2) / 2;
   const flete = fleteVenta(kgPres);
   const handling = M.handling_usd || 0;

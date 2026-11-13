@@ -87,7 +87,13 @@ async function procesar(payload, deps = {}) {
       : `[El cliente mandó un ${e.type}${e.image?.caption ? `: ${e.image.caption}` : ''}. Pedile que lo describa por texto o derivá si hace falta.]`;
     if (st.estaPausado(tel)) { st.agregar(tel, 'user', texto); continue; }
     const derivaciones = [];
-    const resp = await responder({ telefono: tel, texto, store: st, fetchImpl, derivaciones });
+    let resp;
+    try {
+      resp = await responder({ telefono: tel, texto, store: st, fetchImpl, derivaciones });
+    } catch (err) {
+      console.error(err);
+      resp = 'Perdón, se me cortó un segundo. ¿Me repetís el último mensaje?';
+    }
     if (resp) { await enviar(tel, resp, fetchImpl); salidas.push({ to: tel, body: resp }); }
     for (const d of derivaciones) {
       const aviso = `🔔 PuertoBox: ${d.motivo.replace(/_/g, ' ')}\nCliente: +${d.telefono}\n${d.resumen}\n(El bot quedó pausado en ese chat. Para reactivarlo mandá: #bot ${d.telefono})`;
