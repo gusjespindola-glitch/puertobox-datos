@@ -32,7 +32,7 @@ function limpiar(t) {
   if (!t) return t;
   const s = t.replace(MULETILLA, '');
   if (!s.trim()) return t;
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return s.replace(/^([¿¡"'(\s]*)(\p{L})/u, (_, p, l) => p + l.toUpperCase());
 }
 
 /** Procesa un mensaje del cliente y devuelve el texto de respuesta (o null si no corresponde responder). */

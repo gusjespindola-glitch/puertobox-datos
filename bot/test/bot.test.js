@@ -219,4 +219,5 @@ test('saca muletillas del arranque', () => {
   assert.strictEqual(limpiar('¡Buenísimo! ¿Son para vos?'), '¿Son para vos?');
   assert.strictEqual(limpiar('Joya, 600 USD. ¿Sabés cuánto pesa?'), '600 USD. ¿Sabés cuánto pesa?');
   assert.strictEqual(limpiar('Dale'), 'Dale');
+  assert.strictEqual(limpiar('Joya. ¿sabés cuánto pesa?'), '¿Sabés cuánto pesa?');
 });
