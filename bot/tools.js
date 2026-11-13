@@ -84,7 +84,7 @@ function ejecutar(nombre, input, ctx) {
         impuestos_y_gastos_estimados_usd: r.impuestos_estimados_usd.total,
         detalle_impuestos: r.impuestos_estimados_usd,
         total_estimado_usd: r.total_estimado_usd,
-        reglas: 'El flete es ESTIMADO con el peso y las medidas que da el proveedor. El flete final es el que marca la balanza cuando la caja llega al depósito de China (se manda foto): si pesa menos paga menos, si pesa más paga más. Se suma un handling fijo de USD 10 por envío. Flete + handling se pagan al pesarse, antes de que salga. Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier (DHL) al llegar. Nunca prometas que el flete se mantiene si la caja pesa más.',
+        reglas: 'El flete es ESTIMADO con el peso y las medidas que da el proveedor. El flete final es el que marca la balanza cuando la caja llega al depósito de China (se manda foto): si pesa menos paga menos, si pesa más paga más. Se suma un handling fijo de USD 10 por envío. Flete + handling se pagan al pesarse, antes de que salga. Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier al llegar (puede ser DHL, UPS o FedEx; no nombres uno salvo que pregunten). Nunca prometas que el flete se mantiene si la caja pesa más.',
       };
     }
     case 'registrar_lead':
