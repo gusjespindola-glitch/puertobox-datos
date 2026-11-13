@@ -37,7 +37,8 @@ function revisar(resp, ctx) {
   const sinSaludo = t.replace(/¿c[oó]mo (va|est[aá]s|and[aá]s)\?/gi, '');
   if (!esPresupuesto && (sinSaludo.match(/\?/g) || []).length > 1) prob.push('más de una pregunta');
   if (/^\[ERROR/.test(t)) prob.push('error técnico');
-  if (/AMBA|La Plata|Buenos Aires|CABA/.test(t) && /d[oó]nde/i.test(ctx.ultimo)) prob.push('inventa ubicación');
+  if (/d[oó]nde/i.test(ctx.ultimo) && (/AMBA|CABA/.test(t) || !/La Plata/.test(t))) prob.push('ubicación mal (es La Plata, sin local)');
+  if (/retir(o|ar) (en|por) (el|nuestro) local/i.test(t)) prob.push('ofrece retiro en local');
   if (!esPresupuesto && JERGA.test(t)) prob.push('usa palabras técnicas');
   if (/pesa menos/i.test(t)) prob.push('dice "si pesa menos paga menos"');
   if (/\bDHL\b/.test(t) && !/dhl|courier/i.test(ctx.ultimo)) prob.push('nombra DHL sin que pregunten');
