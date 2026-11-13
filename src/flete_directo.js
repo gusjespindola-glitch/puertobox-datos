@@ -2,9 +2,9 @@
 /**
  * Modelo "flete directo" PuertoBox (desde 13/11/2026):
  * - El envío va a nombre y domicilio del cliente por courier (DHL por defecto).
- * - PuertoBox cobra SOLO el flete, por adelantado, al pesarse en el depósito de China.
+ * - PuertoBox cobra flete + handling fijo, por adelantado, al pesarse en el depósito de China.
  * - Impuestos y gasto administrativo los paga el cliente directo al courier.
- * - El presupuesto usa los datos del proveedor + 15% de tolerancia.
+ * - El presupuesto es estimado con los datos del proveedor; el flete final es el de la balanza.
  */
 const path = require('path');
 const precios = require(path.join(__dirname, '..', 'data', 'precios_venta.json'));
@@ -61,19 +61,21 @@ function estimarImpuestos({ valorFactura, flete, die, internos = 0, regimen = 'c
   };
 }
 
-/** Presupuesto firme para el cliente. */
+/** Presupuesto estimado para el cliente (flete final = peso de balanza). */
 function presupuesto({ kg, largo, ancho, alto, valorFactura, die = 0, internos = 0, regimen = 'comercial' }) {
   const declarado = kgCobrable({ kg, largo, ancho, alto });
-  const kgPres = Math.ceil(declarado * (1 + M.tolerancia) * 2) / 2;
+  const kgPres = Math.ceil(declarado * (1 + (M.tolerancia || 0)) * 2) / 2;
   const flete = fleteVenta(kgPres);
+  const handling = M.handling_usd || 0;
   const imp = estimarImpuestos({ valorFactura, flete, die, internos, regimen });
   return {
     kg_declarado_cobrable: declarado,
     kg_presupuestado: kgPres,
     flete_puertobox_usd: flete,
+    handling_puertobox_usd: handling,
     impuestos_estimados_usd: imp,
-    total_estimado_usd: r2(flete + imp.total),
-    margen_interno_usd: r2(flete - fleteCosto(kgPres)),
+    total_estimado_usd: r2(flete + handling + imp.total),
+    margen_interno_usd: r2(flete + handling - fleteCosto(kgPres)),
   };
 }
 

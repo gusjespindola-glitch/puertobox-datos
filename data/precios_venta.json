@@ -87,9 +87,9 @@
     "umbral_die_alto": 20
   },
   "flete_directo": {
-    "descripcion": "Modelo vigente desde 13/11/2026. Envío a nombre y domicilio del cliente por DHL. PuertoBox cobra solo el flete, por adelantado. Impuestos y gasto administrativo los paga el cliente al courier.",
+    "descripcion": "Modelo vigente desde 13/11/2026. Envío a nombre y domicilio del cliente por DHL. PuertoBox cobra flete (por peso real de balanza en el depósito de China) + handling fijo, por adelantado. Impuestos y gasto administrativo los paga el cliente al courier.",
     "courier": "DHL (vía Howard)",
-    "tolerancia": 0.15,
+    "tolerancia": 0,
     "divisor_volumetrico": 5000,
     "tramos_venta": [
       {
@@ -208,6 +208,8 @@
       "recargo zona remota",
       "días de tránsito",
       "¿sigue tarifa 11 USD/kg 20kg+ por FedEx?"
-    ]
+    ],
+    "handling_usd": 10,
+    "cobro": "Flete por peso de balanza (con foto) + handling, 100% al ingresar la caja al depósito de China."
   }
 }
