@@ -1,26 +1,27 @@
 # PuertoBox — estado al 13/11/2026
 
+Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (material del curso).
+
+## Bot de WhatsApp (andando)
+- Línea del bot: **+54 9 221 682-6773**. WhatsApp Business de siempre: 221 698-2199 (aparte, es el número de Gustavo para avisos).
+- Código: `bot/` (prompt en `bot/prompt.md`, herramientas en `bot/tools.js`, precios en `src/flete_directo.js` + `data/precios_venta.json → flete_directo`).
+- Corre en **Railway**: proyecto "sublime-amazement", servicio `puertobox-datos`, dominio `puertobox-datos-production.up.railway.app`, volumen en `/data`. Despliega solo cada vez que se aprueba un PR en `main`.
+- Variables en Railway: ANTHROPIC_API_KEY, YCLOUD_API_KEY, BUSINESS_NUMBER, OWNER_NUMBER (5492216982199), ADMIN_KEY, DATA_FILE (/data/data.json). Opcional: NTFY_TOPIC.
+- IA: Anthropic, Claude Haiku 5.5, USD 5 cargados, **recarga automática apagada**, clave "bot-puertobox" sin vencimiento.
+- YCloud: plan Free, webhook activo a `/webhook` (evento whatsapp.inbound_message.received). El AI Agent de YCloud quedó sin crédito.
+- Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`.
+
 ## Web
-- Archivo vigente: `web/sitio/index.html` (dark/rojo, cotizador nuevo, WhatsApp al bot 5492216826773).
-- Hosting: Cloudflare (cuenta gusjespindola@gmail.com), Worker `royal-mode-b440`, dominios puertobox.com.ar y www conectados.
-- Dominio registrado en NIC Argentina a nombre de Gustavo, vence 08/04/2027. Delegado a jen.ns.cloudflare.com / rocky.ns.cloudflare.com (13/11, esperando propagación).
-- Para actualizar: Cloudflare → Workers & Pages → royal-mode-b440 → subir nuevo index.html.
-- La app vieja de membresía queda en una cuenta de Netlify perdida; ya no se usa.
+- Archivo vigente: `web/sitio/index.html`. Hosting: Cloudflare Worker `royal-mode-b440` (cuenta gusjespindola@gmail.com).
+- Dominio en NIC a nombre de Gustavo, vence 08/04/2027, delegado a Cloudflare el 13/11 (propagando: el 13/11 todavía mostraba el sitio viejo).
 
-## Bot WhatsApp
-- Línea del bot: +54 9 221 682-6773 (Cloud API vía YCloud, AI Agent "Asistente PuertoBox").
-- WhatsApp Business de siempre: 221 698-2199 (aparte).
-
-## Textos del bot
-- Todo en `ycloud-agent/` (instrucciones, aranceles, acciones, mensaje para el 698).
-
-## Tarifas
-- Venta y costos DHL en `data/precios_venta.json` → `flete_directo`.
-
-## Pendientes
-1. Confirmar que puertobox.com.ar muestra "DE CHINA A TU PUERTA" cuando Cloudflare quede activo.
-2. Mensaje de bienvenida/ausencia en el WhatsApp 698 con link al bot:
-   https://wa.me/5492216826773?text=Hola%2C%20quiero%20cotizar%20un%20env%C3%ADo
-3. Link del bot en bios de TikTok e Instagram; app YCloud con notificaciones.
-4. Preguntar a Howard: gastos admin DHL, recargo zona alejada, días de tránsito, si sigue FedEx 11 USD/kg 20+.
-5. Opcional: verificación de negocio en Meta, perfil del número, actualizar tarifas del doc de diagnóstico.
+## Pendientes (en orden)
+1. **Apagar el AI Agent de YCloud** (Inbox > Assignment): si se renueva el crédito, contestarían los dos bots.
+2. **Avisos al 698**: WhatsApp solo los entrega si el 698 le escribió al bot en las últimas 24 h. Instalar la app ntfy y cargar NTFY_TOPIC en Railway.
+3. **Web**: cotizador y FAQ siguen con la tolerancia del 15% "gratis" y sin handling. Alinear con el bot (15% incluido + USD 10).
+4. **Railway**: la prueba vence alrededor del 13/12/2026. Pasar al plan Hobby (USD 5/mes) antes o el bot se apaga.
+5. Seguir revisando el material del curso (ver `docs/curso/README.md`) y aplicarlo.
+6. Confirmar que puertobox.com.ar muestre el sitio nuevo cuando Cloudflare quede activo. Revisar el mail info@ (registros MX en Cloudflare).
+7. Cargar el mensaje de bienvenida o ausencia en el 698 (`ycloud-agent/whatsapp_698_bienvenida.txt`) y el link del bot en las bios.
+8. Preguntar a Howard: gasto administrativo de DHL, recargo por zona alejada, días de tránsito, si sigue FedEx a 11 USD/kg desde 20 kg.
+9. Limpieza del repo: `ycloud-agent/` y el README viejo (modelo consolidado / modelo fijo) ya no se usan; archivos web viejos; `ncm/fuentes_arca/nom.txt` duplicado.

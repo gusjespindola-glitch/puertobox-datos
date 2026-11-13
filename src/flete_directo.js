@@ -40,12 +40,13 @@ function fleteCosto(kg) {
  */
 function estimarImpuestos({ valorFactura, flete, die, internos = 0, regimen = 'comercial', conFranquicia = true }) {
   const cif = (valorFactura + flete) * 1.01;
-  let factorDerechos = 1;
+  // Pequeños envíos (curso, Courier 2025): derechos y tasa sobre (FOB - 400) + flete + seguro; hasta USD 400 FOB solo IVA.
+  let baseDerechos = cif;
   if (regimen === 'personal' && conFranquicia) {
-    factorDerechos = valorFactura <= 400 ? 0 : (valorFactura - 400) / valorFactura;
+    baseDerechos = valorFactura <= 400 ? 0 : cif - 400;
   }
-  const di = cif * factorDerechos * (die / 100);
-  const te = cif * factorDerechos * 0.03;
+  const di = baseDerechos * (die / 100);
+  const te = baseDerechos * 0.03;
   const intern = (cif + di + te) * (internos / 100);
   const iva = (cif + di + te) * 0.21;
   const pctAdmin = cif < 500 ? 0.20 : 0.095;
