@@ -50,11 +50,14 @@ Tests: `node --test test/calc.test.js`
 
 ## Pendiente de confirmar con el proveedor
 
-- [ ] ¿Los 11 USD/kg incluyen despacho e impuestos, o solo flete?
-- [ ] ¿Guía individual a nombre de cada cliente (para que use su franquicia)?
+- [x] Los 11 USD/kg son **solo flete** (sin despacho ni impuestos).
+- [x] Guía individual a nombre de quien se indique.
+- [x] Sobrepeso: por **caja** de más de 23 kg.
+- [x] Volumétrico: mayor entre real y volumétrico, divisor 5000.
+- [ ] Gastos admin: los calcula la **línea courier**. Falta el umbral exacto de valor y los porcentajes reales.
 - [ ] Tarifa para 13 a 20 kg y para menos de 10 kg.
-- [ ] Recargo de sobrepeso: ¿por bulto o por envío? ¿Umbral exacto?
-- [ ] Gastos admin: ¿el porcentaje se aplica sobre todo el CIF (con salto en USD 500) o de forma marginal?
+- [ ] Recargo por batería de litio (hoy +30%).
+- [ ] Plazo depósito China → entrega.
 - [ ] Percepciones en courier comercial: las fuentes no coinciden (por defecto están desactivadas en `regimenes.json`).
 
 ## Avisos
