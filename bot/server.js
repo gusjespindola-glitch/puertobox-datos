@@ -194,6 +194,12 @@ function servidor() {
       const csv = [cols.join(','), ...leads.map((l) => cols.map((c) => JSON.stringify(l[c] ?? '')).join(','))].join('\n');
       res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8' }); return res.end(csv);
     }
+    if (req.method === 'GET' && url.pathname === '/pruebas' && ADMIN_KEY && url.searchParams.get('key') === (process.env.ADMIN_KEY || ADMIN_KEY)) {
+      // Corre el simulador de clientes con la clave de Anthropic del servidor y devuelve el informe.
+      const { correrEscenarios } = require('./simulador');
+      return correrEscenarios().then((txt) => { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }); res.end(txt); })
+        .catch((e) => { res.writeHead(500); res.end('Error: ' + e.message); });
+    }
     if (req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) return servirNomenclador(req, res, url);
     res.writeHead(200); res.end('PuertoBox bot ok');
   });

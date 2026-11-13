@@ -22,6 +22,10 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - Tarea programada **"Novedades aduaneras PuertoBox"**: todos los lunes a las 6:59 (hora argentina). Revisa Boletín Oficial, ARCA y organismos; guarda `docs/novedades/AAAA-MM-DD.md`, abre un PR si hay que cambiar algo y avisa a Gustavo al celular. Aprobación automática de acciones; los PR los mergea Gustavo.
 - Los archivos del Arancel Integrado de ARCA no se pueden bajar desde acá: si hay nuevos, Gustavo los sube y se corre `ncm/build_nomenclador.py`.
 
+## Precios y pruebas
+- `npm run precios` → `docs/precios/AAAA-MM-DD.md` (ganancia por envío y comparación con la competencia). Hallazgos en `docs/precios/README.md`.
+- Simulador de clientes: `bot/simulador.js` (13 escenarios con revisión automática). Se corre con `ANTHROPIC_API_KEY=... npm run simular` o abriendo `https://puertobox-datos-production.up.railway.app/pruebas?key=ADMIN_KEY` (usa la clave del servidor, gasta centavos). Informes en `docs/pruebas/`.
+
 ## Web
 - Archivo vigente: `web/sitio/index.html`. Hosting: Cloudflare Worker `royal-mode-b440` (cuenta gusjespindola@gmail.com).
 - Dominio en NIC a nombre de Gustavo, vence 08/04/2027, delegado a Cloudflare el 13/11 (propagando: el 13/11 todavía mostraba el sitio viejo).
