@@ -106,7 +106,7 @@ async function procesar(payload, deps = {}) {
       st.agregar(tel, 'user', texto);
       // Chat derivado a Gustavo: nunca clavar el visto. Aviso de espera, como mucho uno cada 3 horas.
       if (st.motivoPausa(tel) === 'derivado' && st.avisoEsperaVencido(tel, 3)) {
-        const r = 'Ya le pasé tu consulta a Gustavo y te escribe en un rato. Si querés, dejame acá cualquier dato más.';
+        const r = 'Tu consulta ya está con Gustavo, nuestro despachante de aduana, y te va a escribir a la brevedad. Si querés, podés dejar acá cualquier dato adicional.';
         await enviar(tel, r, fetchImpl); salidas.push({ to: tel, body: r });
       }
       continue;
@@ -139,7 +139,7 @@ async function atender(tel, texto, st, fetchImpl, owner) {
       resp = await responder({ telefono: tel, texto, store: st, fetchImpl, derivaciones });
     } catch (err) {
       console.error(err);
-      resp = 'Perdón, se me cortó un segundo. ¿Me repetís el último mensaje?';
+      resp = 'Disculpá, tuvimos un inconveniente momentáneo. ¿Me podés repetir tu último mensaje?';
     }
     if (resp) { await enviar(tel, resp, fetchImpl); salidas.push({ to: tel, body: resp }); }
     for (const d of derivaciones) {
