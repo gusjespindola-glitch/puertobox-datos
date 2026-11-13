@@ -1,0 +1,16 @@
+{
+  "_meta": "DATOS DEL NEGOCIO EN UN SOLO LUGAR. Lo que cambies acá cambia en el bot, la web, el buscador y las páginas. Los precios del flete y la gestión están en precios_venta.json (flete_directo).",
+  "marca": "PuertoBox",
+  "dominio": "puertobox.com.ar",
+  "whatsapp_bot": "5492216826773",
+  "whatsapp_bot_visible": "+54 9 221 682-6773",
+  "mensaje_whatsapp": "Hola, quiero cotizar un envío desde China",
+  "instagram": "puertobox.ok",
+  "email": "info@puertobox.com.ar",
+  "horario": "Lun–Vie 9:00 a 18:00 hs",
+  "ciudad": "La Plata",
+  "despachante": "Gustavo Espíndola",
+  "precio_cerrado_hasta_pct": 15,
+  "caja_max_kg": 23,
+  "pequenos_envios": { "franquicia_usd": 400, "envios_por_anio": 5, "unidades_iguales": 3 }
+}

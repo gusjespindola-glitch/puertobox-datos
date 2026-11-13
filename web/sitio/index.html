@@ -735,10 +735,11 @@ footer{
     <li><a href="#servicios">Servicios</a></li>
     <li><a href="#como-funciona">Proceso</a></li>
     <li><a href="#tarifas">Tarifas</a></li>
+    <li><a href="/buscador">Posiciones NCM</a></li>
     <li><a href="#contacto">Contacto</a></li>
   </ul>
   <div class="nav-right">
-    <a href="#" data-wa="Hola, quiero cotizar un envío desde China" class="nav-cta">Cotizá Gratis</a>
+    <a href="#" data-wa="{{mensaje_whatsapp}}" class="nav-cta">Cotizá Gratis</a>
     <button class="hamburger" id="hbg" onclick="toggleMenu()" aria-label="Menú">
       <span></span><span></span><span></span>
     </button>
@@ -750,11 +751,12 @@ footer{
   <a href="#servicios" onclick="closeMenu()">Servicios</a>
   <a href="#como-funciona" onclick="closeMenu()">Cómo Funciona</a>
   <a href="#tarifas" onclick="closeMenu()">Tarifas</a>
+  <a href="/buscador">Buscador NCM</a>
   <a href="#faq" onclick="closeMenu()">Preguntas</a>
   <a href="#contacto" onclick="closeMenu()">Contacto</a>
   <div class="menu-footer">
-    <a href="https://instagram.com/puertobox.ok" target="_blank">Instagram</a>
-    <a href="#" data-wa="Hola, quiero cotizar un envío desde China">WhatsApp</a>
+    <a href="https://instagram.com/{{instagram}}" target="_blank">Instagram</a>
+    <a href="#" data-wa="{{mensaje_whatsapp}}">WhatsApp</a>
   </div>
 </div>
 
@@ -797,7 +799,7 @@ footer{
   <div class="hero-bottom">
     <div class="hstat">
       <div class="hstat-num" id="cnt1">0</div>
-      <div class="hstat-lbl">USD/kg desde 20 kg</div>
+      <div class="hstat-lbl">USD/kg desde {{kg_desde}} kg</div>
     </div>
     <div class="hstat">
       <div class="hstat-num" id="cnt2">0%</div>
@@ -844,7 +846,7 @@ footer{
       <div class="serv-i-num">01</div>
       <div class="serv-i-body">
         <div class="serv-i-title">Courier Personal</div>
-        <div class="serv-i-desc">Hasta 3 unidades del mismo producto. Los primeros USD 400 sin derechos de importación, hasta 5 envíos por año. Ideal para uso propio.</div>
+        <div class="serv-i-desc">Hasta {{unidades_iguales}} unidades del mismo producto. Los primeros USD {{franquicia_usd}} sin derechos de importación, hasta {{envios_por_anio}} envíos por año. Ideal para uso propio.</div>
         <span class="serv-tag">Uso propio</span>
       </div>
       <div class="serv-arrow">→</div>
@@ -908,11 +910,11 @@ footer{
 <div class="big-stat">
   <div class="big-stat-inner">
     <div style="position:relative;display:inline-block">
-      <div class="big-num">18</div>
-      <div class="big-num-fill" id="bigFill">18</div>
+      <div class="big-num">{{usd_kg_desde}}</div>
+      <div class="big-num-fill" id="bigFill">{{usd_kg_desde}}</div>
     </div>
     <div class="big-stat-label">
-      <strong>USD por kilo</strong> desde 20 kg, de China a tu puerta.<br>
+      <strong>USD por kilo</strong> desde {{kg_desde}} kg, de China a tu puerta.<br>
       Courier aéreo express · Precio de flete firme · Entrega a domicilio.
     </div>
   </div>
@@ -962,18 +964,25 @@ footer{
   <div class="tar-intro rev">
     <div class="s-num">03 — Tarifas</div>
     <h2 class="s-title">PRECIOS<br><span class="r">CLAROS</span></h2>
-    <p class="s-body">Tarifa base de flete China → tu domicilio, por kilo cobrable (el mayor entre peso real y volumétrico). A eso se suman USD 20 de gestión por envío, que incluye la revisión de un despachante de aduana matriculado. El flete es precio cerrado. Los impuestos se pagan aparte al courier, al llegar, y te los estimamos antes de comprar.</p>
+    <p class="s-body">Tarifa base de flete China → tu domicilio, por kilo cobrable (el mayor entre peso real y volumétrico). A eso se suman USD {{gestion_usd}} de gestión por envío, que incluye la revisión de un despachante de aduana matriculado. El flete es precio cerrado. Los impuestos se pagan aparte al courier, al llegar, y te los estimamos antes de comprar.</p>
   </div>
   <table class="tar-table rev">
-    <tr><td>Hasta 1 kg</td><td>USD 45 total</td></tr>
-    <tr><td>1,5 a 2,5 kg</td><td>USD 32 / kg</td></tr>
-    <tr><td>3 a 4,5 kg</td><td>USD 28 / kg</td></tr>
-    <tr><td>5 a 9,5 kg</td><td>USD 25 / kg</td></tr>
-    <tr><td>10 a 14,5 kg</td><td>USD 20 / kg</td></tr>
-    <tr><td>15 a 19,5 kg</td><td>USD 19 / kg</td></tr>
-    <tr><td>20 kg o más</td><td>USD 18 / kg</td></tr>
+    {{tabla_html}}
   </table>
-  <p style="margin-top:20px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--gray);line-height:1.8">* El flete es precio cerrado: se respeta aunque la caja llegue hasta un 15% más pesada o grande que lo informado. Si supera ese margen, se ajusta con foto de la balanza. Se paga cuando la caja llega a nuestro depósito en China y se pesa. Zonas alejadas pueden tener recargo del courier.</p>
+  <p style="margin-top:20px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--gray);line-height:1.8">* El flete es precio cerrado: se respeta aunque la caja llegue hasta un {{precio_cerrado_hasta_pct}}% más pesada o grande que lo informado. Si supera ese margen, se ajusta con foto de la balanza. Se paga cuando la caja llega a nuestro depósito en China y se pesa. Zonas alejadas pueden tener recargo del courier.</p>
+</section>
+
+<!-- ─── BUSCADOR NCM ─── -->
+<section id="buscador" class="section alt">
+  <div class="rev">
+    <div class="s-num">Gratis</div>
+    <h2 class="s-title">¿QUÉ IMPUESTOS<br><span class="r">PAGA TU PRODUCTO?</span></h2>
+    <p class="s-body">Buscá la posición arancelaria, los derechos de importación y si necesita algún permiso. Con datos actualizados de ARCA.</p>
+    <form action="/buscador" method="get" style="margin-top:20px;max-width:520px">
+      <input name="q" class="f-input" placeholder="Escribí tu producto. Ej.: zapatillas" aria-label="Producto" style="display:block;border:1px solid var(--line);padding:14px 16px;margin:0;background:var(--bg3)">
+      <button class="wa-btn-out" style="background:var(--red)">Buscar posición</button>
+    </form>
+  </div>
 </section>
 
 <!-- ─── FAQ ─── -->
@@ -985,9 +994,9 @@ footer{
   <div class="faq rev" style="margin-top:40px">
     <details><summary>¿El precio incluye los impuestos?</summary><p>No. El flete lo pagás a PuertoBox. Los impuestos de importación y el gasto administrativo del courier se pagan directo al courier cuando llega. Antes de que compres te decimos cuánto van a ser aproximadamente.</p></details>
     <details><summary>¿Cuándo pago el flete?</summary><p>Cuando la caja llega a nuestro depósito en China. La pesamos, te mandamos foto de la balanza y pagás. Recién ahí sale el envío.</p></details>
-    <details><summary>¿Y si la caja pesa más de lo que dijo el proveedor?</summary><p>El flete es precio cerrado: se respeta aunque la caja llegue hasta un 15% más pesada o grande que lo que informó el proveedor. Solo se ajusta si supera ese margen, y siempre con foto de la balanza.</p></details>
+    <details><summary>¿Y si la caja pesa más de lo que dijo el proveedor?</summary><p>El flete es precio cerrado: se respeta aunque la caja llegue hasta un {{precio_cerrado_hasta_pct}}% más pesada o grande que lo que informó el proveedor. Solo se ajusta si supera ese margen, y siempre con foto de la balanza.</p></details>
     <details><summary>¿Dónde están? ¿Puedo retirar?</summary><p>Somos de La Plata. Trabajamos online y sin depósito físico para bajar costos, así el envío te sale más barato. No hay retiro: la caja te llega a domicilio por courier.</p></details>
-    <details><summary>¿Necesito tener empresa?</summary><p>No. Para uso propio va por pequeños envíos: los primeros USD 400 sin derechos de importación, hasta 5 envíos por año y hasta 3 unidades iguales. Para revender va por courier comercial con tu CUIT.</p></details>
+    <details><summary>¿Necesito tener empresa?</summary><p>No. Para uso propio va por pequeños envíos: los primeros USD {{franquicia_usd}} sin derechos de importación, hasta {{envios_por_anio}} envíos por año y hasta {{unidades_iguales}} unidades iguales. Para revender va por courier comercial con tu CUIT.</p></details>
     <details><summary>¿Qué no se puede traer?</summary><p>Réplicas o marcas falsificadas, medicamentos, alimentos y suplementos, cosmética y perfumes, baterías sueltas, líquidos inflamables y productos que requieran permisos (ANMAT, INAL, ENACOM) sin autorización. Hasta USD 3.000 por envío y 50 kg por caja.</p></details>
     <details><summary>¿Llegan a todo el país? ¿Cuánto tarda?</summary><p>Sí, puerta a puerta por courier aéreo express. En algunas zonas alejadas el courier cobra un recargo. El plazo te lo confirmamos al cotizar, según la fecha de salida, y te pasamos el número de guía para seguirlo.</p></details>
   </div>
@@ -1001,12 +1010,12 @@ footer{
     <p class="s-body">Cotización gratis por WhatsApp. Te respondemos en minutos con flete e impuestos estimados.</p>
   </div>
   <div class="contact-grid rev">
-    <div class="contact-item"><div class="contact-ico">💬</div><div><div class="contact-lbl">WhatsApp</div><div class="contact-val"><a href="#" data-wa="Hola, quiero cotizar un envío desde China">+54 9 221 682-6773</a></div></div></div>
-    <div class="contact-item"><div class="contact-ico">📷</div><div><div class="contact-lbl">Instagram</div><div class="contact-val"><a href="https://instagram.com/puertobox.ok" target="_blank">@puertobox.ok</a></div></div></div>
-    <div class="contact-item"><div class="contact-ico">📧</div><div><div class="contact-lbl">Email</div><div class="contact-val"><a href="mailto:info@puertobox.com.ar">info@puertobox.com.ar</a></div></div></div>
-    <div class="contact-item"><div class="contact-ico">🕐</div><div><div class="contact-lbl">Horario</div><div class="contact-val">Lun–Vie 9:00 a 18:00 hs</div></div></div>
+    <div class="contact-item"><div class="contact-ico">💬</div><div><div class="contact-lbl">WhatsApp</div><div class="contact-val"><a href="#" data-wa="{{mensaje_whatsapp}}">{{whatsapp_bot_visible}}</a></div></div></div>
+    <div class="contact-item"><div class="contact-ico">📷</div><div><div class="contact-lbl">Instagram</div><div class="contact-val"><a href="https://instagram.com/{{instagram}}" target="_blank">@{{instagram}}</a></div></div></div>
+    <div class="contact-item"><div class="contact-ico">📧</div><div><div class="contact-lbl">Email</div><div class="contact-val"><a href="mailto:{{email}}">{{email}}</a></div></div></div>
+    <div class="contact-item"><div class="contact-ico">🕐</div><div><div class="contact-lbl">Horario</div><div class="contact-val">{{horario}}</div></div></div>
   </div>
-  <div class="rev" style="margin-top:32px"><a href="#" data-wa="Hola, quiero cotizar un envío desde China" class="wa-btn-out" style="display:inline-flex;text-decoration:none"><span>💬</span> Cotizar por WhatsApp</a></div>
+  <div class="rev" style="margin-top:32px"><a href="#" data-wa="{{mensaje_whatsapp}}" class="wa-btn-out" style="display:inline-flex;text-decoration:none"><span>💬</span> Cotizar por WhatsApp</a></div>
 </section>
 
 <!-- ─── FOOTER ─── -->
@@ -1032,22 +1041,23 @@ footer{
           <li><a href="#como-funciona">Cómo Funciona</a></li>
           <li><a href="#tarifas">Tarifas</a></li>
           <li><a href="#faq">Preguntas</a></li>
+          <li><a href="/buscador">Buscador NCM</a></li>
         </ul>
       </div>
     </div>
   </div>
   <div class="foot-bottom">
     <div class="foot-socials">
-      <a href="https://instagram.com/puertobox.ok" class="foot-social" target="_blank">Instagram</a>
-      <a href="#" data-wa="Hola, quiero cotizar un envío desde China" class="foot-social">WhatsApp</a>
-      <a href="mailto:info@puertobox.com.ar" class="foot-social">Email</a>
+      <a href="https://instagram.com/{{instagram}}" class="foot-social" target="_blank">Instagram</a>
+      <a href="#" data-wa="{{mensaje_whatsapp}}" class="foot-social">WhatsApp</a>
+      <a href="mailto:{{email}}" class="foot-social">Email</a>
     </div>
     <span>© 2026 PuertoBox · Gustavo Espíndola, Despachante de Aduana matriculado ante <strong style="color:var(--red)">ARCA</strong> · Argentina</span>
     <span>Todos los derechos reservados.</span>
   </div>
 </footer>
 
-<a href="#" data-wa="Hola, quiero cotizar un envío desde China" class="wa-float" title="WhatsApp">💬</a>
+<a href="#" data-wa="{{mensaje_whatsapp}}" class="wa-float" title="WhatsApp">💬</a>
 
 <script>
 // ── NAV ──
@@ -1114,7 +1124,7 @@ function animCount(el,to,suf,ms){
 }
 window.addEventListener('load',()=>{
   setTimeout(()=>{
-    animCount(document.getElementById('cnt1'),18,'',1100);
+    animCount(document.getElementById('cnt1'),{{usd_kg_desde}},'',1100);
     animCount(document.getElementById('cnt2'),100,'%',1500);
     animCount(document.getElementById('cnt3'),0,'',600);
   },900);
@@ -1142,7 +1152,7 @@ document.querySelectorAll('.rev').forEach(el=>{
 });
 
 // ── WHATSAPP (bot de cotizaciones) ──
-const WA='5492216826773';
+const WA='{{whatsapp_bot}}';
 const waLink=t=>'https://wa.me/'+WA+'?text='+encodeURIComponent(t);
 document.querySelectorAll('[data-wa]').forEach(a=>{a.href=waLink(a.dataset.wa);a.target='_blank';a.rel='noopener';});
 

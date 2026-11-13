@@ -56,3 +56,4 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 
 - 13/11/2026: Gustavo: "Cotizá gratis" no puede llevar a un cotizador de la web; tiene que ir directo al WhatsApp del bot. Sacar de la web todo lo innecesario (formulario, sección repetida, links muertos). La web se sirve desde el repo con un Worker que lee `web/sitio/index.html`, para no tener que subirla a mano.
 - 13/11/2026: el Worker de la web usa archivos subidos ("Automatic deployment on upload"); pegar código en el editor no cambia lo que se ve. Se actualiza subiendo el index.html nuevo con New deployment. Desde el celular el editor de Cloudflare no deja pegar: hacerlo desde la PC.
+- 13/11/2026: Gustavo: "si cambio una cosa, que cambie todo". Base única: precios en precios_venta.json, contacto y reglas en negocio.json; bot, web y páginas leen de ahí. Nada que complique; todo lo que traiga clientes.
