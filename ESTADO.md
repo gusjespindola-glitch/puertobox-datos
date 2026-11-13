@@ -11,6 +11,9 @@
 - Línea del bot: +54 9 221 682-6773 (Cloud API vía YCloud, AI Agent "Asistente PuertoBox").
 - WhatsApp Business de siempre: 221 698-2199 (aparte).
 
+## Textos del bot
+- Todo en `ycloud-agent/` (instrucciones, aranceles, acciones, mensaje para el 698).
+
 ## Tarifas
 - Venta y costos DHL en `data/precios_venta.json` → `flete_directo`.
 

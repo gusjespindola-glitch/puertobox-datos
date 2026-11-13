@@ -1,0 +1,7 @@
+Agregá etiquetas según la conversación:
+- "uso-propio" o "reventa" según lo que diga el cliente.
+- "cotizado" cuando le pasaste la tarifa y el flete estimado.
+- "listo-para-cerrar" cuando quiere avanzar o pagar.
+- "mayorista" si son más de 50 kg o más de USD 3.000.
+- "prohibido" si pidió algo que no traemos.
+- "zona-remota" si el código postal no es de CABA o GBA.

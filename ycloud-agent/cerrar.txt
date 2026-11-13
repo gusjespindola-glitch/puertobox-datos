@@ -1,0 +1,1 @@
+Cerrá la conversación solo si el cliente dice que no le interesa, que ya está todo, o si no responde después de dos recordatorios. Nunca cierres si el cliente quiere avanzar o tiene una duda pendiente: en ese caso derivá a Gustavo.

@@ -1,0 +1,1 @@
+Guardá en el contacto, apenas el cliente los diga: nombre, producto, valor de factura en USD, peso y medidas, código postal y si es uso propio o reventa. Si el cliente corrige un dato, actualizalo.

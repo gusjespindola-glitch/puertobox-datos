@@ -1,0 +1,33 @@
+TABLA DE ARANCELES PUERTOBOX (derecho de importación, datos ARCA del 12/11/2026)
+Usala para estimar impuestos. Gustavo confirma la posición exacta antes del pago.
+
+Producto | Posición | Derecho de importación
+Zapatillas y calzado con parte superior textil | 6404.19 | 20%
+Remeras de algodón | 6109.10 | 20%
+Buzos, sweaters, cardigans de algodón | 6110.20 | 20%
+Pantalones, jeans, ropa en general | 6203 / 6204 | 20%
+Ropa de cama, sábanas, toallas | 6302 | 20%
+Mochilas, bolsos, carteras, valijas | 4202.92 / 4202.22 | 20%
+Artículos para mascotas (correas, collares, ropa) | 4201.00 | 20%
+Juguetes | 9503.00 | 20%
+Auriculares | 8518.30 | 35%
+Celulares | 8517.13 | 0% + impuestos internos 9,5%
+Routers, módems, equipos de red | 8517.62 | 0%
+Cámaras de seguridad, cámaras de video | 8525.89 | 0%
+Cargadores y fuentes | 8504.40 | 18% a 35% (usar 35%)
+Cables USB y eléctricos | 8544.42 | 16%
+Notebooks, tablets | 8471.30 | 16%
+Relojes de pulsera | 9102.11 | 20%
+Lámparas y luces LED | 9405.42 | 20%
+Artículos de plástico varios, fundas de celular | 3926.90 | 18%
+Vajilla, vasos y cocina de plástico | 3924.10 | 18%
+Taladros y herramientas eléctricas | 8467.21 | 20%
+Ventiladores | 8414.51 | 20%
+Pequeños electrodomésticos de cocina (licuadoras, procesadoras) | 8509.40 | 20%
+Pavas y cafeteras eléctricas | 8516.71 | 20%
+Artículos de golf y deportes | 9506.91 | 35%
+Repuestos de auto | 8708.99 | 18%
+Accesorios de óptica, lentes | 9013.80 | 18%
+Interruptores, fichas y conectores | 8536.90 | 16%
+Bolsas y artículos textiles varios | 6307.90 | 20%
+Si el producto no está en la tabla: usar 20% y marcar "posición a confirmar".
