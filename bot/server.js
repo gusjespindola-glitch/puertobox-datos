@@ -143,6 +143,28 @@ async function atender(tel, texto, st, fetchImpl, owner) {
   return salidas;
 }
 
+// Nomenclador PuertoBox (web/nomenclador) protegido con ADMIN_KEY: se entra una vez con ?key=... y queda guardado en una cookie.
+const fs = require('fs');
+const WEB = path.join(__dirname, '..', 'web', 'nomenclador');
+const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
+function servirNomenclador(req, res, url) {
+  const clave = process.env.ADMIN_KEY || ADMIN_KEY;
+  const cookie = /(?:^|;\s*)pbk=([^;]+)/.exec(req.headers.cookie || '');
+  const dada = url.searchParams.get('key');
+  if (!clave || (dada !== clave && !(cookie && decodeURIComponent(cookie[1]) === clave))) {
+    res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' });
+    return res.end('Acceso restringido. Entrá con el link que tiene la clave.');
+  }
+  if (url.pathname === '/nomenclador') { res.writeHead(302, { location: '/nomenclador/' + (dada ? '?key=' + encodeURIComponent(dada) : '') }); return res.end(); }
+  const rel = decodeURIComponent(url.pathname.slice('/nomenclador/'.length)) || 'index.html';
+  const archivo = path.normalize(path.join(WEB, rel));
+  if (!archivo.startsWith(WEB + path.sep) || !fs.existsSync(archivo) || fs.statSync(archivo).isDirectory()) { res.writeHead(404); return res.end('No encontrado'); }
+  const headers = { 'content-type': TIPOS[path.extname(archivo)] || 'application/octet-stream', 'cache-control': rel.startsWith('data/') ? 'public, max-age=3600' : 'no-cache' };
+  if (dada === clave) headers['set-cookie'] = `pbk=${encodeURIComponent(clave)}; Path=/nomenclador; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax`;
+  res.writeHead(200, headers);
+  fs.createReadStream(archivo).pipe(res);
+}
+
 function servidor() {
   return http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
@@ -164,6 +186,7 @@ function servidor() {
       const csv = [cols.join(','), ...leads.map((l) => cols.map((c) => JSON.stringify(l[c] ?? '')).join(','))].join('\n');
       res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8' }); return res.end(csv);
     }
+    if (req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) return servirNomenclador(req, res, url);
     res.writeHead(200); res.end('PuertoBox bot ok');
   });
 }

@@ -36,6 +36,8 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - Posiciones: archivos oficiales de ARCA (Arancel Integrado), no VUCE. Las intervenciones no vienen en ARCA: tabla curada propia, siempre "confirmar en VUCE".
 - Zapatillas deportivas = 6404.11 (no 6404.19, que son las urbanas). Las posiciones "presentados desmontados" tienen DIE 0%: no usarlas para calzado armado.
 
+- Gustavo quiere estar actualizado como con Tarifar/PCRAM: revisión semanal de normas (tarea de los lunes) y acceso al nomenclador desde el celular (Railway, con clave).
+
 ### Errores que no hay que repetir
 - Prometer en la web o en el bot algo que hace perder plata (la tolerancia del 15% sin cobrarla).
 - Dejar textos de ejemplo ("PEGÁ_ACÁ_...") en plantillas que Gustavo pega tal cual: dar el valor exacto o decir explícitamente qué reemplazar.
