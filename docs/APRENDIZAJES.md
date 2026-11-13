@@ -32,6 +32,8 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - Comando `#borrar` desde el 698 para limpiar los chats de prueba.
 - El número de Gustavo para avisos (OWNER_NUMBER) es el 698. Ojo: WhatsApp solo entrega esos avisos si el 698 le escribió al bot en las últimas 24 h. Está preparado el aviso por ntfy (variable NTFY_TOPIC).
 
+- **Ubicación (13/11):** PuertoBox es de La Plata. No hay local ni retiro: solo envíos a domicilio. Empresa online sin depósito físico para bajar costos y que al cliente le salga más barato.
+
 ### Nomenclador
 - Gustavo quiere una herramienta tipo Tarifar/PCRAM para él (despachante) y para el bot: nomenclador + calculadora. Legislación, jurisprudencia y estadísticas, más adelante si se consiguen las bases.
 - Posiciones: archivos oficiales de ARCA (Arancel Integrado), no VUCE. Las intervenciones no vienen en ARCA: tabla curada propia, siempre "confirmar en VUCE".

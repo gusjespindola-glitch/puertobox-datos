@@ -32,7 +32,6 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 
 ## Pendientes (en orden)
 0. **Cambiar la clave de Anthropic** (quedó pegada en el chat el 13/11): crear una nueva en platform.claude.com → Claves, pegarla en Railway (ANTHROPIC_API_KEY) y borrar la vieja.
-0c. **Qué contestar cuando preguntan dónde está PuertoBox** (ciudad, si hay retiro): hoy el bot dice que trabaja online desde Argentina.
 0b. **Decidir cómo mostrar la tarifa por kilo** (web y bot): hoy el flete se cotiza con +15% sobre el peso, así que la tabla por kilo no cierra con el presupuesto. Opción: publicar la tabla con el 15% ya incluido. Lo decide Gustavo.
 1. **Apagar el AI Agent de YCloud** (Inbox > Assignment): si se renueva el crédito, contestarían los dos bots.
 2. **Avisos al 698**: WhatsApp solo los entrega si el 698 le escribió al bot en las últimas 24 h. Instalar la app ntfy y cargar NTFY_TOPIC en Railway.
