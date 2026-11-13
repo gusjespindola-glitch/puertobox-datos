@@ -1,14 +1,16 @@
 {
   "_meta": {
     "actualizado": "2026-11-12",
-    "aviso": "Lista de precios PuertoBox al cliente. Impuestos se cobran aparte, sin margen."
+    "aviso": "Lista de precios PuertoBox al cliente. Impuestos se cobran aparte, sin margen.",
+    "iva": "Precios con IVA incluido."
   },
   "china_aereo": {
     "usd_kg": 25,
     "minimo_facturable_kg": 1,
-    "fee_gestion_usd": 10,
+    "fee_gestion_usd": 15,
     "plazo_dias_habiles": "12-20",
-    "cobro": "Flete y fee al ingresar al depósito de origen; impuestos y entrega antes de liberar."
+    "cobro": "Flete y fee al ingresar al depósito de origen; impuestos y entrega antes de liberar.",
+    "producto": "Personal"
   },
   "usa_aereo": {
     "usd_kg": null,
@@ -20,7 +22,41 @@
   },
   "todo_incluido_promo": {
     "activo": false,
-    "categorias_permitidas": ["ropa", "calzado"],
+    "categorias_permitidas": [
+      "ropa",
+      "calzado"
+    ],
     "tope_valor_declarado_usd_por_kg": 40
+  },
+  "china_aereo_emprendedor": {
+    "producto": "Emprendedor",
+    "tramos": [
+      {
+        "desde_kg": 10,
+        "usd_kg": 22
+      },
+      {
+        "desde_kg": 20,
+        "usd_kg": 20
+      }
+    ],
+    "fee_gestion_usd": 25,
+    "minimo_kg": 10
+  },
+  "reglas": {
+    "salida": "semanal, mínimo 20 kg consolidados",
+    "caja_max_kg": 23,
+    "cobro_flete": "100% al ingresar al depósito de origen",
+    "cobro_tributos": "antes de liberar; clientes nuevos anticipo 110% estimado",
+    "seguro_opcional": {
+      "porcentaje_fob": 0.03,
+      "minimo_usd": 10
+    },
+    "prohibido": [
+      "réplicas o marcas falsificadas",
+      "línea blanca",
+      "baterías sueltas",
+      "líquidos inflamables"
+    ]
   }
 }
