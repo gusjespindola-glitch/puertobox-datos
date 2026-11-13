@@ -113,3 +113,17 @@ test('Gustavo pausa y reactiva un chat desde su número personal', async () => {
   await procesar(msg('5496', 'sigo acá'), { fetchImpl, store });
   assert.strictEqual(llamadas.claude.length, 1);
 });
+
+test('si la IA falla, avisa al cliente y a Gustavo en vez de quedar mudo', async () => {
+  const store = crearStore(null);
+  process.env.OWNER_NUMBER = '5499999999999';
+  const enviados = [];
+  const fetchImpl = async (url, opts) => {
+    if (String(url).includes('anthropic')) return { ok: false, status: 500, text: async () => 'falla' };
+    enviados.push(JSON.parse(opts.body)); return { ok: true, json: async () => ({}), text: async () => '' };
+  };
+  const out = await procesar(msg('5497', 'hola'), { fetchImpl, store });
+  assert.ok(out.some((o) => o.to === '5497' && /Gustavo/.test(o.body)));
+  assert.ok(out.some((o) => o.to === '5499999999999'));
+  delete process.env.OWNER_NUMBER;
+});

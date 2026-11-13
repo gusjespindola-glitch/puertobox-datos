@@ -25,7 +25,8 @@ const definiciones = [
     input_schema: {
       type: 'object',
       properties: {
-        kg: { type: 'number', description: 'Peso bruto total que declara el proveedor, en kg' },
+        kg: { type: 'number', description: 'Peso bruto TOTAL de todas las cajas, en kg' },
+        cantidad_cajas: { type: 'number', description: 'Cantidad de cajas iguales (las medidas son de UNA caja). Si no se sabe, 1.' },
         valor_factura_usd: { type: 'number', description: 'Valor de la factura del proveedor en USD' },
         die: { type: 'number', description: 'Derecho de importación (%) de la posición elegida' },
         internos: { type: 'number', description: 'Impuestos internos (%) si la posición los tiene, si no 0' },
@@ -67,14 +68,14 @@ function ejecutar(nombre, input, ctx) {
   switch (nombre) {
     case 'buscar_posicion': {
       const m = getMotor();
-      const res = m.buscar(input.producto, 5).map((f) => ({
+      const res = m.buscar(input.producto, 15).filter((f) => !f.c.startsWith('00')).slice(0, 5).map((f) => ({
         posicion: f.c, die: f.die, impuestos_internos: f.ii, descripcion: m.texto(f).slice(-3).join(' › '),
       }));
       return res.length ? res : { aviso: 'Sin resultados. Probá con otras palabras o derivá a Gustavo.' };
     }
     case 'cotizar': {
       const r = presupuesto({
-        kg: input.kg, largo: input.largo_cm, ancho: input.ancho_cm, alto: input.alto_cm,
+        kg: input.kg, cajas: input.cantidad_cajas || 1, largo: input.largo_cm, ancho: input.ancho_cm, alto: input.alto_cm,
         valorFactura: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen,
       });
       return {
