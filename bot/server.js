@@ -92,9 +92,7 @@ async function procesar(payload, deps = {}) {
       resp = await responder({ telefono: tel, texto, store: st, fetchImpl, derivaciones });
     } catch (err) {
       console.error(err);
-      resp = 'Dame un momento que lo reviso con Gustavo y te escribimos enseguida.';
-      st.pausar(tel, 'error');
-      derivaciones.push({ telefono: tel, motivo: 'error_del_bot', resumen: `El bot falló con este chat (último mensaje: "${texto}"). Respondele vos.` });
+      resp = 'Perdón, se me cortó un segundo. ¿Me repetís el último mensaje?';
     }
     if (resp) { await enviar(tel, resp, fetchImpl); salidas.push({ to: tel, body: resp }); }
     for (const d of derivaciones) {
