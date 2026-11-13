@@ -2,7 +2,8 @@ TABLA DE ARANCELES PUERTOBOX (derecho de importación, datos ARCA del 12/11/2026
 Usala para estimar impuestos. Gustavo confirma la posición exacta antes del pago.
 
 Producto | Posición | Derecho de importación
-Zapatillas y calzado con parte superior textil | 6404.19 | 20%
+Zapatillas deportivas (running, training, tenis) | 6404.11 | 20%
+Zapatillas urbanas y calzado con parte superior textil | 6404.19 | 20%
 Remeras de algodón | 6109.10 | 20%
 Buzos, sweaters, cardigans de algodón | 6110.20 | 20%
 Pantalones, jeans, ropa en general | 6203 / 6204 | 20%
