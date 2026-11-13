@@ -39,6 +39,9 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 
 - Gustavo quiere estar actualizado como con Tarifar/PCRAM: revisión semanal de normas (tarea de los lunes) y acceso al nomenclador desde el celular (Railway, con clave).
 
+### Precios y mejora continua
+- Gustavo quiere: revisar la competencia todas las semanas, analizar si gana bien, poco o puede perder con cada precio nuevo, proponer variantes (sin estudios a fondo) y hacer pruebas del bot todo el tiempo. Todo se guarda en el repo (`docs/precios/`, `docs/pruebas/`).
+
 ### Errores que no hay que repetir
 - Prometer en la web o en el bot algo que hace perder plata (la tolerancia del 15% sin cobrarla).
 - Dejar textos de ejemplo ("PEGÁ_ACÁ_...") en plantillas que Gustavo pega tal cual: dar el valor exacto o decir explícitamente qué reemplazar.
