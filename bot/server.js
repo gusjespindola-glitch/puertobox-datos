@@ -93,7 +93,8 @@ async function procesar(payload, deps = {}) {
     if (owner && tel === owner && e.type === 'text' && e.text.body.trim().startsWith('#')) {
       const [cmd, num] = e.text.body.trim().split(/\s+/);
       const cliente = soloDigitos(num);
-      let r = 'Comandos: #pausa 549XXXXXXXXXX (callar el bot en ese chat) · #bot 549XXXXXXXXXX (reactivarlo)';
+      let r = 'Comandos: #borrar (borra tu chat de prueba) · #borrar 549XXXXXXXXXX (borra el de un cliente) · #pausa 549XXXXXXXXXX (callar el bot en ese chat) · #bot 549XXXXXXXXXX (reactivarlo)';
+      if (cmd.toLowerCase() === '#borrar') { const t = cliente || owner; st.borrar(t); r = t === owner ? 'Listo, borré tu conversación. Escribí de nuevo como si fueras un cliente nuevo.' : `Listo, borré la conversación con +${t}.`; }
       if (cmd.toLowerCase() === '#pausa' && cliente) { st.pausar(cliente, 'manual'); r = `Bot pausado con +${cliente}.`; }
       if (cmd.toLowerCase() === '#bot' && cliente) { st.reanudar(cliente); r = `Bot reactivado con +${cliente}.`; }
       await enviar(owner, r, fetchImpl); salidas.push({ to: owner, body: r });
