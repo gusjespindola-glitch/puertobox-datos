@@ -75,7 +75,7 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
       else messages.push({ role: 'user', content: [aviso] });
       continue;
     }
-    const resp = derivaciones.length ? 'Listo, ya le pasé tu consulta a Gustavo y te escribe en un rato.' : 'Perdón, ¿me lo repetís? Así te ayudo bien.';
+    const resp = derivaciones.length ? 'Ya derivé tu consulta a Gustavo, nuestro despachante de aduana. Te va a escribir a la brevedad.' : 'Disculpá, no llegué a entender tu mensaje. ¿Me lo podés repetir?';
     store.agregar(telefono, 'assistant', resp);
     return resp;
   }
