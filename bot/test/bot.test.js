@@ -150,3 +150,21 @@ test('#borrar desde el número de Gustavo limpia su conversación', async () => 
   assert.strictEqual(store.historial('5491100000000').length, 0);
   assert.ok(/borré/.test(out[0].body));
 });
+
+test('el nomenclador pide clave y la recuerda con cookie', async () => {
+  process.env.ADMIN_KEY = 'clave123';
+  const { servidor } = require('../server');
+  const srv = servidor().listen(0); await new Promise((r) => srv.once('listening', r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  try {
+    const sin = await fetch(base + '/nomenclador/'); await sin.text();
+    assert.strictEqual(sin.status, 401);
+    const con = await fetch(base + '/nomenclador/?key=clave123'); await con.text();
+    assert.strictEqual(con.status, 200);
+    const cookie = con.headers.get('set-cookie').split(';')[0];
+    const data = await fetch(base + '/nomenclador/data/intervenciones.json', { headers: { cookie } });
+    assert.strictEqual(data.status, 200); await data.text();
+    const fuera = await fetch(base + '/nomenclador/%2e%2e/%2e%2e/package.json', { headers: { cookie } });
+    assert.ok(!(await fuera.text()).includes('"scripts"'));
+  } finally { srv.closeAllConnections(); srv.close(); delete process.env.ADMIN_KEY; }
+});
