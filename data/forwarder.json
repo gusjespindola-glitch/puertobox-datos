@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "actualizado": "2026-11-12",
+    "proveedor": "Consolidador China (Howard Huang)",
+    "aviso": "Costos PROPIOS de PuertoBox. Los valores marcados 'confirmar' salen de la calculadora actual y deben validarse con el proveedor."
+  },
+  "tipo_cambio": {
+    "rmb_a_usd": 0.138,
+    "nota": "Editable. Actualizar cuando cambie el RMB."
+  },
+  "flete_china_aereo": {
+    "moneda": "USD",
+    "por": "kg facturable (mayor entre real y volumétrico)",
+    "tramos": [
+      { "desde_kg": 0, "hasta_kg": 10, "usd_kg": null, "nota": "Menos de 10 kg: consultar al proveedor. Usar tramo 10-13 o consolidar." },
+      { "desde_kg": 10, "hasta_kg": 20, "usd_kg": 13, "nota": "Proveedor informó 13 USD/kg para 10-13 kg; 13-20 kg se asume igual (confirmar)." },
+      { "desde_kg": 20, "hasta_kg": null, "usd_kg": 11, "nota": "Carga general desde 20 kg." }
+    ],
+    "fallback_menos_10kg_usd_kg": 13,
+    "incluye": "confirmar: ¿llega despachado? ¿incluye impuestos? ¿guía individual por cliente?"
+  },
+  "recargos": {
+    "bateria_litio": { "tipo": "multiplicador_flete", "valor": 1.30, "nota": "+30% carga peligrosa." },
+    "sobrepeso_bulto": {
+      "tipo": "fijo_por_bulto",
+      "umbral_kg": 23,
+      "monto_rmb": 250,
+      "factor": 1.3,
+      "nota": "Cobro de aerolínea cuando el bulto pesa más de 23 kg. Fórmula actual: 250 RMB × 1,3 × tipo de cambio. Confirmar si es por bulto o por envío."
+    }
+  },
+  "gastos_admin": {
+    "base": "CIF",
+    "tramos": [
+      { "cif_desde_usd": 0, "cif_hasta_usd": 500, "porcentaje": 0.20 },
+      { "cif_desde_usd": 500, "cif_hasta_usd": null, "porcentaje": 0.095 }
+    ],
+    "iva_sobre_admin": 0.21,
+    "nota": "Tal como está en la calculadora. Ojo: genera un salto (CIF 499 paga ~99,8; CIF 500 paga 47,5). Confirmar con el proveedor si es así o si es marginal."
+  },
+  "pasarela": {
+    "porcentaje": 0.03,
+    "base": "flete + recargos + admin",
+    "nota": "Alibaba/pasarela de pago."
+  }
+}

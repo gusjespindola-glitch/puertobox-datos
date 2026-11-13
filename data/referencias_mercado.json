@@ -1,0 +1,27 @@
+{
+  "_meta": {
+    "actualizado": "2026-11-12",
+    "aviso": "Tarifas públicas de terceros, de referencia. Cambian seguido."
+  },
+  "competencia": [
+    { "nombre": "ImportarDeMiami", "china_usd_kg": 30, "china_promo_usd_kg": 21.99, "usa_usd_kg": "19,99-29", "plazo_china": "12-20 días", "fuente": "https://importardemiami.com/tarifas/" },
+    { "nombre": "MiamiGO (Rosario)", "china_usd_kg": 36, "usa_usd_kg": 26, "nota": "Mínimo 0,5 kg, fracción 100 g, domicilio aparte", "fuente": "https://www.miamigo.com.ar/tarifas/" },
+    { "nombre": "Casilla Mía", "usa_usd_kg": 20, "fijo_usd": 10, "despacho_usd": { "hasta_800": 75, "mas_de_800": 135 }, "fuente": "https://cambio-uruguay.com/en/couriers-uruguay/casilla-mia" },
+    { "nombre": "Aerobox", "china_barco_usd_kg": { "desde_5kg": 9.99, "desde_300kg": 5.5 }, "aereo_desde_usd_kg": 17, "fuente": "https://aerobox.com.ar/" },
+    { "nombre": "Del Mundo Courier", "china_barco_usd_kg": { "desde_5kg": 9.99, "desde_300kg": 5.5 }, "fuente": "https://delmundocourier.com/" }
+  ],
+  "recargos_express_referencia": {
+    "proveedor": "DHL Express Argentina (vigente 01/01/2026)",
+    "fuente": "https://mydhl.express.dhl/ar/es/ship/surcharges.html",
+    "pieza_sobrepeso": { "umbral_kg": 70, "usd_por_pieza": 125 },
+    "pieza_excedida_tamano": { "lado_mayor_cm": 100, "segundo_lado_cm": 80, "usd_por_pieza": 23 },
+    "pieza_no_convencional": { "peso_real_kg": "25-70", "usd_por_pieza": 23 },
+    "mercancias_peligrosas_usd_envio": 13
+  },
+  "mercado": {
+    "courier_ene_sep_2026_usd_millones": 960,
+    "variacion_interanual": 0.595,
+    "proyeccion_2026_usd_millones": 1250,
+    "fuente": "https://www.revistacontainer.com.ar/nota/las-compras-al-exterior-baten-records-pero-pierden-impulso"
+  }
+}

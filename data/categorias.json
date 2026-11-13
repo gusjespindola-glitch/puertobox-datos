@@ -1,0 +1,28 @@
+{
+  "_meta": {
+    "actualizado": "2026-11-12",
+    "aviso": "Alícuotas ORIENTATIVAS por rubro. El derecho real depende de la posición NCM exacta: verificar siempre en ARCA/SIM antes de confirmar una cotización.",
+    "fuentes": [
+      "https://servidos.ar/calculadora-importacion",
+      "https://calculadoraimportacion.com.ar/blog/guia-costos-importacion-argentina-2026",
+      "https://www.calcusite.com.ar/calculadora/calcular-impuestos-compras-en-el-exterior-argentina",
+      "https://chequeado.com/el-explicador/eliminacion-de-aranceles-a-la-importacion-de-celulares-como-impacta-la-medida-y-cual-es-el-peso-de-los-impuestos-sobre-el-precio-final/",
+      "https://www.arancely.com/blog/como-importar-argentina-guia-completa-2026"
+    ]
+  },
+  "categorias": [
+    { "id": "celulares", "nombre": "Celulares y smartphones", "ncm": "8517.13 / 8517.14", "derechos": 0.0, "impuestos_internos": 0.095, "iva": 0.21, "intervenciones": ["ENACOM (homologación/IMEI)"], "nota": "DI 0% desde 15/01/2026 (Dec. 333/2025). Internos 9,5%." },
+    { "id": "tv_monitores", "nombre": "Televisores y monitores", "ncm": "8528", "derechos": 0.20, "impuestos_internos": 0.095, "iva": 0.21, "intervenciones": [], "nota": "Internos 9,5% (Dec. 333/2025). DI orientativo: verificar NCM." },
+    { "id": "notebooks", "nombre": "Notebooks", "ncm": "8471.30", "derechos": 0.16, "impuestos_internos": 0.0, "iva": 0.21, "intervenciones": [], "nota": "Referencia 16%; según subposición puede ser 8-16%." },
+    { "id": "tablets", "nombre": "Tablets", "ncm": "8471.30", "derechos": 0.0, "impuestos_internos": 0.0, "iva": 0.21, "intervenciones": ["ENACOM si tiene radiofrecuencia"], "nota": "Referencia 0%: verificar subposición." },
+    { "id": "electronica_general", "nombre": "Electrónica de consumo (auriculares, parlantes, gadgets)", "ncm": "85xx", "derechos": 0.20, "impuestos_internos": 0.0, "iva": 0.21, "intervenciones": ["ENACOM si tiene Bluetooth/WiFi"], "nota": "Rango 0-20% según NCM." },
+    { "id": "ropa", "nombre": "Indumentaria", "ncm": "Cap. 61-62", "derechos": 0.20, "impuestos_internos": 0.0, "iva": 0.21, "intervenciones": ["Etiquetado de composición"], "nota": "20% tras Dec. 236/2025 según fuentes recientes; otras fuentes aún citan 35%. Verificar." },
+    { "id": "calzado", "nombre": "Calzado", "ncm": "Cap. 64", "derechos": 0.20, "impuestos_internos": 0.0, "iva": 0.21, "intervenciones": [], "nota": "20% tras Dec. 236/2025 según fuentes recientes; verificar." },
+    { "id": "juguetes", "nombre": "Juguetes", "ncm": "Cap. 95", "derechos": 0.20, "impuestos_internos": 0.0, "iva": 0.21, "intervenciones": ["Certificación de seguridad"], "nota": "20% (Dec. 781/2025) según fuentes recientes." },
+    { "id": "electrodomesticos", "nombre": "Electrodomésticos", "ncm": "84xx / 85xx", "derechos": 0.20, "impuestos_internos": 0.0, "iva": 0.21, "intervenciones": ["Seguridad eléctrica", "Eficiencia energética"], "nota": "Aires acondicionados: internos 9,5%." },
+    { "id": "herramientas", "nombre": "Herramientas", "ncm": "82xx / 8467", "derechos": 0.14, "impuestos_internos": 0.0, "iva": 0.21, "intervenciones": [], "nota": "Referencia ~14%." },
+    { "id": "repuestos_componentes", "nombre": "Componentes y repuestos", "ncm": "varios", "derechos": 0.08, "impuestos_internos": 0.0, "iva": 0.21, "intervenciones": [], "nota": "Rango 4-8% orientativo." },
+    { "id": "cosmetica", "nombre": "Cosmética y perfumería", "ncm": "Cap. 33", "derechos": 0.18, "impuestos_internos": 0.0, "iva": 0.21, "intervenciones": ["ANMAT"], "nota": "DI orientativo: verificar NCM. Requiere ANMAT fuera de pequeños envíos." },
+    { "id": "general", "nombre": "Carga general (otro)", "ncm": "-", "derechos": 0.20, "impuestos_internos": 0.0, "iva": 0.21, "intervenciones": [], "nota": "Default conservador cuando no se conoce el NCM." }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "actualizado": "2026-11-12",
+    "aviso": "Lista de precios PuertoBox al cliente. Impuestos se cobran aparte, sin margen."
+  },
+  "china_aereo": {
+    "usd_kg": 25,
+    "minimo_facturable_kg": 1,
+    "fee_gestion_usd": 10,
+    "plazo_dias_habiles": "12-20",
+    "cobro": "Flete y fee al ingresar al depósito de origen; impuestos y entrega antes de liberar."
+  },
+  "usa_aereo": {
+    "usd_kg": null,
+    "nota": "Completar cuando haya costo de proveedor USA."
+  },
+  "entrega": {
+    "retiro": 0,
+    "envio_nacional": "a tarifa del correo/Andreani"
+  },
+  "todo_incluido_promo": {
+    "activo": false,
+    "categorias_permitidas": ["ropa", "calzado"],
+    "tope_valor_declarado_usd_por_kg": 40
+  }
+}

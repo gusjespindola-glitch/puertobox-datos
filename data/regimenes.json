@@ -1,0 +1,47 @@
+{
+  "_meta": {
+    "actualizado": "2026-11-12",
+    "fuentes": [
+      "https://servicioscf.afip.gob.ar/publico/sitio/contenido/novedad/ver.aspx?id=5939",
+      "https://www.midireccioneuropea.com/decreto-604-2026-argentina-franquicia-400-dolares-correo-y-courier/",
+      "https://comercioyjusticia.info/factor/postal-courier-y-exporta-simple-el-nuevo-ecosistema-argentino-de-comercio-exterior-de-baja-escala/",
+      "https://calculadoraimportacion.com.ar/blog/derechos-aduaneros-aranceles-importacion-argentina",
+      "https://www.despachantesargentinos.com/detalle_noticia.php?id=43868"
+    ],
+    "normativa": ["Decreto 1065/2024", "RG ARCA 5608/2024", "RG ARCA 5631/2025", "Decreto 604/2026", "RG ARCA 5883/2026", "RG ARCA 5884/2026"]
+  },
+  "pequenos_envios": {
+    "descripcion": "Courier/postal sin finalidad comercial, a nombre del cliente (persona humana o jurídica).",
+    "franquicia_fob_usd": 400,
+    "envios_con_franquicia_por_anio": 5,
+    "tope_fob_usd": 3000,
+    "tope_kg_por_bulto": 50,
+    "max_unidades_misma_especie": 3,
+    "finalidad_comercial": false,
+    "dentro_franquicia": { "derechos": false, "tasa_estadistica": false, "iva": true, "impuestos_internos": true },
+    "excedente": "Sobre lo que supera USD 400 FOB: derechos según NCM + tasa de estadística 3%. IVA siempre sobre el total.",
+    "cupo_agotado": "Si ya usó los 5 envíos del año: tributos del régimen general sobre el valor total, sin franquicia.",
+    "percepciones": false
+  },
+  "courier_comercial": {
+    "descripcion": "Courier con finalidad comercial (subrégimen C / DIS). Sin franquicia, envíos ilimitados.",
+    "franquicia_fob_usd": 0,
+    "tope_fob_usd": 3000,
+    "tope_kg_por_bulto": 50,
+    "tributos": ["derechos", "tasa_estadistica", "iva", "impuestos_internos"],
+    "percepciones": {
+      "aplicar_por_defecto": false,
+      "nota": "Fuentes en conflicto. Algunas indican que en courier comercial (DIS) no se liquidan percepciones de IVA adicional ni Ganancias; otras listan percepciones para todo envío fuera de pequeño envío. CONFIRMAR con el courier antes de cotizar. Si aplican: IVA adicional 20% (RI) y Ganancias 6% (RI) / 11% (no inscripto).",
+      "iva_adicional_ri": 0.20,
+      "ganancias_ri": 0.06,
+      "ganancias_no_inscripto": 0.11
+    }
+  },
+  "constantes": {
+    "tasa_estadistica": 0.03,
+    "iva_general": 0.21,
+    "iva_reducido": 0.105,
+    "seguro_sobre_fob_mas_flete": 0.01,
+    "divisor_volumetrico": 5000
+  }
+}
