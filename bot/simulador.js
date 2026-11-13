@@ -27,7 +27,7 @@ const ESCENARIOS = [
 ];
 
 const MULETILLAS = /^(¡?genial|¡?anotado|¡?perfecto|¡?buen[ií]simo|¡?excelente|gracias|joya|dale|tranqui)\b/i;
-const JERGA = /peso bruto|volum[eé]tric|\bFOB\b|\bCIF\b|r[eé]gimen/i;
+const JERGA = /peso bruto|volum[eé]tric|\bFOB\b|\bCIF\b|r[eé]gimen|courier comercial|peque[ñn]os env[ií]os/i;
 
 function revisar(resp, ctx) {
   const prob = [];
@@ -43,6 +43,8 @@ function revisar(resp, ctx) {
   if (/pesa menos/i.test(t)) prob.push('dice "si pesa menos paga menos"');
   if (/\bDHL\b/.test(t) && !/dhl|courier/i.test(ctx.ultimo)) prob.push('nombra DHL sin que pregunten');
   if (MULETILLAS.test(t.trim())) prob.push('arranca con muletilla');
+  if (/^[¿¡]?\p{Ll}/u.test(t.trim())) prob.push('arranca en minúscula');
+  if (/Presupuesto PuertoBox/.test(t) && !/\*Presupuesto PuertoBox\*/.test(t)) prob.push('presupuesto sin formato');
   if (/soy (una )?persona|soy humano/i.test(t)) prob.push('dice que es humano');
   return prob;
 }
