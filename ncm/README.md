@@ -1,23 +1,26 @@
-# Base NCM propia
+# Base de posiciones SIM (Argentina)
 
-Fuente: **Anexo I del Decreto 557/2023** (NCM 2022 + Arancel Externo Común + reintegro), 10.392 posiciones a 8 dígitos.
+Fuente oficial y gratuita: **ARCA — Arancel Integrado y Sufijos de Valor**
+(https://www.afip.gob.ar/aduana/arancelIntegrado/). Es la misma base que consume VUCE.
+
+Versión cargada: ver `sim_meta.json` (fecha de los archivos y cantidad de posiciones).
 
 | Archivo | Qué es |
 |---|---|
-| `ncm_2022_aec.csv` | Tabla completa parseada del PDF oficial (código, descripción, AEC, BK/BIT, RE, descripción con jerarquía) |
-| `modificaciones.json` | Ajustes posteriores al decreto (Dec. 236/2025 textiles/calzado, Dec. 333/2025 celulares e internos). **Acá agregás cada cambio nuevo.** |
-| `sinonimos.json` | Palabras de uso común → términos del arancel (zapatillas → calzado deporte). **Sumá las tuyas al clasificar.** |
-| `ncm.json` | Base final (AEC + ajustes) que usan el buscador y la calculadora |
-| `buscar.js` | Buscador por consola: `node ncm/buscar.js "auriculares"` |
-| `parse_ncm.py` / `build.py` / `build_web.py` | Regeneran todo desde el PDF |
+| `fuentes_arca/` | Los 3 archivos originales de ARCA (capítulos, nomenclador, sufijos) |
+| `sim.csv` | Todas las posiciones SIM (11 dígitos + control) con DIE, DII, DE, reintegros, unidad, impuestos internos y descripción con jerarquía. Se abre en Excel. |
+| `sim_compacto.json` | Base compacta para el buscador y la calculadora |
+| `sufijos.json` | Sufijos de valor por capítulo / partida / subpartida / SIM |
+| `modificaciones.json` | Lo que ARCA no trae en estos archivos: **impuestos internos** (Dec. 333/2025) |
+| `sinonimos.json` | Palabras comunes → términos del arancel. **Sumá las tuyas.** |
+| `buscar.js` | `node ncm/buscar.js "auriculares"` o `node ncm/buscar.js 8518.30` |
+| `../web/ncm.html` | Buscador para el celular (datos embebidos) |
 
 ## Actualizar
-1. Sale una norma que cambia derechos → agregala en `modificaciones.json`.
-2. `python3 ncm/build.py && python3 ncm/build_web.py`
+1. Bajá los 3 archivos nuevos de ARCA y ponelos en `ncm/fuentes_arca/` (reemplazando los viejos).
+2. `bash ncm/actualizar.sh`
 3. Commit.
 
-Si sale una NCM nueva (enmienda del SA), se baja el anexo nuevo y se corre `parse_ncm.py`.
-
 ## Límites
-- DIE = AEC + ajustes conocidos. Argentina tiene excepciones nacionales (LNE, BK, BIT) que pueden diferir. Las posiciones SIM a 11 dígitos con sufijos de valor, las intervenciones y licencias se confirman en **VUCE** (Central de Información, gratis).
-- 3 posiciones sin AEC parseado (6113.00.00, 8480.30.00, 8708.22.00): completar a mano.
+- Intervenciones, licencias y requisitos de terceros organismos no vienen en estos archivos: se consultan en VUCE por posición.
+- La clasificación final es responsabilidad del despachante.
