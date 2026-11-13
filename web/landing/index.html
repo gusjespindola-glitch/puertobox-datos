@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PuertoBox · Traé tus compras de China a tu puerta</title>
+<meta name="description" content="Courier aéreo express de China a tu domicilio. Tarifa clara por kilo y, antes de comprar, te decimos cuánto vas a pagar de impuestos. Despachante de aduana matriculado ante ARCA.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#0f1b33;--muted:#5a6478;--line:#e4e8ef;--bg:#f6f8fb;--brand:#0b5fff;--wa:#1faa59;--card:#fff;--soft:#eef3ff}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);background:#fff;line-height:1.55;font-size:16px}
+a{color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+nav{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:10}
+nav .wrap{display:flex;justify-content:space-between;align-items:center;height:62px}
+.logo{font-weight:800;font-size:21px;letter-spacing:-.02em;text-decoration:none}.logo span{color:var(--brand)}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:10px;padding:13px 20px;font:inherit;font-weight:600;text-decoration:none;cursor:pointer}
+.btn.wa{background:var(--wa);color:#fff}.btn.pri{background:var(--brand);color:#fff}.btn.ghost{background:var(--soft);color:var(--brand)}
+.btn.sm{padding:9px 14px;font-size:14px}
+.hero{padding:64px 0 48px;background:linear-gradient(180deg,#f2f6ff 0%,#fff 100%)}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
+@media(max-width:860px){.hero .wrap{grid-template-columns:1fr}}
+.tag{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:13px;color:var(--muted);margin-bottom:16px}
+h1{font-size:44px;line-height:1.1;letter-spacing:-.03em;margin:0 0 16px}
+@media(max-width:600px){h1{font-size:34px}}
+h1 em{font-style:normal;color:var(--brand)}
+.lead{font-size:18px;color:var(--muted);margin:0 0 26px;max-width:540px}
+.cta{display:flex;gap:10px;flex-wrap:wrap}
+.trust{display:flex;gap:18px;flex-wrap:wrap;margin-top:24px;font-size:14px;color:var(--muted)}
+.trust b{color:var(--ink)}
+.pricecard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(15,27,51,.06)}
+.pricecard h3{margin:0 0 4px;font-size:16px}.pricecard p{margin:0 0 14px;color:var(--muted);font-size:14px}
+table.tar{width:100%;border-collapse:collapse;font-size:15px}
+table.tar td{padding:9px 0;border-bottom:1px solid var(--line)}table.tar td:last-child{text-align:right;font-weight:700}
+table.tar tr:last-child td{border-bottom:0}
+.note{font-size:12px;color:var(--muted);margin-top:10px}
+section{padding:64px 0}
+section.alt{background:var(--bg)}
+h2{font-size:30px;letter-spacing:-.02em;margin:0 0 10px}
+.sub{color:var(--muted);margin:0 0 32px;max-width:640px}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:860px){.steps{grid-template-columns:1fr 1fr}}@media(max-width:520px){.steps{grid-template-columns:1fr}}
+.step{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px}
+.step .n{width:32px;height:32px;border-radius:50%;background:var(--soft);color:var(--brand);font-weight:700;display:grid;place-items:center;margin-bottom:12px}
+.step h4{margin:0 0 6px;font-size:16px}.step p{margin:0;color:var(--muted);font-size:14px}
+.calc{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:860px){.calc{grid-template-columns:1fr}}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 5px;font-weight:500}
+input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.res .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
+.res .row span{color:var(--muted)}.res .row b{font-variant-numeric:tabular-nums}
+.res .total{display:flex;justify-content:space-between;align-items:center;background:var(--ink);color:#fff;border-radius:12px;padding:16px 18px;margin:16px 0}
+.res .total b{font-size:24px}
+.warn{background:#fff7e6;color:#9a5b00;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:10px}
+.diff{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:860px){.diff{grid-template-columns:1fr}}
+.diff div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px}
+.diff h4{margin:0 0 6px}.diff p{margin:0;color:var(--muted);font-size:15px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}@media(max-width:860px){.cols{grid-template-columns:1fr}}
+ul.clean{padding-left:18px;margin:0;color:var(--muted)}ul.clean li{margin:6px 0}
+details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:10px}
+summary{cursor:pointer;font-weight:600}details p{color:var(--muted);margin:10px 0 0}
+.final{background:var(--ink);color:#fff;border-radius:20px;padding:44px;text-align:center}
+.final p{color:#c8d0e0}
+footer{padding:32px 0;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.float{position:fixed;right:18px;bottom:18px;z-index:20;box-shadow:0 8px 24px rgba(31,170,89,.35);border-radius:99px}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="logo" href="#">Puerto<span>Box</span></a>
+  <a class="btn wa sm" href="#" data-wa="Hola, quiero cotizar un envío desde China">Cotizar por WhatsApp</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div>
+    <span class="tag">Despachante de Aduana matriculado ante ARCA</span>
+    <h1>Traé tus compras de China <em>a la puerta de tu casa</em></h1>
+    <p class="lead">Courier aéreo express, a tu nombre. Tarifa clara por kilo y, antes de que compres, te decimos cuánto vas a pagar de impuestos. Sin sorpresas al llegar.</p>
+    <div class="cta">
+      <a class="btn wa" href="#" data-wa="Hola, quiero cotizar un envío desde China">Cotizar ahora por WhatsApp</a>
+      <a class="btn ghost" href="#calculadora">Calcular mi envío</a>
+    </div>
+    <div class="trust"><span><b>Courier express</b> DHL</span><span><b>Puerta a puerta</b> en todo el país</span><span><b>Respuesta</b> en minutos</span></div>
+  </div>
+  <div class="pricecard">
+    <h3>Tarifa de flete China → tu domicilio</h3>
+    <p>Por kilo cobrable (el mayor entre peso real y volumétrico)</p>
+    <table class="tar" id="tarifa"></table>
+    <div class="note">Los impuestos de importación se pagan aparte al courier, al llegar. Te los estimamos antes de comprar.</div>
+  </div>
+</div></header>
+
+<section id="como"><div class="wrap">
+  <h2>Cómo funciona</h2>
+  <p class="sub">Cuatro pasos. Vos comprás, nosotros nos ocupamos del resto.</p>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><h4>Cotizás</h4><p>Nos pasás producto, peso y medidas de la caja y valor de la factura. Te mandamos flete e impuestos estimados.</p></div>
+    <div class="step"><div class="n">2</div><h4>Comprás</h4><p>Tu proveedor envía la caja a nuestro depósito en China, con la factura a tu nombre y el valor real.</p></div>
+    <div class="step"><div class="n">3</div><h4>Pesamos y pagás el flete</h4><p>Pesamos y medimos la caja, te mandamos foto y pagás el flete. Recién ahí sale.</p></div>
+    <div class="step"><div class="n">4</div><h4>Llega a tu casa</h4><p>Viaja por courier aéreo express. Pagás los impuestos al courier y lo recibís en tu puerta.</p></div>
+  </div>
+</div></section>
+
+<section class="alt" id="calculadora"><div class="wrap">
+  <h2>Calculá tu envío</h2>
+  <p class="sub">Estimación al instante. Después la confirmamos por WhatsApp con la posición arancelaria exacta.</p>
+  <div class="calc">
+    <div class="panel">
+      <label>¿Qué querés traer?</label>
+      <select id="cat"></select>
+      <div class="g2">
+        <div><label>Peso de la caja (kg)</label><input id="kg" type="number" min="0" step="0.1" placeholder="10"></div>
+        <div><label>Valor de la factura (USD)</label><input id="val" type="number" min="0" step="1" placeholder="500"></div>
+      </div>
+      <label>Medidas de la caja (cm)</label>
+      <div class="g3"><input id="L" type="number" placeholder="Largo"><input id="A" type="number" placeholder="Ancho"><input id="H" type="number" placeholder="Alto"></div>
+      <label>¿Para qué es?</label>
+      <select id="uso"><option value="comercial">Para revender</option><option value="personal">Para uso propio (hasta 3 unidades iguales)</option></select>
+    </div>
+    <div class="panel res">
+      <div class="row"><span>Kilos cobrables</span><b id="rKg">–</b></div>
+      <div class="row"><span>Flete PuertoBox (precio firme)</span><b id="rFl">–</b></div>
+      <div class="row"><span>Impuestos y gastos estimados, se pagan al courier</span><b id="rIm">–</b></div>
+      <div class="total"><span>Total estimado puesto en tu casa</span><b id="rTo">–</b></div>
+      <div id="avisos"></div>
+      <a class="btn wa" id="waCalc" href="#" style="width:100%;justify-content:center;margin-top:12px">Pedir presupuesto formal por WhatsApp</a>
+      <div class="note">Estimación orientativa: los impuestos dependen de la posición arancelaria exacta, que confirmamos antes de que pagues. Incluye derechos de importación, tasa de estadística, IVA y gasto administrativo del courier.</div>
+    </div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Por qué PuertoBox</h2>
+  <p class="sub">Muchos te dicen el precio del flete. Nosotros te decimos cuánto vas a pagar en total.</p>
+  <div class="diff">
+    <div><h4>Sabés los impuestos antes de comprar</h4><p>Como despachantes, clasificamos tu producto y te estimamos los impuestos antes de que pagues al proveedor.</p></div>
+    <div><h4>Precio de flete firme</h4><p>Se respeta aunque la caja llegue hasta un 15% más pesada que lo que declaró el proveedor. Si llega más liviana, pagás menos.</p></div>
+    <div><h4>Todo en regla</h4><p>Tu mercadería entra a tu nombre, con factura y por el régimen que corresponde. Podés revenderla tranquilo.</p></div>
+  </div>
+</div></section>
+
+<section class="alt"><div class="wrap cols">
+  <div>
+    <h2>Qué podés traer</h2>
+    <ul class="clean">
+      <li>Indumentaria, calzado y accesorios</li>
+      <li>Electrónica: auriculares, cables, cámaras, accesorios de celular</li>
+      <li>Hogar, cocina y decoración</li>
+      <li>Juguetes y artículos para mascotas</li>
+      <li>Herramientas y repuestos</li>
+    </ul>
+    <p class="note">Hasta USD 3.000 por envío y 50 kg por caja. Para más volumen, consultanos por carga consolidada.</p>
+  </div>
+  <div>
+    <h2>Qué no traemos</h2>
+    <ul class="clean">
+      <li>Réplicas o marcas falsificadas</li>
+      <li>Medicamentos, alimentos y suplementos</li>
+      <li>Cosmética y perfumes</li>
+      <li>Baterías sueltas y líquidos inflamables</li>
+      <li>Productos que requieran permisos (ANMAT, INAL, ENACOM) sin autorización</li>
+    </ul>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Preguntas frecuentes</h2>
+  <details><summary>¿El precio incluye los impuestos?</summary><p>No. El flete lo pagás a PuertoBox. Los impuestos de importación y el gasto administrativo del courier se pagan directo al courier cuando llega. Antes de que compres te decimos cuánto van a ser aproximadamente.</p></details>
+  <details><summary>¿Cuándo pago el flete?</summary><p>Cuando la caja llega a nuestro depósito en China. La pesamos, te mandamos foto de la balanza y pagás. Recién ahí sale el envío.</p></details>
+  <details><summary>¿Y si la caja pesa más de lo que dijo el proveedor?</summary><p>El precio se respeta hasta un 15% más de peso o volumen. Si supera ese margen, se ajusta con foto de la balanza. Si pesa menos, pagás menos.</p></details>
+  <details><summary>¿Necesito tener empresa?</summary><p>No. Para uso propio va por el régimen de pequeños envíos (los primeros USD 400 sin derechos de importación, hasta 5 envíos por año). Para revender va por courier comercial con tu CUIT.</p></details>
+  <details><summary>¿Llegan a todo el país?</summary><p>Sí, puerta a puerta. En algunas zonas alejadas el courier cobra un recargo: te lo decimos al cotizar.</p></details>
+  <details><summary>¿Cuánto tarda?</summary><p>Es courier aéreo express. Te confirmamos el plazo al cotizar, según la fecha de salida.</p></details>
+</div></section>
+
+<section style="padding-top:0"><div class="wrap">
+  <div class="final">
+    <h2>¿Qué querés traer de China?</h2>
+    <p>Escribinos y en minutos tenés flete e impuestos estimados.</p>
+    <a class="btn wa" href="#" data-wa="Hola, quiero cotizar un envío desde China">Cotizar por WhatsApp</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <div><b>PuertoBox</b> · Courier China → Argentina<br>Gustavo Espíndola, Despachante de Aduana matriculado ante ARCA</div>
+  <div><a href="#" data-wa="Hola, quiero cotizar un envío desde China">WhatsApp +54 9 221 682-6773</a></div>
+</div></footer>
+
+<a class="btn wa float" href="#" data-wa="Hola, quiero cotizar un envío desde China" aria-label="WhatsApp">WhatsApp</a>
+
+<script>
+const WA = '5492216826773';
+const TRAMOS = [
+  {d:0,h:1.5,total:45},{d:1.5,h:3,kg:32},{d:3,h:5,kg:28},{d:5,h:10,kg:25},
+  {d:10,h:15,kg:20},{d:15,h:20,kg:19},{d:20,h:Infinity,kg:18}];
+const CATS = [
+  ['Indumentaria (remeras, buzos, pantalones)',20],['Zapatillas y calzado',20],['Mochilas, bolsos y carteras',20],
+  ['Juguetes',20],['Artículos para mascotas',20],['Auriculares',35],['Cables y accesorios eléctricos',16],
+  ['Cargadores y fuentes',35],['Fundas y accesorios de celular',18],['Cámaras de seguridad',0],
+  ['Notebooks y tablets',16],['Lámparas y luces LED',20],['Hogar y cocina (plástico)',18],
+  ['Pequeños electrodomésticos',20],['Herramientas eléctricas',20],['Repuestos de auto',18],['Otro producto',20]];
+const usd = x => 'USD ' + Math.round(x).toLocaleString('es-AR');
+const $ = id => document.getElementById(id);
+const waLink = t => `https://wa.me/${WA}?text=${encodeURIComponent(t)}`;
+
+document.querySelectorAll('[data-wa]').forEach(a => { a.href = waLink(a.dataset.wa); a.target = '_blank'; a.rel = 'noopener'; });
+
+$('tarifa').innerHTML = [
+  ['Hasta 1 kg','USD 45 total'],['1,5 a 2,5 kg','USD 32 / kg'],['3 a 4,5 kg','USD 28 / kg'],['5 a 9,5 kg','USD 25 / kg'],
+  ['10 a 14,5 kg','USD 20 / kg'],['15 a 19,5 kg','USD 19 / kg'],['20 kg o más','USD 18 / kg']
+].map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+$('cat').innerHTML = CATS.map((c,i) => `<option value="${i}">${c[0]}</option>`).join('');
+
+function flete(kg){ const t = TRAMOS.find(t => kg >= t.d && kg < t.h); return t.total ?? t.kg * kg; }
+
+function calc(){
+  const kg = parseFloat($('kg').value)||0, val = parseFloat($('val').value)||0;
+  const L = +$('L').value||0, A = +$('A').value||0, H = +$('H').value||0;
+  const vol = L&&A&&H ? L*A*H/5000 : 0;
+  const kc = kg||vol ? Math.ceil(Math.max(kg,vol)*2)/2 : 0;
+  const di = CATS[+$('cat').value][1]/100, uso = $('uso').value;
+  const fl = kc ? flete(kc) : 0;
+  const cif = (val + fl) * 1.01;
+  let fac = 1; if (uso === 'personal') fac = val <= 400 ? 0 : (val - 400) / val;
+  const der = cif*fac*di, tasa = cif*fac*0.03, iva = (cif+der+tasa)*0.21;
+  const adm = cif*(cif < 500 ? 0.20 : 0.095)*1.29;
+  const imp = val ? der+tasa+iva+adm : 0;
+  $('rKg').textContent = kc ? kc + ' kg' : '–';
+  $('rFl').textContent = kc ? usd(fl) : '–';
+  $('rIm').textContent = kc && val ? usd(imp) : '–';
+  $('rTo').textContent = kc && val ? usd(fl+imp) : '–';
+  const av = [];
+  if (kg > 23) av.push('La caja pesa más de 23 kg: conviene pedir al proveedor que la divida (tiene recargo).');
+  if (vol > kg && kg) av.push(`Tu caja cobra por volumen: ${vol.toFixed(1)} kg volumétricos.`);
+  if (val > 3000) av.push('Más de USD 3.000 no entra en courier: escribinos y te ofrecemos otra opción.');
+  $('avisos').innerHTML = av.map(a => `<div class="warn">${a}</div>`).join('');
+  const prod = CATS[+$('cat').value][0];
+  const msg = kc && val
+    ? `Hola, quiero cotizar: ${prod}. Caja de ${kg} kg${vol?`, ${L}x${A}x${H} cm`:''}, factura USD ${val}, ${uso==='personal'?'para uso propio':'para revender'}.`
+    : 'Hola, quiero cotizar un envío desde China';
+  $('waCalc').href = waLink(msg); $('waCalc').target = '_blank';
+}
+['cat','kg','val','L','A','H','uso'].forEach(id => $(id).addEventListener('input', calc));
+calc();
+</script>
+</body>
+</html>
