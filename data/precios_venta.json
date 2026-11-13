@@ -58,5 +58,30 @@
       "baterías sueltas",
       "líquidos inflamables"
     ]
+  },
+  "modelo_fijo": {
+    "descripcion": "Todo a nombre de PuertoBox (importador RI), courier comercial, guía consolidada. Precio único para todos.",
+    "usd_por_kg": 28,
+    "porcentaje_valor_factura": 0.55,
+    "minimo_usd": 40,
+    "incluye": "flete, aduana, impuestos, gasto documental, gestión. Puesto en punto de retiro.",
+    "envio_domicilio": "aparte, tarifa fija por zona",
+    "rubros_admitidos_di_max": 0.2,
+    "no_admitidos": [
+      "réplicas/marcas falsas",
+      "cosmética",
+      "alimentos",
+      "rubros con licencia o intervención",
+      "DI mayor a 20%"
+    ],
+    "supuestos": [
+      "IVA de importación como crédito fiscal (RI) — confirmar con contador",
+      "sin percepciones en courier general (material del curso: DI-TE-IVA-Internos-Antidumping)",
+      "CIF de cada guía > USD 500 → gasto documental 9,5%"
+    ],
+    "alternativa_si_no_hay_credito_iva": {
+      "usd_por_kg": 28,
+      "porcentaje_valor_factura": 0.7
+    }
   }
 }

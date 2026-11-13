@@ -31,6 +31,14 @@ Fuente única de verdad para la calculadora de puertobox.com.ar: regímenes adua
 7. **Precio al cliente** = flete (25 USD/kg) + sobrepeso + gestión (fee 10 USD + admin trasladado) + tributos.
 8. **Ganancia** = lo que cobrás por flete y gestión − costo de flete, admin y pasarela. Los tributos se cobran y se pagan igual: no son ganancia.
 
+## Modelo fijo (recomendado)
+
+Todo a nombre de PuertoBox, guía consolidada, **un solo precio para todos**:
+
+> **Precio = USD 28 × kg + 55% del valor de la factura** (mínimo USD 40). Incluye flete, aduana, impuestos, gasto documental y gestión.
+
+`src/precio_fijo.js` → `precioCliente()` (lo que paga el cliente) y `costeo()` (tu neto). Supuestos y rubros admitidos en `data/precios_venta.json → modelo_fijo`.
+
 ## Uso
 
 ```js

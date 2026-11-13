@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Base de datos de tarifas, regímenes y motor de cotización courier de PuertoBox",
   "main": "src/calc.js",
-  "scripts": { "test": "node --test test/calc.test.js" },
+  "scripts": { "test": "node --test test/*.test.js" },
   "license": "UNLICENSED",
   "private": true
 }
