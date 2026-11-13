@@ -35,6 +35,8 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 
 - **Ubicación (13/11):** PuertoBox es de La Plata. No hay local ni retiro: solo envíos a domicilio. Empresa online sin depósito físico para bajar costos y que al cliente le salga más barato.
 
+- **Web sin cotizador (13/11):** cotiza solo el bot. La web manda a WhatsApp.
+
 ### Nomenclador
 - Gustavo quiere una herramienta tipo Tarifar/PCRAM para él (despachante) y para el bot: nomenclador + calculadora. Legislación, jurisprudencia y estadísticas, más adelante si se consiguen las bases.
 - Posiciones: archivos oficiales de ARCA (Arancel Integrado), no VUCE. Las intervenciones no vienen en ARCA: tabla curada propia, siempre "confirmar en VUCE".
