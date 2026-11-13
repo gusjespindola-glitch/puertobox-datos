@@ -1,4 +1,8 @@
-"""Construye la base SIM argentina desde los archivos oficiales de ARCA
+"""Diseño de registro según ARCA (DI PHSI, docs/disenio_archivos_arca.pdf):
+nomenclador: 2@PA@DE@RE@DIE@RI@DII@DIEM@U.estadística@U.der.específico@texto  (alícuotas EEE.DD)
+sufijos: 3@PA(cap/par/sub/SIM)@sufijo@norma@texto
+
+Construye la base SIM argentina desde los archivos oficiales de ARCA
 ("Arancel Integrado y Sufijos de Valor": capitulo_*.txt, nomenclador_*.txt, sufijos_*.txt).
 
 Uso: python3 ncm/build_sim.py <carpeta_con_txt>
@@ -39,8 +43,8 @@ for line in nom.splitlines():
         "code": code,
         "digits": re.sub(r"[^0-9]", "", code),
         "control": code[-1] if code and code[-1].isalpha() else "",
-        "de": vals[0], "re": vals[1], "die": vals[2], "ri": vals[3], "dii": vals[4],
-        "unidad": p[8].strip(),
+        "de": vals[0], "re": vals[1], "die": vals[2], "ri": vals[3], "dii": vals[4], "diem": vals[5],
+        "unidad": p[8].strip(), "unidad_esp": p[9].strip(),
         "desc": clean(p[10]),
     })
 
@@ -76,7 +80,7 @@ for l in lineas:
         "ncm": l["code"][:10],
         "d": " > ".join(padres + [l["desc"]]),
         "die": num(l["die"]), "dii": num(l["dii"]), "de": num(l["de"]),
-        "re": num(l["re"]), "ri": num(l["ri"]), "ii": internos, "u": l["unidad"],
+        "re": num(l["re"]), "ri": num(l["ri"]), "diem": num(l["diem"]), "ii": internos, "u": l["unidad"], "ue": l["unidad_esp"],
     })
 
 # --- Sufijos de valor ---
@@ -93,9 +97,9 @@ json.dump(sim, open(here / "sim.json", "w", encoding="utf-8"), ensure_ascii=Fals
 json.dump(sufijos, open(here / "sufijos.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
 with open(here / "sim.csv", "w", newline="", encoding="utf-8") as f:
     w = csv.writer(f)
-    w.writerow(["posicion_sim", "ncm", "die", "dii", "de", "re", "ri", "impuestos_internos", "unidad", "descripcion"])
+    w.writerow(["posicion_sim", "ncm", "die", "dii", "de", "re", "ri", "die_especifico_minimo", "unidad_derecho_especifico", "impuestos_internos", "unidad_estadistica", "descripcion"])
     for s in sim:
-        w.writerow([s["c"], s["ncm"], s["die"], s["dii"], s["de"], s["re"], s["ri"], s["ii"], s["u"], s["d"]])
+        w.writerow([s["c"], s["ncm"], s["die"], s["dii"], s["de"], s["re"], s["ri"], s["diem"], s["ue"], s["ii"], s["u"], s["d"]])
 json.dump({"fuente": "ARCA - Arancel Integrado y Sufijos de Valor", "fecha_archivos": fecha,
            "posiciones_sim": len(sim), "claves_con_sufijos": len(sufijos)},
           open(here / "sim_meta.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
