@@ -85,7 +85,7 @@ function ejecutar(nombre, input, ctx) {
         impuestos_y_gastos_estimados_usd: r.impuestos_estimados_usd.total,
         detalle_impuestos: r.impuestos_estimados_usd,
         total_estimado_usd: r.total_estimado_usd,
-        reglas: 'El flete es FIRME: ya incluye un 15% de margen sobre lo que declara el proveedor. Se suma un handling fijo de USD 10 por envío. Solo se ajusta si la caja llega más de 15% más pesada o grande (con foto de la balanza). Nunca digas que si pesa menos paga menos. Flete + handling se pagan al pesarse, antes de que salga. Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier al llegar (puede ser DHL, UPS o FedEx; no nombres uno salvo que pregunten).',
+        reglas: 'El flete es FIRME: ya incluye un 15% de margen sobre lo que declara el proveedor. Se suma un handling fijo de USD 10 por envío. Solo se ajusta si la caja llega más de 15% más pesada o grande (con foto de la balanza). Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier al llegar (puede ser DHL, UPS o FedEx; no nombres uno salvo que pregunten).',
       };
     }
     case 'registrar_lead':

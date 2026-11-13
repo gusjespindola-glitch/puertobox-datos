@@ -58,6 +58,22 @@ function normalizar(payload) {
   return ev;
 }
 
+/** Aviso a Gustavo: WhatsApp (solo llega si le escribió al bot en las últimas 24 h) + notificación push por ntfy (siempre llega). */
+async function avisarGustavo(owner, texto, fetchImpl) {
+  if (owner) await enviar(owner, texto, fetchImpl);
+  const topic = process.env.NTFY_TOPIC;
+  if (topic) {
+    try {
+      await fetchImpl(`https://ntfy.sh/${encodeURIComponent(topic)}`, { method: 'POST', headers: { Title: 'PuertoBox: cliente para atender', Priority: 'high' }, body: texto });
+    } catch (e) { console.error('ntfy error', e.message); }
+  }
+}
+
+// Agrupa los mensajes que el cliente manda seguidos y responde una sola vez, de a un chat por vez.
+const DEBOUNCE_MS = Number(process.env.DEBOUNCE_MS || 6000);
+const pendientes = new Map(); // tel -> { textos: [], timer }
+const colas = new Map(); // tel -> Promise
+
 async function procesar(payload, deps = {}) {
   const fetchImpl = deps.fetchImpl || fetch;
   const st = deps.store || store;
@@ -86,6 +102,28 @@ async function procesar(payload, deps = {}) {
     const texto = e.type === 'text' ? e.text.body
       : `[El cliente mandó un ${e.type}${e.image?.caption ? `: ${e.image.caption}` : ''}. Pedile que lo describa por texto o derivá si hace falta.]`;
     if (st.estaPausado(tel)) { st.agregar(tel, 'user', texto); continue; }
+    const espera = deps.debounceMs ?? DEBOUNCE_MS;
+    if (espera > 0) {
+      const p = pendientes.get(tel) || { textos: [] };
+      p.textos.push(texto); clearTimeout(p.timer);
+      p.timer = setTimeout(() => {
+        pendientes.delete(tel);
+        const junto = p.textos.join('\n');
+        const previa = colas.get(tel) || Promise.resolve();
+        const tarea = previa.then(() => atender(tel, junto, st, fetchImpl, owner)).catch((e) => console.error(e));
+        colas.set(tel, tarea);
+      }, espera);
+      pendientes.set(tel, p);
+      continue;
+    }
+    salidas.push(...(await atender(tel, texto, st, fetchImpl, owner)));
+  }
+  return salidas;
+}
+
+async function atender(tel, texto, st, fetchImpl, owner) {
+  const salidas = [];
+  {
     const derivaciones = [];
     let resp;
     try {
@@ -97,7 +135,7 @@ async function procesar(payload, deps = {}) {
     if (resp) { await enviar(tel, resp, fetchImpl); salidas.push({ to: tel, body: resp }); }
     for (const d of derivaciones) {
       const aviso = `🔔 PuertoBox: ${d.motivo.replace(/_/g, ' ')}\nCliente: +${d.telefono}\n${d.resumen}\n(El bot quedó pausado en ese chat. Para reactivarlo mandá: #bot ${d.telefono})`;
-      if (owner) await enviar(owner, aviso, fetchImpl);
+      await avisarGustavo(owner, aviso, fetchImpl);
       salidas.push({ to: owner, body: aviso });
     }
   }
