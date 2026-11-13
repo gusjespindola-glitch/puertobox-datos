@@ -193,3 +193,30 @@ test('chat derivado: si el cliente escribe, recibe aviso de espera (no visto)', 
   const out2 = await procesar(msg('5482', 'hola??'), { fetchImpl, store, debounceMs: 0 });
   assert.strictEqual(out2.length, 0);
 });
+
+test('dos herramientas a la vez: responde todas y sigue sin error', async () => {
+  const store = crearStore(null);
+  const dos = { stop_reason: 'tool_use', content: [{ type: 'text', text: 'Busco' }, { type: 'tool_use', id: 'a1', name: 'buscar_posicion', input: { producto: 'remeras' } }, { type: 'tool_use', id: 'a2', name: 'registrar_lead', input: { producto: 'remeras' } }] };
+  let segunda;
+  const { fetchImpl } = mock([dos, (body) => { segunda = body.messages; return txt('¿Es para vos o para vender?'); }]);
+  const out = await procesar(msg('5490', 'remeras'), { fetchImpl, store, debounceMs: 0 });
+  const res = segunda[segunda.length - 1].content;
+  assert.deepStrictEqual(res.map((r) => r.tool_use_id), ['a1', 'a2']);
+  assert.strictEqual(out[0].body, '¿Es para vos o para vender?');
+});
+
+test('herramienta pedida con stop_reason distinto igual se responde', async () => {
+  const store = crearStore(null);
+  const raro = { stop_reason: 'max_tokens', content: [{ type: 'tool_use', id: 'b1', name: 'registrar_lead', input: {} }] };
+  const { fetchImpl } = mock([raro, txt('Listo')]);
+  const out = await procesar(msg('5491', 'hola'), { fetchImpl, store, debounceMs: 0 });
+  assert.strictEqual(out[0].body, 'Listo');
+});
+
+test('saca muletillas del arranque', () => {
+  const { limpiar } = require('../agent');
+  assert.strictEqual(limpiar('Perfecto, sin marca. ¿Cuánto pagás?'), 'Sin marca. ¿Cuánto pagás?');
+  assert.strictEqual(limpiar('¡Buenísimo! ¿Son para vos?'), '¿Son para vos?');
+  assert.strictEqual(limpiar('Joya, 600 USD. ¿Sabés cuánto pesa?'), '600 USD. ¿Sabés cuánto pesa?');
+  assert.strictEqual(limpiar('Dale'), 'Dale');
+});
