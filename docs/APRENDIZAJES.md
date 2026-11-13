@@ -55,3 +55,4 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - Cotizar sin revisar marca, intervenciones ni régimen.
 
 - 13/11/2026: Gustavo: "Cotizá gratis" no puede llevar a un cotizador de la web; tiene que ir directo al WhatsApp del bot. Sacar de la web todo lo innecesario (formulario, sección repetida, links muertos). La web se sirve desde el repo con un Worker que lee `web/sitio/index.html`, para no tener que subirla a mano.
+- 13/11/2026: el Worker de la web usa archivos subidos ("Automatic deployment on upload"); pegar código en el editor no cambia lo que se ve. Se actualiza subiendo el index.html nuevo con New deployment. Desde el celular el editor de Cloudflare no deja pegar: hacerlo desde la PC.
