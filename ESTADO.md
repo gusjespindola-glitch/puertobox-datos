@@ -35,10 +35,10 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 0b. **Decidir cómo mostrar la tarifa por kilo** (web y bot): hoy el flete se cotiza con +15% sobre el peso, así que la tabla por kilo no cierra con el presupuesto. Opción: publicar la tabla con el 15% ya incluido. Lo decide Gustavo.
 1. **Apagar el AI Agent de YCloud** (Inbox > Assignment): si se renueva el crédito, contestarían los dos bots.
 2. **Avisos al 698**: WhatsApp solo los entrega si el 698 le escribió al bot en las últimas 24 h. Instalar la app ntfy y cargar NTFY_TOPIC en Railway.
-3. **Web**: cotizador y FAQ siguen con la tolerancia del 15% "gratis" y sin handling. Alinear con el bot (15% incluido + USD 10).
+3. **Web**: `web/sitio/index.html` ya está alineada con el bot (15% incluido + USD 10, FAQ La Plata sin retiro; verificado con los mismos casos que el bot). **Falta subirla a Cloudflare** y que el dominio apunte ahí: el 13/11 a la tarde los DNS seguían en Netlify (dns1.p09.nsone.net) y se veía el sitio viejo con el WhatsApp 698.
 4. **Railway**: la prueba vence alrededor del 13/12/2026. Pasar al plan Hobby (USD 5/mes) antes o el bot se apaga.
 5. Seguir revisando el material del curso (ver `docs/curso/README.md`) y aplicarlo.
-6. Confirmar que puertobox.com.ar muestre el sitio nuevo cuando Cloudflare quede activo. Revisar el mail info@ (registros MX en Cloudflare).
+6. Revisar en NIC Argentina que la delegación a jen/rocky.ns.cloudflare.com haya quedado guardada (el 13/11 seguía en Netlify). Revisar el mail info@ (registros MX en Cloudflare).
 7. Cargar el mensaje de bienvenida o ausencia en el 698 (`ycloud-agent/whatsapp_698_bienvenida.txt`) y el link del bot en las bios.
 8. Preguntar a Howard: gasto administrativo de DHL, recargo por zona alejada, días de tránsito, si sigue FedEx a 11 USD/kg desde 20 kg.
 9. Limpieza del repo: `ycloud-agent/` y el README viejo (modelo consolidado / modelo fijo) ya no se usan; archivos web viejos; `ncm/fuentes_arca/nom.txt` duplicado.
