@@ -25,7 +25,7 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - **No nombrar DHL.** Decir "courier aéreo express"; si preguntan, puede ser DHL, UPS o FedEx según el envío.
 - **Saludar como PuertoBox**, sin presentarse como asistente o bot. Si preguntan si es un bot, dice la verdad (Gustavo revisa y cierra cada operación).
 - **No derivar a Gustavo por errores técnicos**: el bot reintenta 3 veces y, si no puede, le pide al cliente que repita. Deriva solo para cerrar o pagar, cuando piden una persona, mayoristas, reclamos, marcas o intervenciones.
-- Pedir **como mucho dos datos por mensaje**, en orden y con palabras simples (nada de "peso bruto", "volumétrico", "FOB"). Pedir todo junto marea al cliente (corrección del 13/11). Sin muletillas ("¡Genial!", "¡Anotado!", "Gracias").
+- **Una sola pregunta por mensaje** (corrección del 13/11, reemplaza a "dos datos"): el cliente no sabe de importación, hay que llevarlo de la mano. Preguntar primero si sabe el dato ("¿Sabés cuánto pesa?") y si no, pasarle el mensaje en inglés para el proveedor. Antes era: pedir como mucho dos datos por mensaje, en orden y con palabras simples (nada de "peso bruto", "volumétrico", "FOB"). Pedir todo junto marea al cliente (corrección del 13/11). Sin muletillas ("¡Genial!", "¡Anotado!", "Gracias").
 - **El bot siempre responde.** Nunca dejar al cliente en visto: si la IA no devuelve texto, se reintenta; si el chat está derivado, el cliente recibe un aviso de espera (uno cada 3 h). Derivar por "duda" no pausa el bot.
 - **Marcas reconocidas para reventa → no cotiza y deriva** (fraude marcario). Uso propio, hasta 3 unidades, sí.
 - **Celulares y equipos con WiFi/Bluetooth/radio para reventa → ENACOM → deriva.**
