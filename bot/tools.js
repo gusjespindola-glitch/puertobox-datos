@@ -21,7 +21,7 @@ const definiciones = [
   },
   {
     name: 'cotizar',
-    description: 'Calcula el presupuesto de PuertoBox: flete firme (lo cobra PuertoBox) + impuestos y gasto administrativo estimados (los paga el cliente al courier). Usar SIEMPRE para dar precios.',
+    description: 'Calcula el presupuesto de PuertoBox: flete estimado + handling fijo (lo cobra PuertoBox) + impuestos y gasto administrativo estimados (los paga el cliente al courier). Usar SIEMPRE para dar precios.',
     input_schema: {
       type: 'object',
       properties: {
@@ -79,11 +79,12 @@ function ejecutar(nombre, input, ctx) {
       });
       return {
         flete_puertobox_usd: r.flete_puertobox_usd,
+        handling_puertobox_usd: r.handling_puertobox_usd,
         kg_presupuestado: r.kg_presupuestado,
         impuestos_y_gastos_estimados_usd: r.impuestos_estimados_usd.total,
         detalle_impuestos: r.impuestos_estimados_usd,
         total_estimado_usd: r.total_estimado_usd,
-        reglas: 'El flete es firme (incluye 15% de tolerancia sobre lo que declara el proveedor). Si la caja llega más de 15% más pesada o grande, se ajusta con foto de la balanza. Si llega más chica, se cobra menos. Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier (DHL) al llegar.',
+        reglas: 'El flete es ESTIMADO con el peso y las medidas que da el proveedor. El flete final es el que marca la balanza cuando la caja llega al depósito de China (se manda foto): si pesa menos paga menos, si pesa más paga más. Se suma un handling fijo de USD 10 por envío. Flete + handling se pagan al pesarse, antes de que salga. Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier (DHL) al llegar. Nunca prometas que el flete se mantiene si la caja pesa más.',
       };
     }
     case 'registrar_lead':
