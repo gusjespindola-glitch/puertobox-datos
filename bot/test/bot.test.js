@@ -26,26 +26,29 @@ const txt = (t) => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: t
 const msg = (from, body, id = 'm' + Math.random()) => ({ entry: [{ changes: [{ value: { messages: [{ id, from, type: 'text', text: { body } }] } }] }] });
 const eco = (to, body) => ({ entry: [{ changes: [{ value: { message_echoes: [{ to, text: { body } }] } }] }] });
 
-test('cotiza usando las herramientas y responde al cliente', async () => {
+test('cotiza con el modelo flete directo y responde al cliente', async () => {
   const store = crearStore(null);
-  let resultadoCotizar;
+  let r;
   const { fetchImpl, llamadas } = mock([
     tool('buscar_posicion', { producto: 'remeras' }),
-    tool('cotizar', { kg: 2, valor_factura_usd: 80, die: 20 }),
-    (body) => { resultadoCotizar = JSON.parse(body.messages.at(-1).content[0].content); return txt(`Te queda en USD ${resultadoCotizar.precio_final_usd} final 🙌`); },
+    tool('cotizar', { kg: 10, largo_cm: 50, ancho_cm: 40, alto_cm: 30, valor_factura_usd: 500, die: 16, regimen: 'comercial' }),
+    (body) => { r = JSON.parse(body.messages.at(-1).content[0].content); return txt(`Flete USD ${r.flete_puertobox_usd}`); },
   ]);
-  const out = await procesar(msg('5491111111111', 'Hola, quiero traer 2 kg de remeras, factura USD 80'), { fetchImpl, store });
-  assert.strictEqual(resultadoCotizar.precio_final_usd, 100);
-  assert.strictEqual(out[0].body, 'Te queda en USD 100 final 🙌');
+  const out = await procesar(msg('5491111111111', 'Quiero traer remeras, 10 kg, factura USD 500'), { fetchImpl, store });
+  assert.strictEqual(r.kg_presupuestado, 14); // 12 kg volumétricos + 15%
+  assert.strictEqual(r.flete_puertobox_usd, 280); // 14 kg x USD 20
+  assert.ok(r.impuestos_y_gastos_estimados_usd > 0);
+  assert.strictEqual(out[0].body, 'Flete USD 280');
   assert.strictEqual(llamadas.whatsapp[0].to, '5491111111111');
 });
 
-test('DIE alto usa 70%', async () => {
+test('régimen personal con franquicia: sin derechos hasta USD 400', async () => {
   const store = crearStore(null);
   let r;
-  const { fetchImpl } = mock([tool('cotizar', { kg: 1, valor_factura_usd: 100, die: 35 }), (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('ok'); }]);
+  const { fetchImpl } = mock([tool('cotizar', { kg: 1, valor_factura_usd: 100, die: 20, regimen: 'personal' }), (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('ok'); }]);
   await procesar(msg('5492', 'auriculares'), { fetchImpl, store });
-  assert.strictEqual(r.precio_final_usd, 98); // 28 + 70
+  assert.strictEqual(r.flete_puertobox_usd, 48); // 1,15 kg -> 1,5 kg x 32/kg
+  assert.strictEqual(r.detalle_impuestos.derechos_y_tasa, 0);
 });
 
 test('al derivar avisa a Gustavo y pausa el chat', async () => {
@@ -82,5 +85,30 @@ test('no procesa dos veces el mismo mensaje', async () => {
   const { fetchImpl, llamadas } = mock([txt('hola'), txt('hola')]);
   const m = msg('5495', 'hola', 'id-fijo');
   await procesar(m, { fetchImpl, store }); await procesar(m, { fetchImpl, store });
+  assert.strictEqual(llamadas.claude.length, 1);
+});
+
+test('YCloud: recibe el webhook, responde por la API de YCloud', async () => {
+  process.env.YCLOUD_API_KEY = 'k'; process.env.BUSINESS_NUMBER = '5491122223333';
+  try {
+    const store = crearStore(null);
+    const { fetchImpl, llamadas } = mock([txt('Hola! ¿Qué querés traer?')]);
+    const evento = { id: 'evt_1', type: 'whatsapp.inbound_message.received', apiVersion: 'v2',
+      whatsappInboundMessage: { id: 'x1', wamid: 'wamid.1', from: '+5491144445555', to: '+5491122223333', type: 'text', text: { body: 'hola' } } };
+    const out = await procesar(evento, { fetchImpl, store });
+    assert.strictEqual(out[0].to, '5491144445555');
+    assert.deepStrictEqual(llamadas.whatsapp[0], { from: '+5491122223333', to: '+5491144445555', type: 'text', text: { body: 'Hola! ¿Qué querés traer?' } });
+  } finally { delete process.env.YCLOUD_API_KEY; delete process.env.BUSINESS_NUMBER; }
+});
+
+test('Gustavo pausa y reactiva un chat desde su número personal', async () => {
+  const store = crearStore(null);
+  const { fetchImpl, llamadas } = mock([txt('hola de nuevo')]);
+  await procesar(msg(process.env.OWNER_NUMBER, '#pausa 5496'), { fetchImpl, store });
+  assert.ok(store.estaPausado('5496'));
+  await procesar(msg('5496', 'hola'), { fetchImpl, store });
+  assert.strictEqual(llamadas.claude.length, 0);
+  await procesar(msg(process.env.OWNER_NUMBER, '#bot 5496'), { fetchImpl, store });
+  await procesar(msg('5496', 'sigo acá'), { fetchImpl, store });
   assert.strictEqual(llamadas.claude.length, 1);
 });

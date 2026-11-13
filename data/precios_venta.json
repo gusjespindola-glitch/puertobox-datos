@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "actualizado": "2026-11-12",
+    "actualizado": "2026-11-13",
     "aviso": "Lista de precios PuertoBox al cliente. Impuestos se cobran aparte, sin margen.",
     "iva": "Precios con IVA incluido."
   },
@@ -85,5 +85,129 @@
     },
     "porcentaje_die_alto": 0.7,
     "umbral_die_alto": 20
+  },
+  "flete_directo": {
+    "descripcion": "Modelo vigente desde 13/11/2026. Envío a nombre y domicilio del cliente por DHL. PuertoBox cobra solo el flete, por adelantado. Impuestos y gasto administrativo los paga el cliente al courier.",
+    "courier": "DHL (vía Howard)",
+    "tolerancia": 0.15,
+    "divisor_volumetrico": 5000,
+    "tramos_venta": [
+      {
+        "desde_kg": 0,
+        "hasta_kg": 1.5,
+        "total_usd": 45
+      },
+      {
+        "desde_kg": 1.5,
+        "hasta_kg": 3,
+        "usd_kg": 32
+      },
+      {
+        "desde_kg": 3,
+        "hasta_kg": 5,
+        "usd_kg": 28
+      },
+      {
+        "desde_kg": 5,
+        "hasta_kg": 10,
+        "usd_kg": 25
+      },
+      {
+        "desde_kg": 10,
+        "hasta_kg": 15,
+        "usd_kg": 20
+      },
+      {
+        "desde_kg": 15,
+        "hasta_kg": 20,
+        "usd_kg": 19
+      },
+      {
+        "desde_kg": 20,
+        "hasta_kg": null,
+        "usd_kg": 18
+      }
+    ],
+    "tramos_costo_dhl": [
+      {
+        "desde_kg": 0,
+        "hasta_kg": 1.5,
+        "total_usd": 38
+      },
+      {
+        "desde_kg": 1.5,
+        "hasta_kg": 3,
+        "usd_kg": 26
+      },
+      {
+        "desde_kg": 3,
+        "hasta_kg": 5,
+        "usd_kg": 23
+      },
+      {
+        "desde_kg": 5,
+        "hasta_kg": 10,
+        "usd_kg": 20
+      },
+      {
+        "desde_kg": 10,
+        "hasta_kg": 15,
+        "usd_kg": 15
+      },
+      {
+        "desde_kg": 15,
+        "hasta_kg": 20,
+        "usd_kg": 14
+      },
+      {
+        "desde_kg": 20,
+        "hasta_kg": null,
+        "usd_kg": 13.5
+      }
+    ],
+    "tramos_costo_ups_referencia": [
+      {
+        "desde_kg": 0,
+        "hasta_kg": 1.5,
+        "total_usd": 46
+      },
+      {
+        "desde_kg": 1.5,
+        "hasta_kg": 3,
+        "usd_kg": 31
+      },
+      {
+        "desde_kg": 3,
+        "hasta_kg": 5,
+        "usd_kg": 24
+      },
+      {
+        "desde_kg": 5,
+        "hasta_kg": 10,
+        "usd_kg": 22
+      },
+      {
+        "desde_kg": 10,
+        "hasta_kg": 15,
+        "usd_kg": 17
+      },
+      {
+        "desde_kg": 15,
+        "hasta_kg": 20,
+        "usd_kg": 15
+      },
+      {
+        "desde_kg": 20,
+        "hasta_kg": null,
+        "usd_kg": 13.5
+      }
+    ],
+    "fuente_costos": "Howard Huang, Alibaba chat 13/11/2026",
+    "pendiente": [
+      "gasto administrativo de DHL en Argentina",
+      "recargo zona remota",
+      "días de tránsito",
+      "¿sigue tarifa 11 USD/kg 20kg+ por FedEx?"
+    ]
   }
 }

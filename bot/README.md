@@ -1,63 +1,47 @@
 # Bot de WhatsApp de PuertoBox
 
-Atiende a los clientes en **tu mismo número** (WhatsApp Coexistence), cotiza con la fórmula y la base SIM del repo, y te pasa el chat cuando el cliente está listo para cerrar.
+Atiende a los clientes en **una línea propia del bot** conectada por **YCloud**, cotiza con la tarifa de flete y la base SIM del repo, y te avisa cuando el cliente está listo para cerrar.
+
+> Tu número actual (+54 9 221 698-2199) **no** se pudo conectar por coexistencia: Meta lo rechaza con el error #3441034. Por eso el bot usa un número nuevo.
 
 ## Qué hace
 
 | El bot | Vos |
 |---|---|
-| Saluda, pregunta producto, valor, peso y uso | Recibís un aviso con el resumen cuando el cliente quiere avanzar |
-| Busca la posición SIM y cotiza con la fórmula (28/kg + 55% o 70%) | Confirmás, cobrás y cerrás desde tu app de siempre |
-| Explica plazos, pagos, prohibidos y datos del proveedor | Reclamos, mayoristas grandes y dudas raras |
-| Registra cada lead (planilla descargable en CSV) | |
+| Saluda y pide producto, valor, peso, medidas, uso y código postal | Recibís un aviso con el resumen cuando el cliente quiere avanzar |
+| Busca la posición SIM y presupuesta: flete firme (+15% de tolerancia) + impuestos estimados | Confirmás, cobrás y cerrás |
+| Explica régimen personal o comercial, pagos y prohibidos | Reclamos, mayoristas grandes y dudas raras |
+| Registra cada lead (planilla CSV) | |
 
-- **Si escribís vos en un chat desde la app, el bot se calla en ese chat** durante 24 h (se ajusta con `PAUSA_HORAS`).
-- Para devolverle el chat al bot, escribí `#bot` en ese chat.
-- Si le preguntan si es un bot, dice la verdad: es el asistente virtual de PuertoBox y vos cerrás cada operación.
+**Comandos desde tu número personal** (escribiéndole al número del bot):
+- `#pausa 549XXXXXXXXXX` → el bot se calla en ese chat.
+- `#bot 549XXXXXXXXXX` → el bot vuelve a atender ese chat.
 
-Para cambiar cómo habla o qué responde, se edita `prompt.md`. No hace falta tocar código.
-
-## Costos aproximados
-- WhatsApp Cloud API: 1.000 mensajes de servicio gratis por mes por número; después, alrededor de USD 0,026 por mensaje.
-- IA (Anthropic, modelo Haiku): unos centavos por conversación.
-- Servidor: USD 5-7/mes (Railway o Render pago, para que no se duerma).
+Para cambiar cómo habla o qué responde, se edita `prompt.md`. Para cambiar tarifas, `data/precios_venta.json` (bloque `flete_directo`).
 
 ## Puesta en marcha
 
-### 1. Cuentas
-1. **Meta Business** (business.facebook.com) verificada con tus datos.
-2. **Anthropic** (console.anthropic.com): crear una API key y cargar crédito.
-3. **Railway** (railway.app) o **Render** (render.com) para el servidor.
-
-### 2. Conectar tu número con Coexistence
-1. En developers.facebook.com, crear una app de tipo *Business* y agregarle el producto **WhatsApp**.
-2. Conectar tu número **existente de WhatsApp Business** con la opción de Coexistence (Embedded Signup: "conectar una cuenta de la app WhatsApp Business"). Se confirma desde la app con un código. Si Meta no ofrece la opción en tu cuenta, se hace a través de un proveedor (BSP) que tenga Coexistence.
-3. Anotar el **Phone Number ID** y generar un **token permanente** (usuario del sistema en Business Settings con permiso `whatsapp_business_messaging`).
-4. Mantené la app de WhatsApp Business abierta y en uso en tu celular. Si no la abrís por mucho tiempo, Meta puede desconectar la coexistencia.
-
-### 3. Deploy
-1. En Railway: *New Project → Deploy from GitHub repo* → `puertobox-datos`. Comando de inicio: `node bot/server.js`.
-2. Variables de entorno:
+1. **Número nuevo**: chip prepago que **nunca** se haya usado en WhatsApp (o borrá su cuenta de WhatsApp antes).
+2. **YCloud** → WhatsApp Manager → WhatsApp accounts → **WhatsApp Business API → Get started**. En la ventana de Meta: "Ingresar un nuevo número", poné el número nuevo y verificá con el código por SMS.
+3. **Anthropic** (console.anthropic.com) → API Keys → crear una clave y cargar USD 5 de crédito.
+4. **Railway** (railway.app) → New Project → Deploy from GitHub repo → `puertobox-datos`. Se inicia solo con `npm start`. Agregá un volumen montado en `/data`.
+5. **Variables en Railway:**
 
 | Variable | Qué es |
 |---|---|
-| `ANTHROPIC_API_KEY` | Tu API key de Anthropic |
-| `ANTHROPIC_MODEL` | Opcional. Por defecto `claude-haiku-5-5` |
-| `WHATSAPP_TOKEN` | Token permanente de Meta |
-| `PHONE_NUMBER_ID` | ID del número en Meta |
-| `VERIFY_TOKEN` | Una palabra secreta que elegís vos |
-| `OWNER_NUMBER` | Tu número personal (formato 549XXXXXXXXXX) para recibir los avisos |
+| `ANTHROPIC_API_KEY` | Clave de Anthropic |
+| `YCLOUD_API_KEY` | YCloud → Developers → API Keys |
+| `BUSINESS_NUMBER` | Número del bot, formato 549XXXXXXXXXX |
+| `OWNER_NUMBER` | Tu número personal, formato 549XXXXXXXXXX |
 | `ADMIN_KEY` | Clave para descargar los leads |
-| `DATA_FILE` | Ruta del archivo de datos (usar un volumen persistente) |
+| `DATA_FILE` | `/data/data.json` |
 
-3. En Meta → WhatsApp → Configuración → Webhook: URL `https://TU-APP.up.railway.app/webhook`, token = `VERIFY_TOKEN`. Suscribir los campos **messages** y **smb_message_echoes**.
+6. **Webhook en YCloud** → Developers → Webhooks → nuevo endpoint: `https://TU-APP.up.railway.app/webhook`, evento `whatsapp.inbound_message.received`.
+7. **Probar** desde otro celular: una cotización, un prohibido y "quiero avanzar". Leads en `https://TU-APP.up.railway.app/leads?key=ADMIN_KEY`.
 
-### 4. Probar antes de abrirlo
-1. Escribile al número desde otro celular y probá: una cotización, un producto prohibido, "quiero avanzar".
-2. Revisá que te llegue el aviso y que el bot se calle cuando contestás vos.
-3. Leads: `https://TU-APP.up.railway.app/leads?key=ADMIN_KEY` (se abre en Excel).
+**Aviso a tu número personal:** WhatsApp solo deja mandar texto libre dentro de las 24 h desde el último mensaje que le escribiste al número del bot. Mandale "hola" una vez por día desde tu personal.
 
-**Aviso a tu número personal:** WhatsApp solo deja mandar texto libre dentro de las 24 h desde el último mensaje que le escribiste al número del negocio. Escribile "hola" una vez por día desde tu personal, o pedime que lo pase a una plantilla de utilidad aprobada.
+**Costos:** YCloud plan Free + mensajes de servicio gratis de Meta; IA unos centavos por conversación; Railway unos USD 5 por mes.
 
 ## Desarrollo
 - Tests: `node --test bot/test/*.test.js` (simulan conversaciones sin gastar API).

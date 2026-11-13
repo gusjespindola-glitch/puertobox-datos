@@ -1,7 +1,7 @@
 'use strict';
 /** Herramientas del agente: usan el motor de precios y la base SIM del repo. */
 const path = require('path');
-const { precioCliente } = require('../src/precio_fijo');
+const { presupuesto } = require('../src/flete_directo');
 const { crear } = require('../ncm/motor_busqueda');
 
 let motor = null;
@@ -21,16 +21,18 @@ const definiciones = [
   },
   {
     name: 'cotizar',
-    description: 'Calcula el precio final cerrado de PuertoBox (flete, aduana, impuestos, gasto documental y gestión). Usar SIEMPRE para dar precios.',
+    description: 'Calcula el presupuesto de PuertoBox: flete firme (lo cobra PuertoBox) + impuestos y gasto administrativo estimados (los paga el cliente al courier). Usar SIEMPRE para dar precios.',
     input_schema: {
       type: 'object',
       properties: {
-        kg: { type: 'number', description: 'Peso real total en kg' },
+        kg: { type: 'number', description: 'Peso bruto total que declara el proveedor, en kg' },
         valor_factura_usd: { type: 'number', description: 'Valor de la factura del proveedor en USD' },
         die: { type: 'number', description: 'Derecho de importación (%) de la posición elegida' },
+        internos: { type: 'number', description: 'Impuestos internos (%) si la posición los tiene, si no 0' },
+        regimen: { type: 'string', enum: ['personal', 'comercial'], description: 'personal = uso propio, hasta 3 unidades iguales; comercial = para revender' },
         largo_cm: { type: 'number' }, ancho_cm: { type: 'number' }, alto_cm: { type: 'number' },
       },
-      required: ['kg', 'valor_factura_usd', 'die'],
+      required: ['kg', 'valor_factura_usd', 'die', 'regimen'],
     },
   },
   {
@@ -71,11 +73,18 @@ function ejecutar(nombre, input, ctx) {
       return res.length ? res : { aviso: 'Sin resultados. Probá con otras palabras o derivá a Gustavo.' };
     }
     case 'cotizar': {
-      const r = precioCliente({
+      const r = presupuesto({
         kg: input.kg, largo: input.largo_cm, ancho: input.ancho_cm, alto: input.alto_cm,
-        valorFactura: input.valor_factura_usd, die: input.die,
+        valorFactura: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen,
       });
-      return { precio_final_usd: r.total, kg_facturable: r.kg_facturable, formula: `USD 28 x kg + ${Math.round(r.porcentaje * 100)}% del valor (mínimo USD 40)`, nota: 'Se confirma al pesar en el depósito.' };
+      return {
+        flete_puertobox_usd: r.flete_puertobox_usd,
+        kg_presupuestado: r.kg_presupuestado,
+        impuestos_y_gastos_estimados_usd: r.impuestos_estimados_usd.total,
+        detalle_impuestos: r.impuestos_estimados_usd,
+        total_estimado_usd: r.total_estimado_usd,
+        reglas: 'El flete es firme (incluye 15% de tolerancia sobre lo que declara el proveedor). Si la caja llega más de 15% más pesada o grande, se ajusta con foto de la balanza. Si llega más chica, se cobra menos. Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier (DHL) al llegar.',
+      };
     }
     case 'registrar_lead':
       ctx.store.guardarLead(ctx.telefono, input);

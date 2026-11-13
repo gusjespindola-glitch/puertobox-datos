@@ -1,10 +1,16 @@
 {
   "name": "puertobox-datos",
   "version": "1.0.0",
-  "description": "Base de datos de tarifas, regímenes y motor de cotización courier de PuertoBox",
+  "description": "Base de datos de tarifas, reg\u00edmenes y motor de cotizaci\u00f3n courier de PuertoBox",
   "main": "src/calc.js",
-  "scripts": { "test": "node --test test/*.test.js bot/test/*.test.js",
-    "bot": "node bot/server.js" },
+  "scripts": {
+    "test": "node --test test/*.test.js bot/test/*.test.js",
+    "bot": "node bot/server.js",
+    "start": "node bot/server.js"
+  },
   "license": "UNLICENSED",
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
 }
