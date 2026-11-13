@@ -82,6 +82,8 @@
     "alternativa_si_no_hay_credito_iva": {
       "usd_por_kg": 28,
       "porcentaje_valor_factura": 0.7
-    }
+    },
+    "porcentaje_die_alto": 0.7,
+    "umbral_die_alto": 20
   }
 }

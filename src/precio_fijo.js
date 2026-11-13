@@ -11,15 +11,16 @@ function kgFacturable({ kg, largo, ancho, alto }) {
 }
 
 /** Lo que paga el cliente. */
-function precioCliente({ kg, largo, ancho, alto, valorFactura }, m = precios.modelo_fijo) {
+function precioCliente({ kg, largo, ancho, alto, valorFactura, die = null }, m = precios.modelo_fijo) {
   const k = kgFacturable({ kg, largo, ancho, alto });
-  const total = Math.max(m.usd_por_kg * k + m.porcentaje_valor_factura * valorFactura, m.minimo_usd);
-  return { kg_facturable: k, total: r2(total) };
+  const pct = die !== null && die > (m.umbral_die_alto ?? 20) ? (m.porcentaje_die_alto ?? 0.70) : m.porcentaje_valor_factura;
+  const total = Math.max(m.usd_por_kg * k + pct * valorFactura, m.minimo_usd);
+  return { kg_facturable: k, porcentaje: pct, total: r2(total) };
 }
 
 /** Costeo interno (guía consolidada, RI con crédito de IVA). */
 function costeo({ kg, largo, ancho, alto, valorFactura, derechos = 0.20, internos = 0 }, m = precios.modelo_fijo) {
-  const { kg_facturable, total } = precioCliente({ kg, largo, ancho, alto, valorFactura }, m);
+  const { kg_facturable, total } = precioCliente({ kg, largo, ancho, alto, valorFactura, die: derechos * 100 }, m);
   const flete = kg_facturable * 11;
   const cif = (valorFactura + flete) * 1.01;
   const dite = cif * (derechos + 0.03);
