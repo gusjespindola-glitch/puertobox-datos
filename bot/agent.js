@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { definiciones, ejecutar } = require('./tools');
 
-const SYSTEM = fs.readFileSync(path.join(__dirname, 'prompt.md'), 'utf8');
+// El prompt lee precios y datos de la base única (data/): cambiás ahí y el bot se entera solo.
+const SYSTEM = require('../src/negocio').render(fs.readFileSync(path.join(__dirname, 'prompt.md'), 'utf8'));
 const MODELO = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 
 async function llamarClaude(messages, fetchImpl, intentos = 3) {

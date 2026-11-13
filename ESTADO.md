@@ -11,6 +11,17 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - YCloud: plan Free, webhook activo a `/webhook` (evento whatsapp.inbound_message.received). El AI Agent de YCloud quedó sin crédito.
 - Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`.
 
+
+## Base única (desde 13/11/2026)
+Cambiás un dato en un solo lugar y cambia en el bot, la web, el buscador y las páginas:
+- **Precios** (tramos del flete, gestión): `data/precios_venta.json` → `flete_directo`.
+- **Contacto y reglas** (WhatsApp, Instagram, mail, horario, precio cerrado %, franquicia, caja máx.): `data/negocio.json`.
+- El resto (envío mínimo, USD/kg desde 20 kg, tabla de la web) se calcula solo (`src/negocio.js`).
+- Plantillas con `{{dato}}`: `bot/prompt.md`, `web/sitio/index.html`. Un test falla si alguien escribe un precio o el teléfono a mano.
+
+Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web), `/buscador`, `/ncm/XXXX.XX.XX` (10.504 posiciones), `/importar/<producto>`, `/sitemap.xml`, `/robots.txt`.
+**Falta**: que puertobox.com.ar apunte a Railway (dominio propio en Railway + CNAME en Cloudflare + sacar el dominio del Worker). Mientras tanto la web de Cloudflare es la copia subida a mano.
+
 ## Nomenclador PuertoBox (tipo Tarifar)
 - **Acceso principal (celular y PC):** `https://puertobox-datos-production.up.railway.app/nomenclador/?key=ADMIN_KEY` (la primera vez con la clave; después queda en una cookie por un año). Lo sirve el mismo servidor del bot, así que se actualiza con cada merge.
 - Copia en claude.ai: https://claude.ai/artifact/AG4uktPhuZmr7FVxfzLnoo (hay que republicarla a mano, puede quedar vieja). Código en `web/nomenclador/`.

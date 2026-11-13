@@ -153,6 +153,7 @@ async function atender(tel, texto, st, fetchImpl, owner) {
 
 // Nomenclador PuertoBox (web/nomenclador) protegido con ADMIN_KEY: se entra una vez con ?key=... y queda guardado en una cookie.
 const fs = require('fs');
+const paginas = require('../src/paginas');
 const WEB = path.join(__dirname, '..', 'web', 'nomenclador');
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
 function servirNomenclador(req, res, url) {
@@ -201,10 +202,15 @@ function servidor() {
         .catch((e) => { res.writeHead(500); res.end('Error: ' + e.message); });
     }
     if (req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) return servirNomenclador(req, res, url);
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      const pag = paginas.servir(url.pathname, url.searchParams);
+      if (pag) { res.writeHead(200, { 'content-type': pag.tipo, 'cache-control': 'public, max-age=300' }); return res.end(req.method === 'HEAD' ? undefined : pag.cuerpo); }
+      if (url.pathname.startsWith('/ncm/') || url.pathname.startsWith('/importar/')) { res.writeHead(404, { 'content-type': 'text/html; charset=utf-8' }); return res.end(paginas.buscador('')); }
+    }
     if (req.method === 'GET' && (url.pathname === '/leads' || url.pathname === '/pruebas')) {
       res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Clave incorrecta. Revisá que sea la de ADMIN_KEY en Railway.');
     }
-    res.writeHead(200); res.end('PuertoBox bot ok');
+    res.writeHead(200); res.end('PuertoBox bot ok'); // /salud y cualquier otra ruta
   });
 }
 
