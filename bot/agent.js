@@ -20,10 +20,19 @@ async function llamarUnaVez(messages, fetchImpl) {
   const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: MODELO, max_tokens: 600, system: SYSTEM, tools: definiciones, messages }),
+    body: JSON.stringify({ model: MODELO, max_tokens: 1024, system: SYSTEM, tools: definiciones, messages }),
   });
   if (!r.ok) throw new Error(`Anthropic ${r.status}: ${await r.text()}`);
   return r.json();
+}
+
+// Saca las muletillas del arranque ("Perfecto, ...", "¡Genial! ...") que el modelo a veces agrega igual.
+const MULETILLA = /^\s*(¡?\s*(genial|perfecto|buen[íi]simo|excelente|anotado|joya|dale|b[áa]rbaro|tranqui|listo|entendido|ok|okey|gracias)[!.,]*\s*)+/i;
+function limpiar(t) {
+  if (!t) return t;
+  const s = t.replace(MULETILLA, '');
+  if (!s.trim()) return t;
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /** Procesa un mensaje del cliente y devuelve el texto de respuesta (o null si no corresponde responder). */
@@ -41,26 +50,36 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
   let pedidoTexto = false;
   for (let vuelta = 0; vuelta < 7; vuelta++) {
     const res = await llamarClaude(messages, fetchImpl);
-    messages.push({ role: 'assistant', content: res.content });
-    if (res.stop_reason !== 'tool_use') {
-      const respuesta = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
-      if (respuesta) { store.agregar(telefono, 'assistant', respuesta); return respuesta; }
-      // Nunca dejar al cliente sin respuesta: si la IA terminó sin texto, se le pide que conteste.
-      if (!pedidoTexto) {
-        pedidoTexto = true;
-        messages.push({ role: 'user', content: '[Sistema: respondele al cliente ahora con un mensaje de texto corto. Nunca lo dejes sin respuesta.]' });
-        continue;
-      }
-      const resp = derivaciones.length ? 'Listo, ya le pasé tu consulta a Gustavo y te escribe en un rato.' : 'Perdón, ¿me lo repetís? Así te ayudo bien.';
-      store.agregar(telefono, 'assistant', resp);
-      return resp;
+    const contenido = (res.content || []).filter((b) => b.type === 'text' ? b.text && b.text.trim() : true);
+    const usos = contenido.filter((b) => b.type === 'tool_use');
+    if (usos.length) {
+      // Toda herramienta pedida se ejecuta y se responde en el mensaje siguiente, pase lo que pase con stop_reason.
+      messages.push({ role: 'assistant', content: contenido });
+      const resultados = usos.map((b) => {
+        let out;
+        try { out = ejecutar(b.name, b.input || {}, ctx); } catch (e) { out = { error: e.message }; }
+        return { type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(out) };
+      });
+      messages.push({ role: 'user', content: resultados });
+      continue;
     }
-    const resultados = res.content.filter((b) => b.type === 'tool_use').map((b) => ({
-      type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(ejecutar(b.name, b.input, ctx)),
-    }));
-    messages.push({ role: 'user', content: resultados });
+    const respuesta = limpiar(contenido.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim());
+    if (respuesta) { store.agregar(telefono, 'assistant', respuesta); return respuesta; }
+    // Nunca dejar al cliente sin respuesta: si la IA terminó sin texto, se le pide que conteste.
+    if (!pedidoTexto) {
+      pedidoTexto = true;
+      if (contenido.length) messages.push({ role: 'assistant', content: contenido });
+      const ultimo = messages[messages.length - 1];
+      const aviso = { type: 'text', text: '[Sistema: respondele al cliente ahora con un mensaje de texto corto. Nunca lo dejes sin respuesta.]' };
+      if (ultimo.role === 'user') ultimo.content = Array.isArray(ultimo.content) ? [...ultimo.content, aviso] : [{ type: 'text', text: ultimo.content }, aviso];
+      else messages.push({ role: 'user', content: [aviso] });
+      continue;
+    }
+    const resp = derivaciones.length ? 'Listo, ya le pasé tu consulta a Gustavo y te escribe en un rato.' : 'Perdón, ¿me lo repetís? Así te ayudo bien.';
+    store.agregar(telefono, 'assistant', resp);
+    return resp;
   }
   return 'Dame un segundo que lo reviso con Gustavo y te escribimos.';
 }
 
-module.exports = { responder };
+module.exports = { responder, limpiar };

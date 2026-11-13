@@ -26,7 +26,7 @@ const ESCENARIOS = [
   { nombre: 'Mayorista', msgs: ['necesito traer un contenedor de muebles'], espera: { deriva: true } },
 ];
 
-const MULETILLAS = /^(¡?genial|¡?anotado|¡?perfecto|¡?buenísimo|¡?excelente|gracias)\b/i;
+const MULETILLAS = /^(¡?genial|¡?anotado|¡?perfecto|¡?buen[ií]simo|¡?excelente|gracias|joya|dale|tranqui)\b/i;
 const JERGA = /peso bruto|volum[eé]tric|\bFOB\b|\bCIF\b|r[eé]gimen/i;
 
 function revisar(resp, ctx) {
@@ -34,7 +34,10 @@ function revisar(resp, ctx) {
   if (!resp || !resp.trim()) prob.push('respuesta vacía');
   const t = resp || '';
   const esPresupuesto = /Presupuesto PuertoBox/i.test(t);
-  if (!esPresupuesto && (t.match(/\?/g) || []).length > 1) prob.push('más de una pregunta');
+  const sinSaludo = t.replace(/¿c[oó]mo (va|est[aá]s|and[aá]s)\?/gi, '');
+  if (!esPresupuesto && (sinSaludo.match(/\?/g) || []).length > 1) prob.push('más de una pregunta');
+  if (/^\[ERROR/.test(t)) prob.push('error técnico');
+  if (/AMBA|La Plata|Buenos Aires|CABA/.test(t) && /d[oó]nde/i.test(ctx.ultimo)) prob.push('inventa ubicación');
   if (!esPresupuesto && JERGA.test(t)) prob.push('usa palabras técnicas');
   if (/pesa menos/i.test(t)) prob.push('dice "si pesa menos paga menos"');
   if (/\bDHL\b/.test(t) && !/dhl|courier/i.test(ctx.ultimo)) prob.push('nombra DHL sin que pregunten');
