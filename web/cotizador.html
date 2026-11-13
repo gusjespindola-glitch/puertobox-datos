@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PuertoBox — Cotizador courier China</title>
+<style>
+  :root{--bg:#0f1720;--card:#16212d;--line:#243344;--txt:#e8eef4;--mut:#93a4b5;--acc:#f5a623;--ok:#3fb27f;--bad:#e5484d}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);line-height:1.45}
+  main{max-width:520px;margin:0 auto;padding:20px 16px 40px}
+  h1{font-size:1.35rem;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:.92rem;margin:0 0 18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  label{display:block;font-size:.85rem;color:var(--mut);margin:10px 0 4px}
+  input,select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0c131b;color:var(--txt);font-size:1rem}
+  .row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .hint{font-size:.78rem;color:var(--mut);margin-top:4px}
+  .total{font-size:2.2rem;font-weight:700;color:var(--acc);margin:4px 0}
+  .line{display:flex;justify-content:space-between;font-size:.9rem;color:var(--mut);padding:3px 0}
+  .warn{background:#2a1416;border:1px solid #5a2328;color:#ffb4b6;border-radius:10px;padding:10px 12px;font-size:.88rem;display:none;margin-top:10px}
+  .incl{font-size:.85rem;color:var(--mut)}
+  .incl b{color:var(--txt)}
+  ul{margin:6px 0 0 18px;padding:0;font-size:.85rem;color:var(--mut)}
+  button{width:100%;padding:13px;border:0;border-radius:10px;background:var(--acc);color:#1b1300;font-weight:700;font-size:1rem;margin-top:12px;cursor:pointer}
+  .copied{color:var(--ok);font-size:.85rem;text-align:center;margin-top:6px;min-height:1.2em}
+  .badge{display:inline-block;font-size:.72rem;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--mut);margin-bottom:10px}
+</style>
+</head>
+<body>
+<main>
+  <span class="badge">Despachante de Aduana matriculado · ARCA</span>
+  <h1>Cotizá tu envío desde China</h1>
+  <p class="sub">Precio final, sin sorpresas: flete, aduana, impuestos y gestión incluidos.</p>
+
+  <div class="card">
+    <label for="rubro">¿Qué vas a traer?</label>
+    <select id="rubro">
+      <option value="ok">Ropa, calzado, accesorios</option>
+      <option value="ok">Electrónica, gadgets, celulares</option>
+      <option value="ok">Juguetes, hogar, herramientas</option>
+      <option value="ok">Repuestos e insumos</option>
+      <option value="no">Cosmética, perfumes o maquillaje</option>
+      <option value="no">Alimentos o suplementos</option>
+      <option value="no">Réplicas o marcas no originales</option>
+      <option value="no">Baterías sueltas o líquidos</option>
+    </select>
+
+    <label for="valor">Valor de la factura (USD)</label>
+    <input id="valor" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Ej: 80">
+    <div class="hint">Lo que pagaste al proveedor, sin envío.</div>
+
+    <label for="kg">Peso total (kg)</label>
+    <input id="kg" type="number" inputmode="decimal" min="0" step="0.1" placeholder="Ej: 2">
+
+    <label>Medidas de la caja (cm) — opcional</label>
+    <div class="row">
+      <input id="l" type="number" inputmode="decimal" min="0" placeholder="Largo">
+      <input id="a" type="number" inputmode="decimal" min="0" placeholder="Ancho">
+      <input id="h" type="number" inputmode="decimal" min="0" placeholder="Alto">
+    </div>
+    <div class="hint">Si la caja es grande y liviana, se cobra por volumen (L×A×H ÷ 5000).</div>
+
+    <div class="warn" id="warn">Este rubro no lo traemos por courier. Escribinos y te decimos la alternativa.</div>
+  </div>
+
+  <div class="card" id="res">
+    <div class="incl">Precio final puesto en punto de retiro</div>
+    <div class="total" id="total">USD —</div>
+    <div class="line"><span>Peso cobrado</span><span id="kgf">—</span></div>
+    <div class="line"><span>Fórmula</span><span>USD 28 × kg + 55% del valor</span></div>
+    <div class="line"><span>Mínimo por envío</span><span>USD 40</span></div>
+    <p class="incl" style="margin-top:12px"><b>Incluye:</b> flete aéreo China → Argentina, despacho de aduana, impuestos, gasto documental y gestión.<br><b>No incluye:</b> envío a domicilio (tarifa por zona).</p>
+    <button id="copy">Copiar cotización para enviarla por WhatsApp</button>
+    <div class="copied" id="copied"></div>
+  </div>
+
+  <div class="card">
+    <div class="incl"><b>Cómo funciona</b></div>
+    <ul>
+      <li>Comprás y nos pasás la factura a nombre de PuertoBox.</li>
+      <li>Llega a nuestro depósito en China, lo pesamos y pagás el 100%.</li>
+      <li>Sale en la consolidación semanal (12 a 20 días hábiles).</li>
+      <li>Retirás o te lo enviamos.</li>
+    </ul>
+    <p class="hint" style="margin-top:10px">Estimación basada en peso y valor declarados. El precio final se confirma al pesar en depósito.</p>
+  </div>
+</main>
+<script>
+(function(){
+  const A=28, B=0.55, MIN=40, DIV=5000;
+  const $=id=>document.getElementById(id);
+  const num=id=>{const v=parseFloat($(id).value);return isFinite(v)&&v>0?v:0};
+  let last=null;
+  function calc(){
+    const no=$('rubro').value==='no';
+    $('warn').style.display=no?'block':'none';
+    $('res').style.opacity=no?.4:1;
+    const kg=num('kg'), v=num('valor'), l=num('l'), a=num('a'), h=num('h');
+    if(no||(!kg&&!v)){ $('total').textContent='USD —'; $('kgf').textContent='—'; last=null; return; }
+    const vol=(l&&a&&h)?l*a*h/DIV:0;
+    const kgf=Math.max(Math.ceil(Math.max(kg,vol)*10)/10,1);
+    const total=Math.max(A*kgf+B*v,MIN);
+    $('kgf').textContent=kgf.toFixed(1)+' kg'+(vol>kg?' (volumen)':'');
+    $('total').textContent='USD '+total.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    last={kgf,v,total,rubro:$('rubro').options[$('rubro').selectedIndex].text};
+  }
+  ['rubro','valor','kg','l','a','h'].forEach(id=>$(id).addEventListener('input',calc));
+  $('copy').addEventListener('click',async()=>{
+    if(!last){$('copied').textContent='Completá peso y valor primero.';return;}
+    const t=`Hola Gustavo, coticé en PuertoBox:\n• Rubro: ${last.rubro}\n• Valor factura: USD ${last.v}\n• Peso cobrado: ${last.kgf} kg\n• Precio final: USD ${last.total.toFixed(2)}\nQuiero avanzar.`;
+    try{await navigator.clipboard.writeText(t);$('copied').textContent='Copiado. Pegalo en el chat de WhatsApp.';}
+    catch(e){$('copied').textContent='No se pudo copiar: seleccioná y copiá el precio a mano.';}
+  });
+  calc();
+})();
+</script>
+</body>
+</html>
