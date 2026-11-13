@@ -34,7 +34,7 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 0. **Cambiar la clave de Anthropic** (quedó pegada en el chat el 13/11): crear una nueva en platform.claude.com → Claves, pegarla en Railway (ANTHROPIC_API_KEY) y borrar la vieja.
 1. **Apagar el AI Agent de YCloud** (Inbox > Assignment): si se renueva el crédito, contestarían los dos bots.
 2. **Avisos al 698**: WhatsApp solo los entrega si el 698 le escribió al bot en las últimas 24 h. Instalar la app ntfy y cargar NTFY_TOPIC en Railway.
-3. **Web**: el 13/11 a la noche el celular de Gustavo ya mostraba el diseño nuevo desde Cloudflare, pero una versión anterior (con cotizador). Limpieza hecha (PR web-limpieza): "Cotizá Gratis" abre el WhatsApp del bot, sin sección cotizador, sin formulario, sin DHL, sin links muertos. **Falta**: pegar `web/sitio/worker.js` en el Worker `royal-mode-b440` (una sola vez); desde ahí la web se actualiza sola con cada merge.
+3. **Web**: ✅ 13/11 20:24 subida la versión limpia (sin cotizador, sin formulario, sin DHL, gestión USD 20). El Worker `royal-mode-b440` sirve el `index.html` SUBIDO como archivo (static assets): el código de worker.js no se usa. Para cada cambio de la web: bajar `web/sitio/index.html` de GitHub → Cloudflare → royal-mode-b440 → New deployment → subir el archivo.
 4. **Railway**: la prueba vence alrededor del 13/12/2026. Pasar al plan Hobby (USD 5/mes) antes o el bot se apaga.
 5. Seguir revisando el material del curso (ver `docs/curso/README.md`) y aplicarlo.
 6. Revisar en NIC Argentina que la delegación a jen/rocky.ns.cloudflare.com haya quedado guardada (el 13/11 seguía en Netlify). Revisar el mail info@ (registros MX en Cloudflare).
