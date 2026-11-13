@@ -54,7 +54,7 @@ Tests: `node --test test/calc.test.js`
 - [x] Guía individual a nombre de quien se indique.
 - [x] Sobrepeso: por **caja** de más de 23 kg.
 - [x] Volumétrico: mayor entre real y volumétrico, divisor 5000.
-- [ ] Gastos admin: los calcula la **línea courier**. Falta el umbral exacto de valor y los porcentajes reales.
+- [x] Gasto documental UPS: 20% del CIF si es menor a USD 500, 9,5% si es mayor (mail UPS). Falta: ¿lleva IVA? ¿tiene mínimo?
 - [ ] Tarifa para 13 a 20 kg y para menos de 10 kg.
 - [ ] Recargo por batería de litio (hoy +30%).
 - [ ] Plazo depósito China → entrega.
