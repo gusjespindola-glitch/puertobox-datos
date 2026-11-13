@@ -36,6 +36,12 @@ function crearStore(archivo) {
     borrar(tel) { delete db.chats[tel]; guardar(); },
     reanudar(tel) { const c = chat(tel); c.pausadoHasta = 0; c.motivoPausa = null; guardar(); },
     estaPausado: (tel) => chat(tel).pausadoHasta > Date.now(),
+    motivoPausa: (tel) => chat(tel).motivoPausa,
+    avisoEsperaVencido(tel, horas) {
+      const c = chat(tel);
+      if (c.ultimoAvisoEspera && Date.now() - c.ultimoAvisoEspera < horas * 3600e3) return false;
+      c.ultimoAvisoEspera = Date.now(); guardar(); return true;
+    },
     guardarLead(tel, datos) {
       db.leads[tel] = { ...(db.leads[tel] || { telefono: tel, creado: new Date().toISOString() }), ...datos, actualizado: new Date().toISOString() };
       guardar();

@@ -102,7 +102,15 @@ async function procesar(payload, deps = {}) {
     }
     const texto = e.type === 'text' ? e.text.body
       : `[El cliente mandó un ${e.type}${e.image?.caption ? `: ${e.image.caption}` : ''}. Pedile que lo describa por texto o derivá si hace falta.]`;
-    if (st.estaPausado(tel)) { st.agregar(tel, 'user', texto); continue; }
+    if (st.estaPausado(tel)) {
+      st.agregar(tel, 'user', texto);
+      // Chat derivado a Gustavo: nunca clavar el visto. Aviso de espera, como mucho uno cada 3 horas.
+      if (st.motivoPausa(tel) === 'derivado' && st.avisoEsperaVencido(tel, 3)) {
+        const r = 'Ya le pasé tu consulta a Gustavo y te escribe en un rato. Si querés, dejame acá cualquier dato más.';
+        await enviar(tel, r, fetchImpl); salidas.push({ to: tel, body: r });
+      }
+      continue;
+    }
     const espera = deps.debounceMs ?? DEBOUNCE_MS;
     if (espera > 0) {
       const p = pendientes.get(tel) || { textos: [] };
