@@ -71,9 +71,15 @@
     ],
     "iva_sobre_admin": 0.21,
     "quien_cobra": "UPS Argentina (línea courier). Se cobra en todos los envíos que llegan del exterior.",
-    "nota": "Confirmado por UPS. Es sobre el CIF total, no marginal: CIF 499 paga ~99,8 y CIF 500 paga 47,5. El mail no aclara si lleva IVA ni si hay mínimo: se asume IVA 21% (confirmar). Reconfirmar vigencia (mail de febrero 2026).",
+    "nota": "Confirmado por UPS. Es sobre el CIF total, no marginal: CIF 499 paga ~99,8 y CIF 500 paga 47,5. IVA 21% y percepciones IIBB sobre el gasto confirmados en factura FedEx (ver facturas_reales.json); para UPS confirmar mínimo. Reconfirmar vigencia (mail de febrero 2026).",
     "nombre": "Gasto documental UPS",
-    "confirmado": "Mail de UPS Atención al Cliente (consulta del 04/02/2026): CIF < USD 500 → 20%; CIF > USD 500 → 9,5%."
+    "confirmado": "Mail de UPS Atención al Cliente (consulta del 04/02/2026): CIF < USD 500 → 20%; CIF > USD 500 → 9,5%.",
+    "percepciones_iibb_sobre_admin": 0.08,
+    "percepciones_iibb_detalle": {
+      "pba": 0.03,
+      "caba": 0.05,
+      "nota": "Confirmado en factura FedEx (ago-2025) para destinatario en PBA: 3% PBA + 5% CABA sobre honorarios. Depende de la jurisdicción del cliente."
+    }
   },
   "pasarela": {
     "porcentaje": 0.03,

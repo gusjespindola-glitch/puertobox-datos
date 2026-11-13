@@ -52,7 +52,9 @@ function gastosAdmin(cif, fw) {
   const g = fw.gastos_admin;
   const tramo = g.tramos.find((x) => cif >= x.cif_desde_usd && (x.cif_hasta_usd === null || cif < x.cif_hasta_usd));
   const admin = cif * tramo.porcentaje;
-  return { porcentaje: tramo.porcentaje, admin: r2(admin), iva: r2(admin * g.iva_sobre_admin) };
+  const iva = admin * g.iva_sobre_admin;
+  const iibb = admin * (g.percepciones_iibb_sobre_admin || 0);
+  return { porcentaje: tramo.porcentaje, admin: r2(admin), iva: r2(iva), iibb: r2(iibb), total: r2(admin + iva + iibb) };
 }
 
 /** Tributos aduaneros. */
@@ -138,11 +140,11 @@ function cotizar(input, datos = cargarDatos()) {
   // Precio al cliente
   const fleteCliente = kgCobrar * pv.usd_kg * (input.litio ? fw.recargos.bateria_litio.valor : 1);
   const trasladarAdmin = input.trasladarAdmin !== false; // por defecto se traslada
-  const gestionCliente = pv.fee_gestion_usd + (trasladarAdmin ? adm.admin + adm.iva : 0);
+  const gestionCliente = pv.fee_gestion_usd + (trasladarAdmin ? adm.total : 0);
   const totalCliente = fleteCliente + sobrepeso.usd + gestionCliente + trib.total;
 
   // Costo y ganancia (tributos son pass-through: se cobran y se pagan igual)
-  const costoTotal = fleteReal + adm.admin + adm.iva + pasarela;
+  const costoTotal = fleteReal + adm.total + pasarela;
   const ingresoPropio = fleteCliente + sobrepeso.usd + gestionCliente;
   const ganancia = ingresoPropio - costoTotal;
 

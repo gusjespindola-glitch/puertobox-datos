@@ -1,0 +1,47 @@
+{
+  "_meta": {
+    "aviso": "Facturas reales anonimizadas (sin CUIT, domicilio ni guía) para validar el motor de cálculo."
+  },
+  "facturas": [
+    {
+      "id": "fedex-2025-08",
+      "courier": "FedEx (Federal Express Corp., Ezeiza)",
+      "fecha": "2025-08-22",
+      "regimen": "pequeños envíos (anterior al Dec. 604/2026)",
+      "tipo_cambio_ars_usd": 1315,
+      "bultos": 3,
+      "kg": 58.7,
+      "usd": {
+        "fob": 195.0,
+        "flete": 146.75,
+        "seguro": 3.42,
+        "cif": 345.17,
+        "iva_importacion": 36.24,
+        "honorarios": 58.0,
+        "iva_honorarios": 12.18,
+        "iibb_pba": 1.74,
+        "iibb_caba": 2.9,
+        "total_factura": 111.06
+      },
+      "ars": {
+        "fob": 256425.0,
+        "flete": 192976.25,
+        "seguro": 4497.3,
+        "cif": 453898.55,
+        "iva_importacion": 47655.6,
+        "honorarios": 76270.0,
+        "iva_honorarios": 16016.7,
+        "iibb_pba": 2288.1,
+        "iibb_caba": 3813.5,
+        "total_factura": 146043.9
+      },
+      "lecturas": [
+        "Seguro = 1% de (FOB + flete): coincide con el motor.",
+        "IVA de importación 10,5% del CIF: mercadería con alícuota reducida. Sin derechos ni tasa (FOB < USD 400, franquicia).",
+        "Honorarios FedEx USD 58 = 16,8% del CIF: no es el 20% de UPS. Puede ser un fijo; confirmar con otra factura FedEx.",
+        "Sobre los honorarios: IVA 21% + percepción IIBB PBA 3% + CABA 5%. Costo real de la gestión: USD 74,82 = 21,7% del CIF.",
+        "El flete declarado en el CIF es el flete real del courier (USD 146,75 por 58,7 kg)."
+      ]
+    }
+  ]
+}

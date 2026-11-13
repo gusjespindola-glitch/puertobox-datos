@@ -12,6 +12,7 @@ Fuente única de verdad para la calculadora de puertobox.com.ar: regímenes adua
 | `data/categorias.json` | Derechos, impuestos internos e intervenciones por rubro (celulares, ropa, notebooks, etc.) | Cuando cambie un arancel |
 | `data/forwarder.json` | **Tus costos**: tramos por kilo del consolidador, recargo por sobrepeso de bulto, gastos admin por tramo de CIF, pasarela, tipo de cambio RMB | Cuando el proveedor cambie precios |
 | `data/precios_venta.json` | **Tu lista de precios** al cliente | Vos |
+| `data/facturas_reales.json` | Facturas reales anonimizadas para validar el cálculo (FedEx ago-2025) | Cuando tengas una factura nueva |
 | `data/referencias_mercado.json` | Tarifas de la competencia y recargos express de referencia (DHL) | Cada tanto |
 | `src/calc.js` | Motor de cotización | — |
 | `test/calc.test.js` | Casos de prueba | — |
@@ -22,7 +23,7 @@ Fuente única de verdad para la calculadora de puertobox.com.ar: regímenes adua
 2. **Costo de flete** = kg × tarifa del proveedor según el tramo de la **salida consolidada** (11 USD/kg desde 20 kg; 13 USD/kg de 10 a 20 kg; menos de 10 kg se consulta). Litio: ×1,30.
 3. **Sobrepeso de bulto** (aerolínea): cada bulto de más de 23 kg suma 250 RMB × 1,3 × tipo de cambio (~USD 44,85).
 4. **CIF** = FOB + flete **real** + seguro 1%. No existe opción para declarar un flete menor.
-5. **Gastos admin del proveedor** = CIF × 20% (CIF < USD 500) o 9,5% (CIF ≥ 500), más IVA 21%. Pasarela 3%.
+5. **Gasto documental de la línea** = CIF × 20% (CIF < USD 500) o 9,5% (CIF ≥ 500), más IVA 21% y percepciones IIBB (3% PBA + 5% CABA, según factura FedEx). Costo real ≈ gasto × 1,29. Pasarela 3%.
 6. **Tributos**:
    - Pequeños envíos con cupo: si FOB ≤ 400, sin derechos ni tasa. Si FOB > 400, derechos y tasa 3% solo sobre la fracción excedente. IVA siempre sobre el total.
    - Cupo de 5 envíos agotado o courier comercial: derechos y tasa sobre todo el CIF.

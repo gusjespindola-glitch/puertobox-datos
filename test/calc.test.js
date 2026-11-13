@@ -67,4 +67,17 @@ test('cotización completa: 2 kg de ropa, salida consolidada de 50 kg', () => {
   assert.ok(c.ganancia > 0, 'debe dejar ganancia');
 });
 
+test('factura real FedEx: IVA 21% + IIBB 8% sobre honorarios', () => {
+  const f = require('../data/facturas_reales.json').facturas[0];
+  assert.strictEqual(r(f.ars.honorarios * 0.21), f.ars.iva_honorarios);
+  assert.strictEqual(r(f.ars.honorarios * fw.gastos_admin.percepciones_iibb_sobre_admin), r(f.ars.iibb_pba + f.ars.iibb_caba));
+  assert.ok(Math.abs(f.ars.seguro / (f.ars.fob + f.ars.flete) - 0.01) < 0.0001, 'seguro ~1% de FOB+flete');
+});
+
+test('gasto admin incluye IVA e IIBB', () => {
+  const g = gastosAdmin(300, fw);
+  assert.strictEqual(g.admin, 60);
+  assert.strictEqual(g.total, r(60 * 1.29));
+});
+
 function r(n) { return Math.round(n * 100) / 100; }
