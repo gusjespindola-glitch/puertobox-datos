@@ -24,6 +24,16 @@ const ESCENARIOS = [
   { nombre: 'Pregunta si es bot', msgs: ['sos un bot?'], espera: { noDiceHumano: true } },
   { nombre: 'Quiere pagar', msgs: ['quiero traer remeras sin marca para vender, 300 usd, 5 kilos, 1 caja 40x30x30', 'dale quiero avanzar como pago?'], espera: { deriva: true } },
   { nombre: 'Mayorista', msgs: ['necesito traer un contenedor de muebles'], espera: { deriva: true } },
+  { nombre: 'Juguetes para vender (certificación)', msgs: ['quiero traer juguetes sin marca para vender, pago 400 usd, son 12 kilos en una caja'], espera: { presupuesto: true, contiene: /certific/i } },
+  { nombre: 'Cargadores para vender (seguridad eléctrica)', msgs: ['cargadores de celular sin marca para vender, 250 dolares, 6 kilos'], espera: { presupuesto: true, contiene: /certific/i } },
+  { nombre: 'Caja de más de 23 kg', msgs: ['mochilas sin marca para vender, 900 usd, una sola caja de 30 kilos'], espera: { presupuesto: true, contiene: /divid|23 ?kg/i } },
+  { nombre: 'Uso propio de más de USD 400', msgs: ['unas zapatillas sin marca para mi, pago 600 dolares, pesan 3 kilos'], espera: { presupuesto: true } },
+  { nombre: 'Valor no creíble', msgs: ['un robot de cocina de 25 kilos que me sale 60 dolares, para vender, sin marca'], espera: { sinPresupuesto: true } },
+  { nombre: 'Pregunta el plazo', msgs: ['cuanto tarda en llegar?'], espera: { noContiene: /\b\d+\s*(a\s*\d+\s*)?d[ií]as\b/i } },
+  { nombre: 'Pregunta cómo se paga', msgs: ['como se paga?'], espera: { contiene: /dep[oó]sito|pes/i } },
+  { nombre: 'Manda un audio', msgs: ['[El cliente mandó un audio. Pedile que lo describa por texto o derivá si hace falta.]'], espera: { contiene: /escrib|texto/i } },
+  { nombre: 'Zona alejada', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja', 'mi codigo postal es 9410, ushuaia'], espera: { presupuesto: true, contiene: /recargo|zona/i } },
+  { nombre: 'Repuestos de auto', msgs: ['repuestos de auto genericos para vender, 800 dolares, 20 kilos, 2 cajas'], espera: { presupuesto: true } },
 ];
 
 const MULETILLAS = /^(¡?genial|¡?anotado|¡?perfecto|¡?buen[ií]simo|¡?excelente|gracias|joya|dale|tranqui)\b/i;
@@ -76,6 +86,8 @@ async function correrEscenarios() {
     if (e.mencionaProveedor && !/gross weight|proveedor/i.test(junto)) finales.push('no ayudó a pedirle el peso al proveedor');
     if (e.sinTabla && /32\/kg|28\/kg|25\/kg/.test(junto)) finales.push('recitó la tabla por kilo');
     if (e.deriva && !derivaciones.length) finales.push('no derivó a Gustavo');
+    if (e.contiene && !e.contiene.test(junto)) finales.push(`le faltó mencionar ${e.contiene}`);
+    if (e.noContiene && e.noContiene.test(junto)) finales.push(`no debía decir ${e.noContiene}`);
     fallas += finales.length;
     salida.push(finales.length ? `**Resultado:** ❌ ${finales.join(' · ')}` : '**Resultado:** ✅', '');
   }

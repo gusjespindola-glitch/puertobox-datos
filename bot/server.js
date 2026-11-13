@@ -201,6 +201,9 @@ function servidor() {
         .catch((e) => { res.writeHead(500); res.end('Error: ' + e.message); });
     }
     if (req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) return servirNomenclador(req, res, url);
+    if (req.method === 'GET' && (url.pathname === '/leads' || url.pathname === '/pruebas')) {
+      res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Clave incorrecta. Revisá que sea la de ADMIN_KEY en Railway.');
+    }
     res.writeHead(200); res.end('PuertoBox bot ok');
   });
 }
