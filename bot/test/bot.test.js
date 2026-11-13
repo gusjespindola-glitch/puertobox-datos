@@ -35,11 +35,11 @@ test('cotiza con el modelo flete directo y responde al cliente', async () => {
     (body) => { r = JSON.parse(body.messages.at(-1).content[0].content); return txt(`Flete USD ${r.flete_puertobox_usd}`); },
   ]);
   const out = await procesar(msg('5491111111111', 'Quiero traer remeras, 10 kg, factura USD 500'), { fetchImpl, store, debounceMs: 0 });
-  assert.strictEqual(r.kg_presupuestado, 14); // 12 kg volumétricos + 15%
-  assert.strictEqual(r.flete_puertobox_usd, 280); // 14 kg x USD 20
-  assert.strictEqual(r.handling_puertobox_usd, 10);
+  assert.strictEqual(r.kg_presupuestado, 12); // 12 kg volumétricos (sin margen, opción C)
+  assert.strictEqual(r.flete_puertobox_usd, 240); // 12 kg x USD 20
+  assert.strictEqual(r.handling_puertobox_usd, 20);
   assert.ok(r.impuestos_y_gastos_estimados_usd > 0);
-  assert.strictEqual(out[0].body, 'Flete USD 280');
+  assert.strictEqual(out[0].body, 'Flete USD 240');
   assert.strictEqual(llamadas.whatsapp[0].to, '5491111111111');
 });
 
@@ -48,7 +48,7 @@ test('régimen personal con franquicia: sin derechos hasta USD 400', async () =>
   let r;
   const { fetchImpl } = mock([tool('cotizar', { kg: 1, valor_factura_usd: 100, die: 20, regimen: 'personal' }), (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('ok'); }]);
   await procesar(msg('5492', 'auriculares'), { fetchImpl, store, debounceMs: 0 });
-  assert.strictEqual(r.flete_puertobox_usd, 48); // 1,15 kg -> 1,5 kg x 32/kg
+  assert.strictEqual(r.flete_puertobox_usd, 45); // 1 kg -> USD 45 total
   assert.strictEqual(r.detalle_impuestos.derechos_y_tasa, 0);
 });
 
