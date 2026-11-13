@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nomenclador PuertoBox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: terminal de consulta arancelaria. Izquierda buscador y resultados, derecha ficha de tratamiento + liquidación. Una columna en celular. */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#15202b; --mut:#5b6b7b; --line:#d5dce3; --acc:#0b4f8a; --acc-soft:#e3eef8;
+  --ok:#1d7a46; --warn:#a15c00; --warn-soft:#fff3e0; --bad:#b42318;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e141a; --panel:#151e27; --ink:#e6edf3; --mut:#93a3b3; --line:#26323e; --acc:#6cb2ee; --acc-soft:#16283a;
+  --ok:#4cc38a; --warn:#f0a63a; --warn-soft:#2a2112; --bad:#f97066; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141a; --panel:#151e27; --ink:#e6edf3; --mut:#93a3b3; --line:#26323e; --acc:#6cb2ee; --acc-soft:#16283a;
+  --ok:#4cc38a; --warn:#f0a63a; --warn-soft:#2a2112; --bad:#f97066; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body)}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+header h1{font-size:1.15rem;margin:0;text-wrap:balance}
+header .src{color:var(--mut);font-size:.82rem}
+.wrap{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:16px;padding:16px 20px;max-width:1400px;margin:0 auto}
+@media (max-width:860px){.wrap{grid-template-columns:1fr;padding:12px 16px}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.side{display:flex;flex-direction:column;gap:10px;padding:12px;align-self:start;position:sticky;top:12px;max-height:calc(100vh - 90px)}
+@media (max-width:860px){.side{position:static;max-height:none}}
+label{font-size:.78rem;color:var(--mut);font-weight:500}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+input:focus-visible,select:focus-visible,button:focus-visible,.res:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+#q{font-size:1.02rem;padding:11px 12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 .78rem var(--f-body);border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:4px 10px;cursor:pointer}
+.chip:hover{border-color:var(--acc);color:var(--acc)}
+.count{font-size:.8rem;color:var(--mut)}
+.list{overflow:auto;display:flex;flex-direction:column;gap:6px;min-height:120px}
+.res{border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;background:var(--panel)}
+.res:hover{border-color:var(--acc)}
+.res.sel{border-color:var(--acc);background:var(--acc-soft)}
+.res .c{font:600 .92rem var(--f-mono);color:var(--acc);display:flex;justify-content:space-between;gap:8px}
+.res .c span{font:500 .78rem var(--f-body);color:var(--mut)}
+.res .d{font-size:.82rem;color:var(--mut);margin-top:2px}
+.res .d b{color:var(--ink);font-weight:500}
+.main{display:flex;flex-direction:column;gap:16px;min-width:0}
+.ficha{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.pos{font:600 1.5rem var(--f-mono);color:var(--acc);margin:0}
+.pos small{font:500 .85rem var(--f-body);color:var(--mut);margin-left:8px}
+.desc{margin:0;font-size:1.02rem;max-width:75ch}
+.tree{margin:0;padding:0;list-style:none;font-size:.86rem;color:var(--mut);display:flex;flex-direction:column;gap:2px}
+.tree li{padding-left:calc(var(--lv)*14px)}
+.tree li:last-child{color:var(--ink);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.k{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.k .l{font-size:.72rem;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.k .v{font:600 1.15rem var(--f-mono);font-variant-numeric:tabular-nums}
+.k.hi{border-color:var(--acc);background:var(--acc-soft)}
+h2{font-size:.95rem;margin:0;text-wrap:balance}
+.sec{display:flex;flex-direction:column;gap:8px}
+.int{display:flex;flex-direction:column;gap:6px}
+.int div{border-left:3px solid var(--warn);background:var(--warn-soft);padding:7px 10px;border-radius:0 6px 6px 0;font-size:.86rem}
+.int b{color:var(--ink)}
+.none{font-size:.86rem;color:var(--mut)}
+.note{font-size:.78rem;color:var(--mut)}
+a{color:var(--acc)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:500;font-size:.76rem;text-transform:uppercase;letter-spacing:.04em}
+td.m{font-family:var(--f-mono);white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono)}
+details summary{cursor:pointer;font-weight:600;font-size:.95rem}
+details pre{white-space:pre-wrap;font:.8rem/1.5 var(--f-mono);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:420px;overflow:auto}
+.calc{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.form{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.form div{display:flex;flex-direction:column;gap:4px}
+.tot td{font-weight:700;border-bottom:none}
+.tot td.n{font-size:1.05rem;color:var(--acc)}
+.avisos div{font-size:.84rem;color:var(--warn)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:600 .86rem var(--f-body);border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:8px;padding:8px 14px;cursor:pointer}
+button.ghost{background:transparent;color:var(--acc)}
+.empty{padding:30px 18px;color:var(--mut)}
+@media (prefers-reduced-motion:no-preference){.res{transition:border-color .12s}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Nomenclador PuertoBox</h1>
+  <span class="src" id="src">Cargando Arancel Integrado ARCA…</span>
+</header>
+<div class="wrap">
+  <aside class="panel side">
+    <div class="sec">
+      <label for="q">Buscar por producto o posición</label>
+      <input id="q" placeholder="Ej: zapatillas, termo, 8518.30" autocomplete="off">
+    </div>
+    <div class="chips" id="frec" aria-label="Búsquedas frecuentes"></div>
+    <div class="count" id="count"></div>
+    <div class="list" id="list" role="listbox" aria-label="Resultados"></div>
+    <div class="note" id="hist"></div>
+  </aside>
+  <main class="main">
+    <section class="panel ficha" id="ficha"><div class="empty">Elegí una posición de la lista.</div></section>
+    <section class="panel calc" id="calc">
+      <h2>Liquidación estimada</h2>
+      <div class="form">
+        <div><label for="reg">Régimen</label>
+          <select id="reg">
+            <option value="courier">Courier general (reventa)</option>
+            <option value="pequenos">Pequeños envíos (uso propio)</option>
+            <option value="general">Régimen general (despacho)</option>
+          </select></div>
+        <div><label for="fob">FOB USD</label><input id="fob" type="number" min="0" step="0.01" value="1168.75"></div>
+        <div><label for="flete">Flete USD</label><input id="flete" type="number" min="0" step="0.01" value="46.46"></div>
+        <div><label for="seg">Seguro USD (vacío = 1%)</label><input id="seg" type="number" min="0" step="0.01" placeholder="1% de FOB + flete"></div>
+        <div><label for="die">DIE %</label><input id="die" type="number" min="0" step="0.1" value="2"></div>
+        <div><label for="te">Tasa estadística %</label><input id="te" type="number" min="0" step="0.1" value="3"></div>
+        <div><label for="iva">IVA %</label><select id="iva"><option value="21">21</option><option value="10.5">10,5</option></select></div>
+        <div><label for="ii">Internos %</label><input id="ii" type="number" min="0" step="0.1" value="0"></div>
+        <div class="pg"><label for="pgan">Perc. Ganancias %</label><input id="pgan" type="number" min="0" step="0.1" value="6"></div>
+        <div class="pg"><label for="piibb">Perc. IIBB %</label><input id="piibb" type="number" min="0" step="0.1" value="2.5"></div>
+      </div>
+      <div class="tbl"><table id="liq"></table></div>
+      <div class="avisos" id="avisos"></div>
+      <div class="row"><button id="copy" type="button">Copiar liquidación</button><span class="note" id="copied"></span></div>
+      <p class="note">Estimación orientativa. Pequeños envíos: DI y TE sobre CIF − USD 400, hasta USD 400 FOB solo IVA (curso, Courier 2025). Percepciones solo en régimen general: IVA adicional 20% (10% con IVA 10,5%), Ganancias e IIBB editables. No incluye antidumping, gasto documental del courier ni honorarios.</p>
+    </section>
+  </main>
+</div>
+<script src="nomenclador.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = (n) => (Number.isInteger(n) ? n : String(n).replace('.', ',')) + '%';
+const usd = (n) => 'USD ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const FREC = ['zapatillas', 'remeras', 'juguetes', 'auriculares', 'termo', 'mochila', 'cargador', 'reloj', 'lámpara led', 'repuestos auto'];
+let N = null, sel = null;
+
+function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+
+async function cargar() {
+  const get = (f) => fetch('data/' + f).then((r) => { if (!r.ok) throw new Error(f); return r.json(); });
+  const [sim, sufijos, intervenciones, sinonimos, notas] = await Promise.all(['sim.json', 'sufijos.json', 'intervenciones.json', 'sinonimos.json', 'notas.json'].map(get));
+  N = Nomenclador.crear({ sim, sufijos, intervenciones, sinonimos, notas });
+  $('src').textContent = `Arancel Integrado ARCA · archivos del ${N.meta.fecha_archivos.split('-').reverse().join('/')} · ${N.meta.posiciones_sim.toLocaleString('es-AR')} posiciones SIM`;
+  $('frec').innerHTML = FREC.map((f) => `<button type="button" class="chip" data-q="${esc(f)}">${esc(f)}</button>`).join('');
+  const h = location.hash.match(/^#p-(\d+)/);
+  if (h) { const r = N.buscar(h[1], 1); if (r[0]) { $('q').value = r[0].c; buscar(); abrir(r[0].c); } }
+  else { $('q').value = 'zapatillas'; buscar(); const r = N.buscar('zapatillas', 30).find((f) => f.die > 0); if (r) abrir(r.c); }
+  verHist();
+}
+
+function buscar() {
+  const q = $('q').value;
+  const r = N.buscar(q, 60);
+  $('count').textContent = q.trim() ? (r.length ? `${r.length}${r.length === 60 ? '+' : ''} resultados` : 'Sin resultados. Probá con el nombre técnico o los primeros dígitos de la posición.') : '';
+  $('list').innerHTML = r.map((f) => {
+    const j = N.jerarquia(f);
+    return `<div class="res${sel === f.c ? ' sel' : ''}" role="option" tabindex="0" data-c="${f.c}"><div class="c">${f.c}<span>DIE ${pct(f.die)}${f.ii ? ' · int. ' + pct(+(f.ii * 100).toFixed(1)) : ''}</span></div>
+      <div class="d">${esc(j.slice(-3, -1).join(' › ')).slice(-160)}${j.length > 1 ? ' › ' : ''}<b>${esc(j[j.length - 1])}</b></div></div>`;
+  }).join('');
+}
+
+function abrir(c) {
+  const f = N.ficha(c);
+  if (!f) return;
+  sel = f.posicion;
+  document.querySelectorAll('.res').forEach((e) => e.classList.toggle('sel', e.dataset.c === sel));
+  try { history.replaceState(null, '', '#p-' + Nomenclador.digitos(sel)); } catch (e) { /* sin hash */ }
+  const j = f.jerarquia;
+  const k = (l, v, hi) => `<div class="k${hi ? ' hi' : ''}"><div class="l">${l}</div><div class="v">${v}</div></div>`;
+  $('ficha').innerHTML = `
+    <div><p class="pos">${f.posicion}<small>NCM ${f.ncm}</small></p><p class="desc">${esc(j[j.length - 1])}</p></div>
+    <ul class="tree">${j.map((t, i) => `<li style="--lv:${i}">${esc(t)}</li>`).join('')}</ul>
+    <div class="grid">
+      ${k('DIE extrazona', pct(f.die), true)}${k('DII intrazona', pct(f.dii))}${k('Tasa estadística', '3%')}${k('IVA', '21%*')}
+      ${k('Internos', f.impuestos_internos ? pct(+(f.impuestos_internos * 100).toFixed(1)) : '—')}${k('Der. export.', pct(f.de))}
+      ${k('Reint. extraz.', pct(f.re))}${k('Reint. intraz.', pct(f.ri))}${k('DIE mín. espec.', f.die_especifico_minimo || '—')}${k('Unidad estad.', f.unidad_estadistica || '—')}
+    </div>
+    <p class="note">* IVA general. Verificar si la posición tiene alícuota reducida del 10,5% (bienes de capital y otros). Tasa estadística general del 3%.</p>
+    <div class="sec"><h2>Intervenciones posibles (orientativas)</h2>
+      <div class="int">${f.intervenciones.length ? f.intervenciones.map((i) => `<div><b>${esc(i.organismo)}</b>: ${esc(i.detalle)}${i.nota ? ' <em>' + esc(i.nota) + '</em>' : ''}</div>`).join('') : '<span class="none">No hay intervenciones cargadas en la tabla de PuertoBox para esta posición.</span>'}</div>
+      <p class="note">No vienen en los archivos de ARCA: es una tabla curada por PuertoBox. Confirmá siempre en <a href="https://www.vuce.gob.ar/" target="_blank" rel="noopener">VUCE</a> por posición.</p>
+    </div>
+    <div class="sec"><h2>Sufijos de valor (${f.sufijos.length})</h2>
+      ${f.sufijos.length ? `<div class="tbl"><table><thead><tr><th>Sufijo</th><th>Descripción</th><th>Norma</th><th>Nivel</th></tr></thead><tbody>${f.sufijos.map((s) => `<tr><td class="m">${esc(s.s)}</td><td>${esc(s.t)}</td><td class="m">${esc(s.norma)}</td><td class="m">${esc(s.nivel)}</td></tr>`).join('')}</tbody></table></div>` : '<span class="none">Sin sufijos de valor.</span>'}
+    </div>
+    <details><summary>Notas de sección y capítulo ${f.posicion.slice(0, 2)}</summary><pre>${esc(f.notas || 'Sin notas en el archivo de ARCA.')}</pre></details>`;
+  $('die').value = f.die; $('ii').value = +(f.impuestos_internos * 100).toFixed(2);
+  liquidar();
+  const h = (store('pb-hist') || []).filter((x) => x !== sel); h.unshift(sel); store('pb-hist', h.slice(0, 8)); verHist();
+}
+
+function verHist() {
+  const h = store('pb-hist') || [];
+  $('hist').innerHTML = h.length ? 'Últimas consultadas: ' + h.map((c) => `<a href="#p-${Nomenclador.digitos(c)}" data-c="${c}">${c.slice(0, 10)}</a>`).join(' · ') : '';
+}
+
+function liquidar() {
+  const v = (id) => parseFloat($(id).value);
+  const reg = $('reg').value;
+  document.querySelectorAll('.pg').forEach((e) => { e.style.display = reg === 'general' ? '' : 'none'; });
+  const seg = $('seg').value === '' ? null : v('seg');
+  const r = Nomenclador.liquidar({ regimen: reg, fob: v('fob') || 0, flete: v('flete') || 0, seguro: seg, die: v('die') || 0, te: v('te') || 0, iva: v('iva'), internos: v('ii') || 0, percepcionGanancias: v('pgan') || 0, percepcionIibb: v('piibb') || 0 });
+  const filas = [['Seguro', r.seguro], ['CIF', r.cif], ['Base de derechos', r.base_derechos], ['Derecho de importación', r.di], ['Tasa estadística', r.te], ['Base IVA (CIF + DI + TE)', r.base_iva], ['IVA', r.iva]];
+  if (r.internos) filas.push(['Impuestos internos', r.internos]);
+  filas.push(['Total tributos', r.tributos, 1]);
+  if (reg === 'general') filas.push(['Percepción IVA adicional', r.percepcion_iva], ['Percepción Ganancias', r.percepcion_ganancias], ['Percepción IIBB', r.percepcion_iibb], ['Total a pagar con percepciones', r.total_a_pagar, 1]);
+  $('liq').innerHTML = `<thead><tr><th>Concepto</th><th class="n">Monto</th></tr></thead><tbody>${filas.map(([l, m, t]) => `<tr${t ? ' class="tot"' : ''}><td>${l}</td><td class="n">${usd(m)}</td></tr>`).join('')}</tbody>`;
+  $('avisos').innerHTML = r.avisos.map((a) => `<div>${esc(a)}</div>`).join('');
+  liquidar.ultimo = { r, reg, filas };
+}
+
+$('q').addEventListener('input', () => { clearTimeout(buscar.t); buscar.t = setTimeout(buscar, 140); });
+$('list').addEventListener('click', (e) => { const r = e.target.closest('.res'); if (r) abrir(r.dataset.c); });
+$('list').addEventListener('keydown', (e) => { const r = e.target.closest('.res'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); abrir(r.dataset.c); } });
+$('frec').addEventListener('click', (e) => { const b = e.target.closest('.chip'); if (b) { $('q').value = b.dataset.q; buscar(); } });
+$('hist').addEventListener('click', (e) => { const a = e.target.closest('a[data-c]'); if (a) { e.preventDefault(); abrir(a.dataset.c); } });
+['reg', 'fob', 'flete', 'seg', 'die', 'te', 'iva', 'ii', 'pgan', 'piibb'].forEach((id) => $(id).addEventListener('input', liquidar));
+$('copy').addEventListener('click', async () => {
+  const u = liquidar.ultimo; if (!u) return;
+  const txt = [`Posición ${sel || '-'} · ${$('reg').selectedOptions[0].text}`, `FOB ${usd($('fob').value || 0)} · Flete ${usd($('flete').value || 0)}`, ...u.filas.map(([l, m]) => `${l}: ${usd(m)}`)].join('\n');
+  try { await navigator.clipboard.writeText(txt); $('copied').textContent = 'Copiado.'; } catch (e) { $('copied').textContent = 'No se pudo copiar desde este navegador.'; }
+});
+window.addEventListener('hashchange', () => { const h = location.hash.match(/^#p-(\d+)/); if (h && N) { const r = N.buscar(h[1], 1); if (r[0] && r[0].c !== sel) abrir(r[0].c); } });
+cargar().catch((e) => { $('src').textContent = 'No se pudieron cargar los datos (' + e.message + '). Recargá la página.'; });
+</script>
+</body>
+</html>

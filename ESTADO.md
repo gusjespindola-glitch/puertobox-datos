@@ -11,6 +11,12 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - YCloud: plan Free, webhook activo a `/webhook` (evento whatsapp.inbound_message.received). El AI Agent de YCloud quedó sin crédito.
 - Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`.
 
+## Nomenclador PuertoBox (tipo Tarifar)
+- Página: https://claude.ai/artifact/AG4uktPhuZmr7FVxfzLnoo (privada de Gustavo). Código en `web/nomenclador/`.
+- Buscador por producto o posición; ficha con DIE, DII, TE, IVA, internos, DE, reintegros, DIE mínimo específico, unidad, sufijos de valor, notas de sección y capítulo, intervenciones orientativas; liquidación régimen general / courier / pequeños envíos.
+- Motor compartido `src/nomenclador.js`: lo usa la página y el bot (`buscar_posicion`). Intervenciones curadas en `ncm/intervenciones.json` (Gustavo valida).
+- Actualizar con archivos nuevos de ARCA: ponerlos en `ncm/fuentes_arca/`, `bash ncm/actualizar.sh`, `python3 ncm/build_nomenclador.py` y republicar la página.
+
 ## Web
 - Archivo vigente: `web/sitio/index.html`. Hosting: Cloudflare Worker `royal-mode-b440` (cuenta gusjespindola@gmail.com).
 - Dominio en NIC a nombre de Gustavo, vence 08/04/2027, delegado a Cloudflare el 13/11 (propagando: el 13/11 todavía mostraba el sitio viejo).

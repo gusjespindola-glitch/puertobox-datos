@@ -2,13 +2,14 @@
 /** Herramientas del agente: usan el motor de precios y la base SIM del repo. */
 const path = require('path');
 const { presupuesto } = require('../src/flete_directo');
-const { crear } = require('../ncm/motor_busqueda');
+const { crear } = require('../src/nomenclador');
 
+// Mismos datos que el Nomenclador PuertoBox (web/nomenclador/data), generados desde ARCA.
 let motor = null;
 function getMotor() {
   if (!motor) {
-    motor = crear(require(path.join(__dirname, '..', 'ncm', 'sim_compacto.json')),
-      require(path.join(__dirname, '..', 'ncm', 'sinonimos.json')));
+    const d = (f) => require(path.join(__dirname, '..', 'web', 'nomenclador', 'data', f));
+    motor = crear({ sim: d('sim.json'), sufijos: {}, intervenciones: d('intervenciones.json'), sinonimos: d('sinonimos.json'), notas: {} });
   }
   return motor;
 }
@@ -16,7 +17,7 @@ function getMotor() {
 const definiciones = [
   {
     name: 'buscar_posicion',
-    description: 'Busca posiciones arancelarias SIM (Argentina, datos ARCA) para un producto. Devuelve hasta 5 candidatas con su derecho de importación (DIE %) e impuestos internos.',
+    description: 'Busca posiciones arancelarias SIM (Argentina, datos oficiales ARCA) para un producto. Devuelve hasta 5 candidatas con su derecho de importación (DIE %), impuestos internos e intervenciones posibles (orientativas: si aparece ANMAT, INAL, ANMAT/INAL envases, SENASA, ENACOM o SIDIP y es para revender, derivá a Gustavo).',
     input_schema: { type: 'object', properties: { producto: { type: 'string', description: 'Descripción del producto o posición' } }, required: ['producto'] },
   },
   {
@@ -69,7 +70,8 @@ function ejecutar(nombre, input, ctx) {
     case 'buscar_posicion': {
       const m = getMotor();
       const res = m.buscar(input.producto, 15).filter((f) => !f.c.startsWith('00')).slice(0, 5).map((f) => ({
-        posicion: f.c, die: f.die, impuestos_internos: f.ii, descripcion: m.texto(f).slice(-3).join(' › '),
+        posicion: f.c, die: f.die, impuestos_internos: f.ii, descripcion: m.jerarquia(f).slice(-3).join(' › '),
+        intervenciones_posibles: m.intervencionesDe(f).map((i) => i.organismo),
       }));
       return res.length ? res : { aviso: 'Sin resultados. Probá con otras palabras o derivá a Gustavo.' };
     }

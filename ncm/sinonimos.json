@@ -1,8 +1,8 @@
 {
  "_meta": "Palabras de uso común → términos del arancel. Agregá las tuyas a medida que clasificás.",
- "zapatilla": "calzado deporte tenis",
- "zapatillas": "calzado deporte tenis",
- "sneakers": "calzado deporte",
+ "zapatilla": "calzado suela caucho textil",
+ "zapatillas": "calzado suela caucho textil",
+ "sneakers": "calzado suela caucho textil",
  "remera": "t-shirts camisetas",
  "remeras": "t-shirts camisetas",
  "musculosa": "camisetas",
@@ -60,5 +60,10 @@
  "bicicleta": "bicicletas",
  "casco": "cascos",
  "termo": "termos",
- "botella": "botellas"
+ "botella": "botellas",
+ "juguetes": "juguetes",
+ "peluche": "juguetes peluche",
+ "vaso": "vasos",
+ "mascotas": "animales",
+ "correa perro": "traillas"
 }
