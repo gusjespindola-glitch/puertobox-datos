@@ -1,0 +1,15 @@
+{
+  "_meta": {
+    "aviso": "Ajustes posteriores al Anexo I del Decreto 557/2023 aplicados sobre el AEC para estimar el DIE argentino vigente. El dato oficial por posición está en VUCE (vuce.gob.ar, Central de Información). Verificar siempre antes de despachar.",
+    "actualizado": "2026-11-12"
+  },
+  "reglas": [
+    {"norma": "Decreto 236/2025", "vigencia": "2025-03-31", "capitulos": ["61","62","64"], "si_aec": 35, "die": 20, "nota": "Confecciones y calzado 35% → 20%"},
+    {"norma": "Decreto 236/2025", "vigencia": "2025-03-31", "capitulos": ["50","51","52","53","54","55","58","60"], "si_aec": 26, "die": 18, "nota": "Tejidos 26% → 18%"},
+    {"norma": "Decreto 236/2025", "vigencia": "2025-03-31", "capitulos": ["50","51","52","53","54","55"], "si_aec": 18, "die": 14, "nota": "Hilados 18% → 14% (aprox.; algunos 12-16%)"},
+    {"norma": "Decreto 333/2025", "vigencia": "2026-01-15", "codigos": ["8517.13.00","8517.14.31"], "die": 0, "nota": "Celulares: arancel 0%"}
+  ],
+  "impuestos_internos": [
+    {"norma": "Decreto 333/2025", "prefijos": ["8517.13","8517.14.31","8528","8415"], "alicuota": 0.095, "nota": "Celulares, TV/monitores, aires acondicionados importados: 9,5%"}
+  ]
+}
