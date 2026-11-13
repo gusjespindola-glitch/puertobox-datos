@@ -18,6 +18,10 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - Motor compartido `src/nomenclador.js`: lo usa la página y el bot (`buscar_posicion`). Intervenciones curadas en `ncm/intervenciones.json` (Gustavo valida).
 - Actualizar con archivos nuevos de ARCA: ponerlos en `ncm/fuentes_arca/`, `bash ncm/actualizar.sh`, `python3 ncm/build_nomenclador.py` y republicar la página.
 
+## Actualizaciones normativas
+- Tarea programada **"Novedades aduaneras PuertoBox"**: todos los lunes a las 6:59 (hora argentina). Revisa Boletín Oficial, ARCA y organismos; guarda `docs/novedades/AAAA-MM-DD.md`, abre un PR si hay que cambiar algo y avisa a Gustavo al celular. Aprobación automática de acciones; los PR los mergea Gustavo.
+- Los archivos del Arancel Integrado de ARCA no se pueden bajar desde acá: si hay nuevos, Gustavo los sube y se corre `ncm/build_nomenclador.py`.
+
 ## Web
 - Archivo vigente: `web/sitio/index.html`. Hosting: Cloudflare Worker `royal-mode-b440` (cuenta gusjespindola@gmail.com).
 - Dominio en NIC a nombre de Gustavo, vence 08/04/2027, delegado a Cloudflare el 13/11 (propagando: el 13/11 todavía mostraba el sitio viejo).
