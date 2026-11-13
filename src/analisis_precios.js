@@ -18,7 +18,8 @@ function gananciaEnvio(kg) {
   const p = fd.presupuesto({ kg, valorFactura: 100 });
   const venta = p.flete_puertobox_usd + p.handling_puertobox_usd;
   const costoNormal = fd.fleteCosto(p.kg_declarado_cobrable) * (1 + PASARELA); // la caja pesa lo que dijo el proveedor
-  const costoPeor = fd.fleteCosto(p.kg_presupuestado) * (1 + PASARELA); // la caja llega 15% más pesada (tope del precio firme)
+  const kgPeor = Math.ceil(p.kg_declarado_cobrable * 1.15 * 2) / 2; // la caja llega 15% más pesada (tope del precio cerrado)
+  const costoPeor = fd.fleteCosto(Math.max(kgPeor, p.kg_presupuestado)) * (1 + PASARELA);
   return {
     kg, kg_cotizado: p.kg_presupuestado, venta: r2(venta), por_kg: r2(venta / kg),
     ganancia: r2(venta - costoNormal), ganancia_pct: r2(((venta - costoNormal) / venta) * 100),
