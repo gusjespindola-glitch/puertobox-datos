@@ -159,3 +159,12 @@ test('anuncio de Meta: el chat que entra con el texto del anuncio queda marcado 
   assert.deepStrictEqual(e.anuncio, { chats: 1, cotizados: 1, pagar: 0 });
   assert.match(e.texto, /Del anuncio de Meta: 1 escribieron · 1 con presupuesto/);
 });
+
+test('el 3034 (WhatsApp personal de Gustavo) tampoco cuenta como cliente', () => {
+  const { embudo, esGustavo } = require('../bot/recordatorios');
+  const st = crearStore(null);
+  st.guardarLead('5492213033034', { producto: 'prueba' });
+  st.guardarLead('5491100000099', { producto: 'real' });
+  assert.ok(esGustavo('5492213033034', OWNER));
+  assert.strictEqual(embudo(st, OWNER).consultas, 1);
+});

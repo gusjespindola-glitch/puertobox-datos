@@ -9,7 +9,7 @@
   const digitos = (c) => String(c).replace(/[^0-9]/g, '');
   const r2 = (n) => Math.round(n * 100) / 100;
 
-  function crear({ sim, sufijos = {}, intervenciones = { reglas: [], organismos: {} }, sinonimos = {}, notas = {} }) {
+  function crear({ sim, sufijos = {}, intervenciones = { reglas: [], organismos: {} }, sinonimos = {}, notas = {}, frecuentes = { productos: [] } }) {
     const T = sim.t;
     const TN = T.map(norm);
     const filas = sim.p.map(([c, die, dii, de, re, ri, diem, udiem, ue, ii, ids]) => ({
@@ -18,12 +18,42 @@
     }));
     const porCodigo = new Map(filas.map((f) => [f.c, f]));
 
+    const DESMONTADO = /desmontad|sin montar/;
+    const enPalabras = (texto, frase) => (' ' + texto + ' ').includes(' ' + frase + ' ');
+    /** Productos frecuentes (ncm/productos_frecuentes.json): gana la frase más larga que aparezca en la consulta. */
+    function frecuente(qn) {
+      let mejor = null;
+      for (const p of frecuentes.productos || []) {
+        for (const w of p.palabras) {
+          const wn = norm(w).trim();
+          if (enPalabras(qn, wn) && (!mejor || wn.length > mejor.largo)) mejor = { p, largo: wn.length };
+        }
+      }
+      return mejor && mejor.p;
+    }
+
     function buscar(q, n = 30) {
-      const qn = norm(q).trim();
+      const qn = norm(q).replace(/[^a-z0-9.\s-]/g, ' ').replace(/\s+/g, ' ').trim();
       if (!qn) return [];
       if (/^[\d.\s]+[a-z]?$/.test(qn)) {
         const p = digitos(qn);
         return filas.filter((f) => f.d.startsWith(p)).slice(0, n);
+      }
+      const fr = frecuente(qn);
+      if (fr) {
+        const quiereDesmontado = /desmont/.test(qn);
+        const pref = fr.prefijos.map(digitos);
+        // Dentro de las subpartidas: primero las que nombran algo de lo que pidió el cliente; después "Los demás" (la apertura general).
+        const extra = qn.split(' ').filter((t) => t.length > 3 && !STOP.has(t)).map((t) => t.replace(/(es|s)$/, ''));
+        const nota = (f) => extra.filter((t) => f.txt.includes(t)).length * 6 + (/^l[oa]s demas/.test(f.ult) ? 1 : 0);
+        const cand = filas.filter((f) => pref.some((p) => f.d.startsWith(p)) && (quiereDesmontado || !DESMONTADO.test(f.txt)))
+          .map((f, i) => ({ f, i, k: pref.findIndex((p) => f.d.startsWith(p)), s: nota(f) }))
+          .sort((a, b) => b.s - a.s || a.k - b.k || a.i - b.i);
+        // Una de cada subpartida primero (para que se vean todas las opciones), después el resto.
+        const vistas = new Set(), primero = [], resto = [];
+        for (const x of cand) (vistas.has(x.k) ? resto : (vistas.add(x.k), primero)).push(x);
+        const r = [...primero.sort((a, b) => a.k - b.k), ...resto].map((x) => x.f);
+        if (r.length) return r.slice(0, n).map((f) => ({ ...f, frecuente: fr.nota }));
       }
       let q2 = qn;
       for (const [k, v] of Object.entries(sinonimos)) {
@@ -33,12 +63,17 @@
       const toks = q2.split(/\s+/).filter((t) => t.length > 1 && !STOP.has(t)).map((t) => (t.length > 4 ? t.replace(/(es|s)$/, '') : t));
       if (!toks.length) return [];
       const rx = toks.map((t) => new RegExp('\\b' + t.replace(/[^a-z0-9-]/g, '').replace(/-/g, '.?') + '(es|s|as|os|a|o)?\\b'));
-      const out = [];
+      const quiereDesmontado = /desmont/.test(qn);
+      const todos = [], casi = [];
       for (const f of filas) {
         let s = 0, h = 0;
         for (const w of rx) if (w.test(f.txt)) { h++; s += 2; if (w.test(f.ult)) s += 6; }
-        if (h === rx.length) out.push([s - (f.c.startsWith('00') ? 50 : 0), f]);
+        if (!h) continue;
+        s -= f.c.startsWith('00') ? 50 : 0;
+        if (!quiereDesmontado && DESMONTADO.test(f.txt)) s -= 20; // "presentados desmontados" (DIE 0%) casi nunca es lo que trae el cliente
+        if (h === rx.length) todos.push([s, f]); else if (rx.length > 1 && h === rx.length - 1) casi.push([s, f]);
       }
+      const out = todos.length ? todos : casi; // si ninguna posición tiene todas las palabras, las que tienen todas menos una
       return out.sort((a, b) => b[0] - a[0]).slice(0, n).map((x) => x[1]);
     }
 

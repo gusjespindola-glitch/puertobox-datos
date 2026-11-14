@@ -16,7 +16,7 @@ const RAIZ = path.join(__dirname, '..');
 const dataNom = (f) => JSON.parse(fs.readFileSync(path.join(RAIZ, 'web', 'nomenclador', 'data', f), 'utf8'));
 let motor = null;
 function nom() {
-  if (!motor) motor = crear({ sim: dataNom('sim.json'), intervenciones: dataNom('intervenciones.json'), sinonimos: dataNom('sinonimos.json') });
+  if (!motor) motor = crear({ sim: dataNom('sim.json'), intervenciones: dataNom('intervenciones.json'), sinonimos: dataNom('sinonimos.json'), frecuentes: dataNom('productos_frecuentes.json') });
   return motor;
 }
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

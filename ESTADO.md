@@ -9,7 +9,7 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - Variables en Railway: ANTHROPIC_API_KEY, YCLOUD_API_KEY, BUSINESS_NUMBER, OWNER_NUMBER (5492216982199), ADMIN_KEY, DATA_FILE (/data/data.json), YCLOUD_WEBHOOK_SECRET (firma del webhook; sin ella cualquiera puede mandar mensajes falsos). Opcional: NTFY_TOPIC, PAUSA_HORAS (24 por defecto), GROQ_API_KEY (audios a texto, gratis).
 - IA: Anthropic, Claude Haiku 5.5, USD 5 cargados, **recarga automática apagada**, clave "bot-puertobox" sin vencimiento.
 - YCloud: plan Free, webhook activo a `/webhook` (evento whatsapp.inbound_message.received). El AI Agent de YCloud quedó sin crédito.
-- Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`.
+- Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`. Los números de Gustavo (698 y 3034, `negocio.json` → `numeros_gustavo`) no cuentan como clientes en el resumen ni en pendientes.
 
 
 ## Base única (desde 13/11/2026)
@@ -30,6 +30,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - Copia en claude.ai: https://claude.ai/artifact/AG4uktPhuZmr7FVxfzLnoo (hay que republicarla a mano, puede quedar vieja). Código en `web/nomenclador/`.
 - Buscador por producto o posición; ficha con DIE, DII, TE, IVA, internos, DE, reintegros, DIE mínimo específico, unidad, sufijos de valor, notas de sección y capítulo, intervenciones orientativas; liquidación régimen general / courier / pequeños envíos.
 - Motor compartido `src/nomenclador.js`: lo usa la página y el bot (`buscar_posicion`). Intervenciones curadas en `ncm/intervenciones.json` (Gustavo valida).
+- **Productos frecuentes (14/11):** `ncm/productos_frecuentes.json` (copia en `web/nomenclador/data/`): ~45 productos comunes (zapatillas, ropa, auriculares, memorias, gimnasio, cocina, etc.) → subpartida orientativa y cómo elegir. El buscador los muestra primero y nunca ofrece las aperturas "presentados desmontados" (DIE 0%) salvo que se pidan. **Gustavo: revisar la tabla**; si una está mal, se corrige ahí y cambia en bot, nomenclador y web.
 - Actualizar con archivos nuevos de ARCA: ponerlos en `ncm/fuentes_arca/`, `bash ncm/actualizar.sh`, `python3 ncm/build_nomenclador.py` y republicar la página.
 
 ## Actualizaciones normativas
