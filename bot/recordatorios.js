@@ -126,9 +126,41 @@ function embudo(store, owner, ahora = Date.now()) {
   return { consultas: leads.length, cotizados, pagar, anuncio, texto: `Últimas 24 h: ${leads.length} consultas nuevas · ${cotizados} con presupuesto · ${pagar} quieren pagar.${textoAnuncio}` };
 }
 
+/**
+ * Empujones (seguimiento automático por WhatsApp, 14/11): clientes que dejaron de contestar después de un mensaje del bot.
+ * Uno solo por silencio, entre 4 y 22 h después del último mensaje del cliente (dentro de las 24 h gratis de WhatsApp),
+ * de 9 a 21 h. No a los números de Gustavo, ni a chats pausados o derivados que esperan a Gustavo, ni a Instagram.
+ */
+const EMPUJON_DESDE_H = 4, EMPUJON_HASTA_H = 22;
+function paraEmpujar(store, owner, ahora = Date.now()) {
+  const { hora } = horaAR(ahora);
+  if (hora < 9 || hora >= 21) return [];
+  const out = [];
+  for (const c of store.chats()) {
+    if (!c.telefono || String(c.telefono).startsWith('ig:') || esGustavo(c.telefono, owner)) continue;
+    const ult = c.ultimoClienteEn || 0;
+    const pasaron = (ahora - ult) / H;
+    if (!ult || pasaron < EMPUJON_DESDE_H || pasaron > EMPUJON_HASTA_H) continue;
+    if ((c.pausadoHasta || 0) > ahora) continue;
+    if ((c.empujonEn || 0) > ult) continue;
+    const msgs = c.mensajes || [];
+    if (!msgs.length || msgs[msgs.length - 1].role !== 'assistant') continue;
+    const lead = store.lead ? store.lead(c.telefono) : null;
+    if (lead && ['listo_para_cerrar', 'derivado'].includes(lead.estado)) continue;
+    out.push({ telefono: c.telefono, horas: Math.round(pasaron), cotizado: lead?.estado === 'cotizado' });
+  }
+  return out;
+}
+
 /** Corre cada 15 minutos: avisos de clientes esperando y resumen diario. */
-async function revisar({ store, owner, avisar, ahora = Date.now() }) {
+async function revisar({ store, owner, avisar, empujar, ahora = Date.now() }) {
   const enviados = [];
+  if (empujar) {
+    for (const p of paraEmpujar(store, owner, ahora)) {
+      store.marcar(p.telefono, { empujonEn: ahora }); // primero se marca: si falla el envío, no se reintenta en loop
+      try { if (await empujar(p)) enviados.push('empujon:' + p.telefono); } catch (e) { console.error('Empujón:', e.message); }
+    }
+  }
   if (!silencio(ahora)) {
     const { esperando } = pendientes(store, owner, ahora);
     for (const p of esperando) {
@@ -165,13 +197,13 @@ async function revisar({ store, owner, avisar, ahora = Date.now() }) {
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /** Página para el celular: lista de pendientes con un botón "Ya lo atendí" por cliente. */
-function paginaPendientes(store, owner, linkAtendido, ahora = Date.now()) {
+function paginaPendientes(store, owner, linkAtendido, ahora = Date.now(), linkBot = null) {
   const { esperando, seguimiento, dudas } = pendientes(store, owner, ahora);
-  const fila = (p, conBoton) => `<li><div><b>${p.importante ? '⭐ ' : ''}${esc(describir(p.c, p.lead, ahora))}</b><br><small>${esc(NOMBRE_MOTIVO[p.c.derivadoMotivo] || '')}${p.c.derivadoMotivo ? ' · ' : ''}${esc(hace(ahora - p.desde))}</small>${p.c.derivadoResumen ? `<p>${esc(String(p.c.derivadoResumen).slice(0, 300))}</p>` : ''}</div>${conBoton ? `<form method="post" action="${esc(linkAtendido(p.c.telefono))}"><button>Ya lo atendí</button></form>` : ''}</li>`;
+  const fila = (p, conBoton) => `<li><div><b>${p.importante ? '⭐ ' : ''}${esc(describir(p.c, p.lead, ahora))}</b><br><small>${esc(NOMBRE_MOTIVO[p.c.derivadoMotivo] || '')}${p.c.derivadoMotivo ? ' · ' : ''}${esc(hace(ahora - p.desde))}</small>${p.c.derivadoResumen ? `<p>${esc(String(p.c.derivadoResumen).slice(0, 300))}</p>` : ''}</div>${conBoton ? `<form method="post" action="${esc(linkAtendido(p.c.telefono))}"><button>Ya lo atendí</button></form>` : ''}${conBoton && linkBot && (p.c.pausadoHasta || 0) > ahora ? `<form method="post" action="${esc(linkBot(p.c.telefono))}"><button class="bot">Que lo siga el bot</button></form>` : ''}</li>`;
   const bloque = (titulo, lista, conBoton) => lista.length ? `<h2>${titulo} (${lista.length})</h2><ul>${lista.map((p) => fila(p, conBoton)).join('')}</ul>` : '';
   const cuerpo = bloque('Esperan tu respuesta', esperando, true) + bloque('Dudas para confirmar', dudas, true) + bloque('Presupuesto enviado, no volvieron a escribir', seguimiento, true);
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Pendientes PuertoBox</title>
-<style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f5f5f5;color:#111}h1{font-size:20px}h2{font-size:16px;margin-top:24px}ul{list-style:none;padding:0}li{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px}p{margin:6px 0 0;font-size:14px;color:#444}small{color:#666}button{width:100%;padding:12px;font-size:16px;border:0;border-radius:10px;background:#1a7f37;color:#fff}.wa{display:inline-block;margin-top:8px;font-size:14px}</style></head>
+<style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f5f5f5;color:#111}h1{font-size:20px}h2{font-size:16px;margin-top:24px}ul{list-style:none;padding:0}li{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px}p{margin:6px 0 0;font-size:14px;color:#444}small{color:#666}button{width:100%;padding:12px;font-size:16px;border:0;border-radius:10px;background:#1a7f37;color:#fff}button.bot{background:#1a5fb4}.wa{display:inline-block;margin-top:8px;font-size:14px}</style></head>
 <body><h1>Pendientes PuertoBox</h1>${cuerpo || '<p>No tenés clientes pendientes. Todo al día.</p>'}</body></html>`;
 }
 
@@ -207,4 +239,4 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3) {
 ${chats.length ? `<ul>${chats.map(tarjeta).join('')}</ul>` : '<p>Ningún cliente le escribió al bot en estos días.</p>'}</body></html>`;
 }
 
-module.exports = { esGustavo, pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes, paginaCharlas, embudo };
+module.exports = { paraEmpujar, esGustavo, pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes, paginaCharlas, embudo };
