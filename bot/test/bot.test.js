@@ -221,3 +221,28 @@ test('saca muletillas del arranque', () => {
   assert.strictEqual(limpiar('Dale'), 'Dale');
   assert.strictEqual(limpiar('Joya. ¿sabés cuánto pesa?'), '¿Sabés cuánto pesa?');
 });
+
+test('Instagram: responde por Instagram, ignora su propio eco y se pausa si responde Gustavo', async () => {
+  const { procesar: proc } = require('../server');
+  const { crearStore } = require('../store');
+  const st = crearStore(null);
+  process.env.IG_TOKEN = 'tok';
+  const llamadas = [];
+  const fetchImpl = async (url, opt) => {
+    llamadas.push({ url, body: opt && opt.body });
+    if (String(url).includes('anthropic')) return { ok: true, json: async () => ({ content: [{ type: 'text', text: 'Hola, gracias por escribir a PuertoBox. ¿Qué producto querés traer?' }], stop_reason: 'end_turn' }) };
+    return { ok: true, json: async () => ({ message_id: 'mid.bot1' }), text: async () => '' };
+  };
+  const ig = (m) => ({ object: 'instagram', entry: [{ id: 'pb', messaging: [m] }] });
+  process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || 'x';
+  await proc(ig({ sender: { id: '777' }, recipient: { id: 'pb' }, message: { mid: 'm1', text: 'Hola' } }), { fetchImpl, store: st, debounceMs: 0 });
+  const envio = llamadas.find((l) => String(l.url).includes('graph.instagram.com'));
+  assert.ok(envio, 'mandó por Instagram');
+  assert.strictEqual(JSON.parse(envio.body).recipient.id, '777');
+  // eco del propio bot: no pausa
+  await proc(ig({ sender: { id: 'pb' }, recipient: { id: '777' }, message: { mid: 'mid.bot1', text: 'x', is_echo: true } }), { fetchImpl, store: st, debounceMs: 0 });
+  assert.strictEqual(st.estaPausado('ig:777'), false);
+  // Gustavo responde desde la app: pausa
+  await proc(ig({ sender: { id: 'pb' }, recipient: { id: '777' }, message: { mid: 'm2', text: 'Hola, soy Gustavo', is_echo: true } }), { fetchImpl, store: st, debounceMs: 0 });
+  assert.strictEqual(st.estaPausado('ig:777'), true);
+});

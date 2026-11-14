@@ -53,7 +53,7 @@ ul.res{list-style:none;padding:0}ul.res li{padding:12px 0;border-bottom:1px soli
 </style></head><body>
 <header><a class="logo" href="/">PUERTO<em>BOX</em></a><a href="/buscador">Buscador de posiciones</a></header>
 <main>${cuerpo}
-<p class="muted" style="margin-top:40px">${esc(d.marca)} · ${esc(d.despachante)}, despachante de aduana matriculado ante ARCA · ${esc(d.ciudad)} · <a href="/">Inicio</a></p>
+<p class="muted" style="margin-top:40px">${esc(d.marca)} · ${esc(d.despachante)}, despachante de aduana matriculado ante ARCA · ${esc(d.ciudad)} · <a href="/">Inicio</a> · <a href="/privacidad">Privacidad</a></p>
 </main></body></html>`;
 }
 
@@ -169,10 +169,24 @@ ${aviso()}`,
   });
 }
 
+function privacidad() {
+  const d = negocio.datos();
+  return layout({
+    titulo: 'Política de privacidad | PuertoBox',
+    descripcion: 'Cómo PuertoBox usa los datos que nos dejás al cotizar por WhatsApp o Instagram.',
+    canonico: '/privacidad',
+    cuerpo: `<h1>Política de privacidad</h1>
+<p>${esc(d.marca)} (${esc(d.despachante)}, despachante de aduana matriculado ante ARCA, ${esc(d.ciudad)}) usa los datos que nos mandás por WhatsApp, Instagram o esta web solo para cotizar y gestionar tu envío: nombre, teléfono o usuario, producto, peso, medidas y valor de la compra.</p>
+<p>Las respuestas automáticas las arma un asistente con inteligencia artificial que procesa tus mensajes para responderte. No vendemos ni compartimos tus datos con terceros, salvo lo necesario para hacer el envío (courier y Aduana).</p>
+<p>Podés pedir que borremos tus datos o tu conversación cuando quieras escribiendo a <a href="mailto:${esc(d.email)}">${esc(d.email)}</a> o por los mismos chats. Lo hacemos dentro de los 10 días.</p>
+<p class="muted">Última actualización: 13/11/2026.</p>`,
+  });
+}
+
 function sitemap() {
   const d = negocio.datos();
   const base = `https://${d.dominio}`;
-  const urls = ['/', '/buscador', ...palabras().map((p) => `/importar/${slug(p)}`), ...[...new Set(filasValidas().map((f) => ncmDe(f.c)))].map((n) => `/ncm/${n}`)];
+  const urls = ['/', '/buscador', '/privacidad', ...palabras().map((p) => `/importar/${slug(p)}`), ...[...new Set(filasValidas().map((f) => ncmDe(f.c)))].map((n) => `/ncm/${n}`)];
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `<url><loc>${base}${u}</loc></url>`).join('\n')}\n</urlset>\n`;
 }
 
@@ -188,9 +202,10 @@ function servir(pathname, searchParams) {
   if (pathname === '/buscador') return html(buscador(searchParams.get('q')));
   if (pathname.startsWith('/ncm/')) return html(paginaNcm(decodeURIComponent(pathname.slice(5))));
   if (pathname.startsWith('/importar/')) return html(paginaProducto(decodeURIComponent(pathname.slice(10))));
+  if (pathname === '/privacidad') return html(privacidad());
   if (pathname === '/sitemap.xml') return { tipo: 'application/xml; charset=utf-8', cuerpo: sitemap() };
   if (pathname === '/robots.txt') return { tipo: 'text/plain; charset=utf-8', cuerpo: robots() };
   return null;
 }
 
-module.exports = { servir, home, buscador, paginaNcm, paginaProducto, sitemap, robots, slug, palabras };
+module.exports = { servir, home, buscador, privacidad, paginaNcm, paginaProducto, sitemap, robots, slug, palabras };
