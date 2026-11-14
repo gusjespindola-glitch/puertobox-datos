@@ -230,3 +230,12 @@ test('anuncio clic a WhatsApp: el mensaje con datos del anuncio (referral) marca
   assert.strictEqual(c.origen, 'anuncio');
   assert.strictEqual(c.anuncioId, '120252806');
 });
+
+test('los códigos de verificación de Meta (+44 7974 905090) no se contestan ni se derivan', async () => {
+  const st = crearStore(null);
+  const llamadas = [];
+  const fetchImpl = async (u) => { llamadas.push(String(u)); return { ok: true, json: async () => ({}), text: async () => '' }; };
+  await procesar({ type: 'whatsapp.inbound_message.received', whatsappInboundMessage: { id: 'meta1', from: '+447974905090', type: 'unsupported' } }, { store: st, fetchImpl, debounceMs: 0 });
+  assert.strictEqual(llamadas.length, 0);
+  assert.ok(!st.chats().some((c) => c.telefono === '447974905090' && (c.mensajes || []).length));
+});
