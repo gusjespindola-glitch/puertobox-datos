@@ -45,7 +45,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - Dominio en NIC a nombre de Gustavo, vence 08/04/2027, DNS en Cloudflare.
 
 ## Pendientes (en orden)
--3. **Publicidad (14/11):** estudio y anuncios clic a WhatsApp listos (versión 2 nativa: chat real, nota, cara del despachante; falta la foto de Gustavo) (`docs/marketing/estudio-publicidad-2026-11-14.md`, canvas https://claude.ai/artifact/8DFdRGBu67k8Po2SphdzyP). Falta: exportar PNG, cargar en Meta Ads y definir presupuesto.
+-3. **Publicidad (14/11):** estudio y anuncios clic a WhatsApp listos (versión 2 nativa: chat real, nota, foto real de la balanza; falta pedirle la foto a Howard) (`docs/marketing/estudio-publicidad-2026-11-14.md`, canvas https://claude.ai/artifact/8DFdRGBu67k8Po2SphdzyP). Falta: exportar PNG, cargar en Meta Ads y definir presupuesto.
 -2. **Revisión 2 (14/11, `docs/auditoria/2026-11-14-revision-2.md`):** ver en YCloud › Billing si Meta cobra las respuestas del bot (posible USD 0,026 por mensaje desde 1/10/2026) y el saldo de YCloud. Si la portada se ve vieja, purgar caché en Cloudflare.
 -1. ✅ **Auditoría completa 14/11** (`docs/auditoria/2026-11-14-completa.md`): arreglos mergeados y `YCLOUD_WEBHOOK_SECRET` cargado en Railway (14/11 7:52, probado: el bot responde). Falta: correr `/pruebas` y la decisión de impuestos en envíos chicos (preguntar a Howard).
 0. ✅ Clave de Anthropic rotada el 13/11 (bot-puertobox-2, sin vencimiento).
