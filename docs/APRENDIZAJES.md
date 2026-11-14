@@ -76,3 +76,4 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - 14/11/2026 (Gustavo): audios sí, si es gratis. Se hizo con Groq (Whisper, plan gratis sin tarjeta).
 - 14/11/2026 (Gustavo): quiere un asistente que le recuerde clientes sin atender, los importantes y los olvidados. Y un solo aviso por cosa: no WhatsApp + ntfy a la vez (era mucho). Se hizo: todo por ntfy, recordatorios con importantes primero, resumen a las 9, silencio de 22 a 8, comandos #pendientes y #listo.
 - 14/11/2026 (Gustavo): no se acuerda de comandos; todo tiene que ser intuitivo. Se reemplazaron por botones en la notificación de ntfy («Ya lo atendí», «Ver pendientes»). No darle comandos para memorizar.
+- 14/11/2026 (Gustavo): el asistente en lenguaje natural para su número ("Jarvis") quedó sin efecto. Alcanza con los avisos de ntfy y sus botones.
