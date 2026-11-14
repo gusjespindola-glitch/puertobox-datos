@@ -220,3 +220,13 @@ test('empujón: la IA recibe la charla y escribe un mensaje que queda en el hist
   assert.match(cuerpo.messages.at(-1).content, /Sistema, no lo escribió el cliente/);
   assert.strictEqual(st.historial('5491100000071').at(-1).content, txt);
 });
+
+test('anuncio clic a WhatsApp: el mensaje con datos del anuncio (referral) marca el chat como del anuncio', async () => {
+  const st = crearStore(null);
+  st.pausar('5491100000079', 'manual');
+  const fetchImpl = async () => ({ ok: true, json: async () => ({}), text: async () => '' });
+  await procesar({ type: 'whatsapp.inbound_message.received', whatsappInboundMessage: { id: 'ref1', from: '+5491100000079', type: 'text', text: { body: 'Hola' }, referral: { sourceId: '120252806', sourceType: 'ad' } } }, { store: st, fetchImpl, debounceMs: 0 });
+  const c = st.chats().find((x) => x.telefono === '5491100000079');
+  assert.strictEqual(c.origen, 'anuncio');
+  assert.strictEqual(c.anuncioId, '120252806');
+});

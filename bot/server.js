@@ -76,7 +76,7 @@ function normalizar(payload) {
   const ev = [];
   if (payload.type === 'whatsapp.inbound_message.received' && payload.whatsappInboundMessage) {
     const m = payload.whatsappInboundMessage;
-    ev.push({ tipo: 'mensaje', id: m.wamid || m.id, from: soloDigitos(m.from), type: m.type, text: m.text, image: m.image, audio: m.audio || m.voice });
+    ev.push({ tipo: 'mensaje', id: m.wamid || m.id, from: soloDigitos(m.from), type: m.type, text: m.text, image: m.image, audio: m.audio || m.voice, referral: m.referral || (m.context && m.context.referral) || null });
   }
   if ((payload.type === 'whatsapp.echo_message.created') && payload.whatsappMessage) {
     const m = payload.whatsappMessage;
@@ -238,7 +238,10 @@ async function procesar(payload, deps = {}) {
       continue;
     }
     // ¿Vino del anuncio de Meta? El link del anuncio trae un texto precargado propio (negocio.json → mensaje_anuncio).
-    if (e.type === 'text' && st.marcar && esMensajeAnuncio(e.text.body)) st.marcar(tel, { origen: 'anuncio', origenEn: Date.now() });
+    if (st.marcar && (e.referral || (e.type === 'text' && esMensajeAnuncio(e.text.body)))) {
+      // Anuncio clic a WhatsApp: WhatsApp manda los datos del anuncio (referral) en el primer mensaje.
+      st.marcar(tel, { origen: 'anuncio', origenEn: Date.now(), ...(e.referral ? { anuncioId: e.referral.sourceId || e.referral.source_id || null } : {}) });
+    }
     const transcripto = e.transcripto !== undefined ? e.transcripto : (e.audio ? await transcribirAudio(e.audio, fetchImpl) : null); // no transcribir dos veces
     const texto = e.type === 'text' ? e.text.body
       : transcripto ? `[Audio del cliente, pasado a texto automáticamente] ${transcripto}`
