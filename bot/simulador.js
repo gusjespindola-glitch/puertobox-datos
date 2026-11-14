@@ -43,6 +43,7 @@ const ESCENARIOS = [
   { nombre: 'Envío dentro de China', msgs: ['quien paga el envio de la fabrica hasta el deposito?'], espera: { sinPresupuesto: true, contiene: /proveedor/i } },
   { nombre: 'Audio pasado a texto', msgs: ['[Audio del cliente, pasado a texto automáticamente] hola buen día quería saber cuánto me sale traer unas mochilas sin marca para vender, son como 400 dólares y pesan 8 kilos'], espera: { presupuesto: true, noContiene: /no (puedo )?escuch/i } },
   { nombre: 'Marca desconocida para vender (INPI)', msgs: ['cargadores marca Baseus para vender, 300 dolares, 5 kilos, una caja'], espera: { presupuesto: true, deriva: true } },
+  { nombre: 'Fundas para vender (respuesta clara)', msgs: ['quiero traer fundas de celular para vender'], espera: { contiene: /\bs[ií]\b|traemos/i } },
   { nombre: 'Repuestos de auto', msgs: ['repuestos de auto genericos para vender, 800 dolares, 20 kilos, 2 cajas'], espera: { presupuesto: true } },
 ];
 
@@ -69,6 +70,8 @@ function revisar(resp, ctx) {
   if (/Presupuesto PuertoBox/.test(t) && !/\*Presupuesto PuertoBox\*/.test(t)) prob.push('presupuesto sin formato');
   if (esPresupuesto && !/Total a PuertoBox/i.test(t)) prob.push('presupuesto sin "Total a PuertoBox"');
   if (esPresupuesto && /total estimado/i.test(t)) prob.push('mezcla PuertoBox e impuestos en un solo total');
+  if (/se pueden? evaluar|lo evaluamos|lo analizamos|tenemos contemplad|en principio/i.test(t)) prob.push('frase vacía ("se puede evaluar", "contemplado"...)');
+  if (/[?!]\.(\s|$)/.test(t)) prob.push('puntuación rara ("?.")');
   if (/Gustavo/.test(t)) prob.push('nombra a Gustavo (tiene que decir "nuestro despachante")');
   if (/(pag[aá]s|paga|pagan)[^.]{0,20}al courier/i.test(t)) prob.push('dice que se paga al courier (tiene que decir "la empresa de transporte")');
   if (/soy (una )?persona|soy humano/i.test(t)) prob.push('dice que es humano');
