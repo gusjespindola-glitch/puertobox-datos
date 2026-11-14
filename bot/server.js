@@ -76,7 +76,7 @@ function normalizar(payload) {
   const ev = [];
   if (payload.type === 'whatsapp.inbound_message.received' && payload.whatsappInboundMessage) {
     const m = payload.whatsappInboundMessage;
-    ev.push({ tipo: 'mensaje', id: m.wamid || m.id, from: soloDigitos(m.from), type: m.type, text: m.text, image: m.image });
+    ev.push({ tipo: 'mensaje', id: m.wamid || m.id, from: soloDigitos(m.from), type: m.type, text: m.text, image: m.image, audio: m.audio || m.voice });
   }
   if ((payload.type === 'whatsapp.echo_message.created') && payload.whatsappMessage) {
     const m = payload.whatsappMessage;
@@ -94,7 +94,7 @@ function normalizar(payload) {
           continue;
         }
         if (msg.text) ev.push({ tipo: 'mensaje', id: msg.mid, from: `ig:${m.sender.id}`, type: 'text', text: { body: msg.text } });
-        else ev.push({ tipo: 'mensaje', id: msg.mid, from: `ig:${m.sender.id}`, type: (msg.attachments?.[0]?.type) || 'adjunto', text: null });
+        else ev.push({ tipo: 'mensaje', id: msg.mid, from: `ig:${m.sender.id}`, type: (msg.attachments?.[0]?.type) || 'adjunto', text: null, audio: msg.attachments?.[0]?.type === 'audio' ? { link: msg.attachments[0].payload?.url } : undefined });
       }
     }
     return ev;
@@ -107,6 +107,31 @@ function normalizar(payload) {
     }
   }
   return ev;
+}
+
+/**
+ * Audios: se pasan a texto con Whisper en Groq (plan gratis, sin tarjeta). Necesita GROQ_API_KEY en Railway.
+ * Sin clave, o si algo falla, devuelve null y el bot le pide al cliente que lo escriba (como antes).
+ */
+async function transcribirAudio(audio, fetchImpl = fetch) {
+  const clave = process.env.GROQ_API_KEY;
+  if (!clave || !audio || !audio.link) return null;
+  try {
+    const headers = /api\.ycloud\.com/.test(audio.link) ? { 'X-API-Key': process.env.YCLOUD_API_KEY || YCLOUD_API_KEY } : {};
+    const r = await fetchImpl(audio.link, { headers });
+    if (!r.ok) { console.error('Audio: no se pudo descargar', r.status); return null; }
+    const datos = await r.arrayBuffer();
+    if (!datos.byteLength || datos.byteLength > 24e6) return null; // tope del plan gratis: 25 MB
+    const form = new FormData();
+    form.append('file', new Blob([datos], { type: audio.mime_type || 'audio/ogg' }), 'audio.ogg');
+    form.append('model', 'whisper-large-v3-turbo');
+    form.append('language', 'es');
+    form.append('response_format', 'json');
+    const t = await fetchImpl('https://api.groq.com/openai/v1/audio/transcriptions', { method: 'POST', headers: { authorization: `Bearer ${clave}` }, body: form });
+    if (!t.ok) { console.error('Audio: Groq respondió', t.status, await t.text()); return null; }
+    const texto = String((await t.json()).text || '').trim();
+    return texto || null;
+  } catch (err) { console.error('Audio:', err.message); return null; }
 }
 
 /** Aviso a Gustavo: WhatsApp (solo llega si le escribió al bot en las últimas 24 h) + notificación push por ntfy (siempre llega). */
@@ -152,7 +177,9 @@ async function procesar(payload, deps = {}) {
       await enviar(owner, r, fetchImpl); salidas.push({ to: owner, body: r });
       continue;
     }
+    const transcripto = e.audio ? await transcribirAudio(e.audio, fetchImpl) : null;
     const texto = e.type === 'text' ? e.text.body
+      : transcripto ? `[Audio del cliente, pasado a texto automáticamente] ${transcripto}`
       : `[El cliente mandó un ${e.type}${e.image?.caption ? `: ${e.image.caption}` : ''}. Pedile que lo describa por texto o derivá si hace falta.]`;
     if (st.estaPausado(tel)) {
       st.agregar(tel, 'user', texto);
@@ -321,4 +348,4 @@ if (require.main === module) {
   servidor().listen(PORT, () => console.log(`Bot escuchando en :${PORT}`));
   if (process.env.IG_TOKEN) { renovarTokenIG(); setInterval(renovarTokenIG, 24 * 3600e3).unref(); }
 }
-module.exports = { procesar, servidor, normalizar, firmaYCloudOk };
+module.exports = { procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio };

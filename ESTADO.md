@@ -6,7 +6,7 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - Línea del bot: **+54 9 221 682-6773**. WhatsApp Business de siempre: 221 698-2199 (aparte, es el número de Gustavo para avisos).
 - Código: `bot/` (prompt en `bot/prompt.md`, herramientas en `bot/tools.js`, precios en `src/flete_directo.js` + `data/precios_venta.json → flete_directo`).
 - Corre en **Railway**: proyecto "sublime-amazement", servicio `puertobox-datos`, dominio `puertobox-datos-production.up.railway.app`, volumen en `/data`. Despliega solo cada vez que se aprueba un PR en `main`.
-- Variables en Railway: ANTHROPIC_API_KEY, YCLOUD_API_KEY, BUSINESS_NUMBER, OWNER_NUMBER (5492216982199), ADMIN_KEY, DATA_FILE (/data/data.json), YCLOUD_WEBHOOK_SECRET (firma del webhook; sin ella cualquiera puede mandar mensajes falsos). Opcional: NTFY_TOPIC, PAUSA_HORAS (24 por defecto).
+- Variables en Railway: ANTHROPIC_API_KEY, YCLOUD_API_KEY, BUSINESS_NUMBER, OWNER_NUMBER (5492216982199), ADMIN_KEY, DATA_FILE (/data/data.json), YCLOUD_WEBHOOK_SECRET (firma del webhook; sin ella cualquiera puede mandar mensajes falsos). Opcional: NTFY_TOPIC, PAUSA_HORAS (24 por defecto), GROQ_API_KEY (audios a texto, gratis).
 - IA: Anthropic, Claude Haiku 5.5, USD 5 cargados, **recarga automática apagada**, clave "bot-puertobox" sin vencimiento.
 - YCloud: plan Free, webhook activo a `/webhook` (evento whatsapp.inbound_message.received). El AI Agent de YCloud quedó sin crédito.
 - Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`.
@@ -54,7 +54,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 6. ✅ Delegación a Cloudflare activa (13/11). Falta revisar que el mail info@ funcione (registros MX en Cloudflare).
 7. Cargar el mensaje de bienvenida o ausencia en el 698 (`ycloud-agent/whatsapp_698_bienvenida.txt`) y el link del bot en las bios.
 8. Preguntar a Howard: gasto administrativo de DHL, recargo por zona alejada, días de tránsito, si sigue FedEx a 11 USD/kg desde 20 kg.
-10. (Más adelante, decisión de Gustavo 14/11) **Audios de WhatsApp**: que el bot los entienda pasándolos a texto con Whisper en Groq. Plan gratis sin tarjeta (2.000 pedidos por día). Requiere que Gustavo cree una cuenta en console.groq.com y cargue `GROQ_API_KEY` en Railway; el código es chico (descargar el audio de YCloud con X-API-Key y mandarlo a /audio/transcriptions). Hoy el bot le pide al cliente que lo escriba.
+10. **Audios de WhatsApp (código listo 14/11)**: el bot pasa los audios a texto con Whisper en Groq (plan gratis, sin tarjeta, 2.000 por día). Falta que Gustavo cree la cuenta en console.groq.com y cargue `GROQ_API_KEY` en Railway. Sin la clave, el bot sigue pidiendo que lo escriban.
 9. Limpieza del repo: `ycloud-agent/` y el README viejo (modelo consolidado / modelo fijo) ya no se usan; archivos web viejos; `ncm/fuentes_arca/nom.txt` duplicado.
 
 ## Instagram (en curso, 13/11/2026)
