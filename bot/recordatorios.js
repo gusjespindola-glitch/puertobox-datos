@@ -105,7 +105,16 @@ function embudo(store, owner, ahora = Date.now()) {
   const leads = (store.leads ? store.leads() : []).filter((l) => l.telefono !== owner && Date.parse(l.creado || 0) >= desde);
   const cotizados = leads.filter((l) => ['cotizado', 'listo_para_cerrar'].includes(l.estado) || l.precio_usd).length;
   const pagar = leads.filter((l) => l.estado === 'listo_para_cerrar').length;
-  return { consultas: leads.length, cotizados, pagar, texto: `Últimas 24 h: ${leads.length} consultas nuevas · ${cotizados} con presupuesto · ${pagar} quieren pagar.` };
+  // Del anuncio de Meta: chats que entraron por el link del anuncio (aunque el bot todavía no haya guardado datos).
+  const chatsAnuncio = (store.chats ? store.chats() : []).filter((c) => c.origen === 'anuncio' && c.telefono !== owner && (c.origenEn || 0) >= desde);
+  const leadAnuncio = (tel) => (store.lead ? store.lead(tel) : null) || {};
+  const anuncio = {
+    chats: chatsAnuncio.length,
+    cotizados: chatsAnuncio.filter((c) => { const l = leadAnuncio(c.telefono); return ['cotizado', 'listo_para_cerrar'].includes(l.estado) || l.precio_usd; }).length,
+    pagar: chatsAnuncio.filter((c) => leadAnuncio(c.telefono).estado === 'listo_para_cerrar').length,
+  };
+  const textoAnuncio = anuncio.chats ? `\nDel anuncio de Meta: ${anuncio.chats} escribieron · ${anuncio.cotizados} con presupuesto · ${anuncio.pagar} quieren pagar.` : '';
+  return { consultas: leads.length, cotizados, pagar, anuncio, texto: `Últimas 24 h: ${leads.length} consultas nuevas · ${cotizados} con presupuesto · ${pagar} quieren pagar.${textoAnuncio}` };
 }
 
 /** Corre cada 15 minutos: avisos de clientes esperando y resumen diario. */
@@ -136,7 +145,7 @@ async function revisar({ store, owner, avisar, ahora = Date.now() }) {
     store.meta('resumenDia', fecha);
     const pend = textoPendientes(store, owner, ahora);
     const e = embudo(store, owner, ahora);
-    if (pend !== 'No tenés clientes pendientes. Todo al día.' || e.consultas) {
+    if (pend !== 'No tenés clientes pendientes. Todo al día.' || e.consultas || e.anuncio.chats) {
       await avisar(`${e.texto}\n\n${pend}`, 'PuertoBox: resumen del dia', 'default');
       enviados.push('resumen');
     }

@@ -195,6 +195,12 @@ const pendientes = new Map(); // tel -> { textos: [], timer }
 const colas = new Map(); // tel -> Promise
 const avisoSaldo = { ultimo: 0 };
 
+const normalizarTexto = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+function esMensajeAnuncio(texto) {
+  const m = require('../src/negocio').datos().mensaje_anuncio;
+  return !!m && normalizarTexto(texto).startsWith(normalizarTexto(m));
+}
+
 async function procesar(payload, deps = {}) {
   const fetchImpl = deps.fetchImpl || fetch;
   const st = deps.store || store;
@@ -230,6 +236,8 @@ async function procesar(payload, deps = {}) {
       await enviar(owner, r, fetchImpl); salidas.push({ to: owner, body: r });
       continue;
     }
+    // ¿Vino del anuncio de Meta? El link del anuncio trae un texto precargado propio (negocio.json → mensaje_anuncio).
+    if (e.type === 'text' && st.marcar && esMensajeAnuncio(e.text.body)) st.marcar(tel, { origen: 'anuncio', origenEn: Date.now() });
     const transcripto = e.transcripto !== undefined ? e.transcripto : (e.audio ? await transcribirAudio(e.audio, fetchImpl) : null); // no transcribir dos veces
     const texto = e.type === 'text' ? e.text.body
       : transcripto ? `[Audio del cliente, pasado a texto automáticamente] ${transcripto}`
@@ -397,8 +405,9 @@ function servidor() {
     }
     if (req.method === 'GET' && url.pathname === '/leads' && ADMIN_KEY && url.searchParams.get('key') === ADMIN_KEY) {
       const leads = store.leads();
-      const cols = ['telefono', 'nombre', 'producto', 'posicion', 'kg', 'valor_usd', 'precio_usd', 'tipo', 'estado', 'notas', 'actualizado'];
-      const csv = [cols.join(','), ...leads.map((l) => cols.map((c) => JSON.stringify(l[c] ?? '')).join(','))].join('\n');
+      const origenes = Object.fromEntries(store.chats().map((c) => [c.telefono, c.origen || '']));
+      const cols = ['telefono', 'origen', 'nombre', 'producto', 'posicion', 'kg', 'valor_usd', 'precio_usd', 'tipo', 'estado', 'notas', 'actualizado'];
+      const csv = [cols.join(','), ...leads.map((l) => cols.map((c) => JSON.stringify((c === 'origen' ? origenes[l.telefono] : l[c]) ?? '')).join(','))].join('\n');
       res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8' }); return res.end(csv);
     }
     if (req.method === 'GET' && url.pathname === '/pruebas' && ADMIN_KEY && url.searchParams.get('key') === (process.env.ADMIN_KEY || ADMIN_KEY)) {
