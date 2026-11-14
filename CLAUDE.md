@@ -14,4 +14,4 @@ Después de cada cambio o cada cosa nueva que aprendas:
 Reglas fijas:
 - Gustavo habla en castellano rioplatense informal. Un paso por vez, simple y directo.
 - Nunca subas claves ni datos de clientes al repo.
-- Los cambios al bot se suben como PR. Gustavo los aprueba con "Merge" y Railway despliega solo.
+- Los cambios se suben como PR y **el merge lo hace Claude** (decisión de Gustavo, 14/11/2026): no pedirle que apriete Merge. Antes de mergear: tests en verde y todos los commits subidos. Railway despliega solo.
