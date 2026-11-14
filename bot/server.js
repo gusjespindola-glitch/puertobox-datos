@@ -243,6 +243,13 @@ async function procesar(payload, deps = {}) {
     const texto = e.type === 'text' ? e.text.body
       : transcripto ? `[Audio del cliente, pasado a texto automáticamente] ${transcripto}`
       : `[El cliente mandó un ${e.type}${e.image?.caption ? `: ${e.image.caption}` : ''}. Pedile que lo describa por texto o derivá si hace falta.]`;
+    // BAJA: el que no quiere más mensajes de la difusión. Se lo saca y no se le vuelve a escribir.
+    if (e.type === 'text' && require('./difusion').esBaja(e.text.body)) {
+      require('./difusion').darDeBaja(st, tel);
+      const r = 'Listo, no te vamos a enviar más mensajes. Si algún día querés cotizar un envío desde China, escribinos por acá.';
+      await enviar(tel, r, fetchImpl); salidas.push({ to: tel, body: r });
+      continue;
+    }
     if (st.estaPausado(tel)) {
       st.agregar(tel, 'user', texto);
       // Chat derivado a Gustavo: nunca clavar el visto. Aviso de espera, como mucho uno cada 3 horas.
@@ -416,6 +423,28 @@ function servidor() {
       const html = require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`, Date.now(), (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&volver=${t}`);
       return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`));
     }
+    if (url.pathname === '/difusion') {
+      // Mensaje a clientes anteriores del 698 (plantilla de WhatsApp). Con ?key=ADMIN_KEY o link firmado.
+      const clave = process.env.ADMIN_KEY || ADMIN_KEY;
+      const t = url.searchParams.get('t'); const k = url.searchParams.get('key');
+      if (!(firmaOk('difusion', t) || (clave && k === clave))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      const dif = require('./difusion');
+      const accion = `/difusion?t=${firma('difusion')}`;
+      const esG = (tel) => require('./recordatorios').esGustavo(tel, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER));
+      if (req.method === 'POST') {
+        let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 200000) req.destroy(); });
+        return req.on('end', async () => {
+          const numeros = new URLSearchParams(raw).get('numeros') || '';
+          const r = dif.cargar(store, numeros, esG);
+          let extra = '';
+          try { const p = await dif.asegurarPlantilla(store); extra = p.estado === 'APPROVED' ? ' Ya están saliendo.' : ' Salen apenas Meta apruebe el mensaje.'; } catch (e) { extra = ' Ojo: ' + e.message; }
+          res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+          res.end(dif.pagina(store, accion, `Cargados ${r.agregados} números (${r.salteados} salteados).${extra}`));
+        });
+      }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+      return res.end(dif.pagina(store, accion));
+    }
     if (req.method === 'GET' && url.pathname === '/charlas') {
       const clave = process.env.ADMIN_KEY || ADMIN_KEY;
       if (!(firmaOk('charlas', url.searchParams.get('t')) || (clave && url.searchParams.get('key') === clave))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
@@ -454,6 +483,7 @@ if (require.main === module) {
   // Asistente de pendientes: cada 15 minutos revisa clientes sin respuesta y manda avisos por ntfy (y el resumen de las 9).
   const { revisar } = require('./recordatorios');
   const tic = () => revisar({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), avisar: (t, titulo, prioridad, tel) => avisarNtfy(t, titulo, prioridad, fetch, tel), empujar: async (p) => { const txt = await require('./agent').empujon({ telefono: p.telefono, store, horas: p.horas, cotizado: p.cotizado }); if (txt) await enviar(p.telefono, txt); return !!txt; } }).catch((e) => console.error('Recordatorios:', e.message));
-  setTimeout(tic, 60e3).unref(); setInterval(tic, 15 * 60e3).unref();
+  const ticDifusion = () => require('./difusion').tick({ store, esGustavo: (tel) => require('./recordatorios').esGustavo(tel, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER)) }).catch((e) => console.error('Difusión:', e.message));
+  setTimeout(() => { tic(); ticDifusion(); }, 60e3).unref(); setInterval(() => { tic(); ticDifusion(); }, 15 * 60e3).unref();
 }
 module.exports = { procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo };
