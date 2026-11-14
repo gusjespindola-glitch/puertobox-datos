@@ -45,6 +45,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - Dominio en NIC a nombre de Gustavo, vence 08/04/2027, DNS en Cloudflare.
 
 ## Pendientes (en orden)
+-2. **Revisión 2 (14/11, `docs/auditoria/2026-11-14-revision-2.md`):** ver en YCloud › Billing si Meta cobra las respuestas del bot (posible USD 0,026 por mensaje desde 1/10/2026) y el saldo de YCloud. Si la portada se ve vieja, purgar caché en Cloudflare.
 -1. ✅ **Auditoría completa 14/11** (`docs/auditoria/2026-11-14-completa.md`): arreglos mergeados y `YCLOUD_WEBHOOK_SECRET` cargado en Railway (14/11 7:52, probado: el bot responde). Falta: correr `/pruebas` y la decisión de impuestos en envíos chicos (preguntar a Howard).
 0. ✅ Clave de Anthropic rotada el 13/11 (bot-puertobox-2, sin vencimiento).
 1. **Apagar el AI Agent de YCloud** (Inbox > Assignment): si se renueva el crédito, contestarían los dos bots.
@@ -68,6 +69,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - **Un solo aviso:** si está NTFY_TOPIC, todo llega solo por ntfy (antes llegaba WhatsApp + ntfy). Sin ntfy, por WhatsApp al 698.
 - **Recordatorios** (`bot/recordatorios.js`, cada 15 min): cliente derivado (quiere pagar, pide persona, mayorista, reclamo) sin respuesta → aviso a la hora y después cada 3 h, máximo 4. ⭐ importantes primero (quiere pagar, mayorista o pedido de USD 1.000 o más). Nada entre las 22 y las 8.
 - **Resumen diario a las 9:** esperando respuesta, dudas por confirmar y presupuestos sin respuesta del cliente hace más de 24 h (para seguimiento).
+- **Ventana de 24 h de WhatsApp:** la lista muestra cuántas horas quedan para contestar libremente y llega un aviso urgente con menos de 3 h. **Tope:** más de 60 mensajes por día en un chat → se pausa y avisa (tu número no tiene tope). **Resumen de las 9** con los números de las últimas 24 h (consultas → presupuestos → quieren pagar).
 - **Sin comandos (14/11):** cada notificación trae dos botones: «Ya lo atendí» (marca al cliente y deja de recordarlo) y «Ver pendientes» (página `/pendientes` con la lista y un botón por cliente). Los links van firmados con ADMIN_KEY (no la muestran). Los comandos `#pendientes` y `#listo 549...` siguen andando de respaldo. Si Gustavo contesta desde la app y llega el eco, se marca solo.
 
 ## Avisos y saldo (13/11/2026)

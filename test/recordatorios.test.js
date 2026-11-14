@@ -113,3 +113,36 @@ test('botones: "Ya lo atendí" y la página de pendientes funcionan solo con fir
   assert.match(await ok.text(), /marcado como atendido/);
   s.close();
 });
+
+test('ventana de 24 h: avisa cuando se está por vencer y lo muestra en la lista', async () => {
+  const ahora = TARDE;
+  const st = crearStore(null);
+  st.marcar('5491100000005', { derivadoEn: ahora - 22 * H, derivadoMotivo: 'listo_para_cerrar', ultimoClienteEn: ahora - 22 * H, recordatorios: 4, ultimoRecordatorio: ahora - H });
+  st.meta('resumenDia', '2026-11-14');
+  const avisos = [];
+  await revisar({ store: st, owner: OWNER, avisar: async (t, titulo) => avisos.push(titulo), ahora });
+  assert.deepStrictEqual(avisos, ['PuertoBox: se vence el plazo para contestar']);
+  await revisar({ store: st, owner: OWNER, avisar: async (t, titulo) => avisos.push(titulo), ahora: ahora + 30 * 60e3 });
+  assert.strictEqual(avisos.length, 1, 'el aviso de vencimiento sale una sola vez');
+  assert.match(textoPendientes(st, OWNER, ahora), /te quedan 2 h para contestarle/);
+});
+
+test('si la pausa venció y el bot atiende, no molesta a Gustavo aunque el cliente siga escribiendo', () => {
+  const ahora = TARDE;
+  const st = crearStore(null);
+  st.marcar('5491100000006', { derivadoEn: ahora - 30 * H, derivadoMotivo: 'pide_humano', gustavoRespondioEn: ahora - 29 * H, ultimoClienteEn: ahora - H, pausadoHasta: ahora - 5 * H });
+  assert.strictEqual(pendientes(st, OWNER, ahora).esperando.length, 0);
+  st.marcar('5491100000006', { pausadoHasta: ahora + 5 * H });
+  assert.strictEqual(pendientes(st, OWNER, ahora).esperando.length, 1, 'con el bot pausado, sí espera a Gustavo');
+});
+
+test('resumen de las 9: trae los números del día (consultas → presupuestos → quieren pagar)', async () => {
+  const { embudo } = require('../bot/recordatorios');
+  const st = crearStore(null);
+  st.guardarLead('5491100000011', { estado: 'nuevo' });
+  st.guardarLead('5491100000012', { estado: 'cotizado', precio_usd: 145 });
+  st.guardarLead('5491100000013', { estado: 'listo_para_cerrar', precio_usd: 380 });
+  const e = embudo(st, OWNER, Date.now());
+  assert.deepStrictEqual([e.consultas, e.cotizados, e.pagar], [3, 2, 1]);
+  assert.match(e.texto, /3 consultas nuevas · 2 con presupuesto · 1 quieren pagar/);
+});

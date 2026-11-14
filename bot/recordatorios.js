@@ -22,6 +22,13 @@ function horaAR(ahora) {
 }
 const silencio = (ahora) => { const { hora } = horaAR(ahora); return hora >= 22 || hora < 8; };
 
+/**
+ * WhatsApp deja contestar gratis y con texto libre solo dentro de las 24 h desde el último mensaje del cliente.
+ * Después hace falta una plantilla aprobada. Devuelve las horas que quedan (0 si ya venció).
+ */
+const ventana = (ultimoCliente, ahora) => (ultimoCliente ? Math.max(0, 24 - (ahora - ultimoCliente) / H) : 0);
+const textoVentana = (q) => (q <= 0 ? 'ya pasaron 24 h: por WhatsApp solo con plantilla' : q < 1 ? 'te queda menos de 1 h para contestarle por WhatsApp' : `te quedan ${Math.floor(q)} h para contestarle por WhatsApp`);
+
 function hace(ms) {
   const min = Math.round(ms / 60e3);
   if (min < 60) return `hace ${min} min`;
@@ -50,9 +57,14 @@ function pendientes(store, owner, ahora = Date.now()) {
     const ultimoCliente = c.ultimoClienteEn || 0;
     if (c.derivadoEn && MOTIVOS_GUSTAVO.includes(c.derivadoMotivo)) {
       // Espera respuesta si Gustavo no contestó desde la derivación o el cliente volvió a escribir después.
-      const desde = Math.max(c.derivadoEn, respondio < ultimoCliente ? ultimoCliente : 0);
-      if (respondio < c.derivadoEn || respondio < ultimoCliente) {
-        esperando.push({ c, lead, desde, importante: esImportante(c, lead) });
+      // Si el cliente volvió a escribir después de que Gustavo contestó, solo cuenta si el bot sigue pausado
+      // (si la pausa venció, lo está atendiendo el bot y no hay que molestar a Gustavo).
+      const pausado = (c.pausadoHasta || 0) > ahora;
+      const sinRespuesta = respondio < c.derivadoEn;
+      const volvio = respondio >= c.derivadoEn && respondio < ultimoCliente && pausado;
+      if (sinRespuesta || volvio) {
+        const desde = volvio ? ultimoCliente : c.derivadoEn;
+        esperando.push({ c, lead, desde, importante: esImportante(c, lead), quedanH: ventana(ultimoCliente, ahora) });
         continue;
       }
     }
@@ -72,7 +84,8 @@ function pendientes(store, owner, ahora = Date.now()) {
 function linea(p, ahora, conMotivo = true) {
   const estrella = p.importante ? '⭐ ' : '';
   const motivo = conMotivo && p.c.derivadoMotivo ? ` (${NOMBRE_MOTIVO[p.c.derivadoMotivo] || p.c.derivadoMotivo})` : '';
-  return `${estrella}${describir(p.c, p.lead, ahora)}${motivo}, ${hace(ahora - p.desde)}`;
+  const v = p.quedanH !== undefined ? ` (${textoVentana(p.quedanH)})` : '';
+  return `${estrella}${describir(p.c, p.lead, ahora)}${motivo}, ${hace(ahora - p.desde)}${v}`;
 }
 
 /** Texto completo de pendientes (para el resumen y el comando #pendientes). */
@@ -82,8 +95,17 @@ function textoPendientes(store, owner, ahora = Date.now()) {
   const partes = [];
   if (esperando.length) partes.push(`Esperan tu respuesta (${esperando.length}):\n${esperando.map((p) => '- ' + linea(p, ahora)).join('\n')}`);
   if (dudas.length) partes.push(`Dudas para confirmar (${dudas.length}):\n${dudas.map((p) => '- ' + linea(p, ahora, false) + (p.c.derivadoResumen ? `: ${String(p.c.derivadoResumen).slice(0, 120)}` : '')).join('\n')}`);
-  if (seguimiento.length) partes.push(`Presupuesto enviado, no volvieron a escribir (${seguimiento.length}) — conviene un mensaje de seguimiento:\n${seguimiento.map((p) => '- ' + linea(p, ahora, false)).join('\n')}`);
+  if (seguimiento.length) partes.push(`Presupuesto enviado, no volvieron a escribir (${seguimiento.length}) — conviene un mensaje de seguimiento (pasaron más de 24 h: desde la línea del bot hace falta una plantilla de WhatsApp):\n${seguimiento.map((p) => '- ' + linea(p, ahora, false)).join('\n')}`);
   return partes.join('\n\n');
+}
+
+/** Números de las últimas 24 h para saber cómo viene la venta: consultas nuevas → presupuestos → quieren pagar. */
+function embudo(store, owner, ahora = Date.now()) {
+  const desde = ahora - 24 * H;
+  const leads = (store.leads ? store.leads() : []).filter((l) => l.telefono !== owner && Date.parse(l.creado || 0) >= desde);
+  const cotizados = leads.filter((l) => ['cotizado', 'listo_para_cerrar'].includes(l.estado) || l.precio_usd).length;
+  const pagar = leads.filter((l) => l.estado === 'listo_para_cerrar').length;
+  return { consultas: leads.length, cotizados, pagar, texto: `Últimas 24 h: ${leads.length} consultas nuevas · ${cotizados} con presupuesto · ${pagar} quieren pagar.` };
 }
 
 /** Corre cada 15 minutos: avisos de clientes esperando y resumen diario. */
@@ -95,8 +117,15 @@ async function revisar({ store, owner, avisar, ahora = Date.now() }) {
       const veces = p.c.recordatorios || 0;
       const espera = ahora - p.desde;
       const toca = veces === 0 ? espera >= PRIMER_AVISO_MIN * 60e3 : ahora - (p.c.ultimoRecordatorio || 0) >= CADA_HORAS * H;
+      const porVencer = p.quedanH > 0 && p.quedanH < 3 && !p.c.avisoVentana;
+      if (porVencer) {
+        await avisar(`⏳ Se te vence la ventana de WhatsApp con ${describir(p.c, p.lead, ahora)}: ${textoVentana(p.quedanH)}. Después solo se le puede escribir con una plantilla.`, 'PuertoBox: se vence el plazo para contestar', 'high', p.c.telefono);
+        store.marcar(p.c.telefono, { avisoVentana: true, ultimoRecordatorio: ahora });
+        enviados.push(p.c.telefono);
+        continue;
+      }
       if (!toca || veces >= MAX_AVISOS) continue;
-      const texto = `${p.importante ? '⭐ IMPORTANTE. ' : ''}Cliente esperando tu respuesta ${hace(espera)}:\n${describir(p.c, p.lead, ahora)}\nMotivo: ${NOMBRE_MOTIVO[p.c.derivadoMotivo] || p.c.derivadoMotivo}${p.c.derivadoResumen ? `\n${String(p.c.derivadoResumen).slice(0, 300)}` : ''}\nSi ya lo atendiste, tocá «Ya lo atendí».`;
+      const texto = `${p.importante ? '⭐ IMPORTANTE. ' : ''}Cliente esperando tu respuesta ${hace(espera)} (${textoVentana(p.quedanH)}):\n${describir(p.c, p.lead, ahora)}\nMotivo: ${NOMBRE_MOTIVO[p.c.derivadoMotivo] || p.c.derivadoMotivo}${p.c.derivadoResumen ? `\n${String(p.c.derivadoResumen).slice(0, 300)}` : ''}\nSi ya lo atendiste, tocá «Ya lo atendí».`;
       await avisar(texto, p.importante ? 'PuertoBox: cliente importante esperando' : 'PuertoBox: cliente esperando', p.importante ? 'high' : 'default', p.c.telefono);
       store.marcar(p.c.telefono, { recordatorios: veces + 1, ultimoRecordatorio: ahora });
       enviados.push(p.c.telefono);
@@ -105,8 +134,12 @@ async function revisar({ store, owner, avisar, ahora = Date.now() }) {
   const { hora, fecha } = horaAR(ahora);
   if (hora >= HORA_RESUMEN && hora < 22 && store.meta('resumenDia') !== fecha) {
     store.meta('resumenDia', fecha);
-    const texto = textoPendientes(store, owner, ahora);
-    if (texto !== 'No tenés clientes pendientes. Todo al día.') { await avisar(texto, 'PuertoBox: resumen del dia', 'default'); enviados.push('resumen'); }
+    const pend = textoPendientes(store, owner, ahora);
+    const e = embudo(store, owner, ahora);
+    if (pend !== 'No tenés clientes pendientes. Todo al día.' || e.consultas) {
+      await avisar(`${e.texto}\n\n${pend}`, 'PuertoBox: resumen del dia', 'default');
+      enviados.push('resumen');
+    }
   }
   return enviados;
 }
@@ -124,4 +157,4 @@ function paginaPendientes(store, owner, linkAtendido, ahora = Date.now()) {
 <body><h1>Pendientes PuertoBox</h1>${cuerpo || '<p>No tenés clientes pendientes. Todo al día.</p>'}</body></html>`;
 }
 
-module.exports = { pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes };
+module.exports = { pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes, embudo };
