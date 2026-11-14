@@ -14,8 +14,8 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 ## Decisiones del 13/11/2026
 
 ### Precio
-- **Flete firme**: se presupuesta con el peso cobrable del proveedor **+ 15%** de margen, más **handling fijo USD 10** por envío.
-- El flete solo se ajusta si la caja llega **más de 15%** más pesada o grande (con foto de la balanza).
+- **Precio (opción C, decidida el 13/11 a la noche):** flete por el kilo cobrable del proveedor **sin el 15%**, más **gestión fija USD 20** por envío. Precio cerrado: el flete se respeta aunque la caja llegue hasta 15% más pesada; el riesgo lo cubre la gestión. Antes era peso + 15% y handling USD 10: Gustavo lo vio caro ("la merma por la medida es muy grande").
+- El flete solo se ajusta si la caja llega **más de 15%** más pesada o grande (con foto de la balanza). En el peor caso nunca se pierde (mínimo USD 17 de ganancia, en 2 kg).
 - **Nunca decir "si pesa menos, paga menos".**
 - Al cliente no se le muestran las cuentas de kilos ni el margen: solo flete, handling, impuestos estimados y total.
 - Impuestos y gasto administrativo los paga el cliente al courier; PuertoBox no los cobra.
@@ -53,3 +53,9 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - Mostrar claves en capturas: avisar antes de la pantalla que la muestra.
 - Aprobar (merge) un PR mientras todavía se suben commits: terminar todo y recién después pasar el link.
 - Cotizar sin revisar marca, intervenciones ni régimen.
+
+- 13/11/2026: Gustavo: "Cotizá gratis" no puede llevar a un cotizador de la web; tiene que ir directo al WhatsApp del bot. Sacar de la web todo lo innecesario (formulario, sección repetida, links muertos). La web se sirve desde el repo con un Worker que lee `web/sitio/index.html`, para no tener que subirla a mano.
+- 13/11/2026: el Worker de la web usa archivos subidos ("Automatic deployment on upload"); pegar código en el editor no cambia lo que se ve. Se actualiza subiendo el index.html nuevo con New deployment. Desde el celular el editor de Cloudflare no deja pegar: hacerlo desde la PC.
+- 13/11/2026: Gustavo: "si cambio una cosa, que cambie todo". Base única: precios en precios_venta.json, contacto y reglas en negocio.json; bot, web y páginas leen de ahí. Nada que complique; todo lo que traiga clientes.
+- 13/11/2026: dominio conectado a Railway con el botón Connect (Cloudflare). Antes hubo que sacar puertobox.com.ar y www del Worker (registro AAAA 100:: con candado). El trial de Railway permite un solo dominio propio.
+- 13/11/2026: Gustavo no tiene local (trabaja desde su casa): nada de Perfil de Google ni dirección publicada. Sí al bot en Instagram.

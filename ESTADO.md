@@ -11,6 +11,17 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - YCloud: plan Free, webhook activo a `/webhook` (evento whatsapp.inbound_message.received). El AI Agent de YCloud quedó sin crédito.
 - Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`.
 
+
+## Base única (desde 13/11/2026)
+Cambiás un dato en un solo lugar y cambia en el bot, la web, el buscador y las páginas:
+- **Precios** (tramos del flete, gestión): `data/precios_venta.json` → `flete_directo`.
+- **Contacto y reglas** (WhatsApp, Instagram, mail, horario, precio cerrado %, franquicia, caja máx.): `data/negocio.json`.
+- El resto (envío mínimo, USD/kg desde 20 kg, tabla de la web) se calcula solo (`src/negocio.js`).
+- Plantillas con `{{dato}}`: `bot/prompt.md`, `web/sitio/index.html`. Un test falla si alguien escribe un precio o el teléfono a mano.
+
+Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web), `/buscador`, `/ncm/XXXX.XX.XX` (10.504 posiciones), `/importar/<producto>`, `/sitemap.xml`, `/robots.txt`.
+✅ 13/11 20:50: puertobox.com.ar apunta a Railway (Cloudflare DNS conectado desde Railway, dominio sacado del Worker). **La web se actualiza sola con cada merge**: ya no se sube nada a mano. El Worker `royal-mode-b440` quedó sin dominio (se puede borrar). www redirige a puertobox.com.ar (regla de Cloudflare). Google Search Console verificado (13/11) y sitemap enviado: https://puertobox.com.ar/sitemap.xml. ⚠️ El dominio vive en Railway: pasar a Hobby antes de que termine el trial (~13/12).
+
 ## Nomenclador PuertoBox (tipo Tarifar)
 - **Acceso principal (celular y PC):** `https://puertobox-datos-production.up.railway.app/nomenclador/?key=ADMIN_KEY` (la primera vez con la clave; después queda en una cookie por un año). Lo sirve el mismo servidor del bot, así que se actualiza con cada merge.
 - Copia en claude.ai: https://claude.ai/artifact/AG4uktPhuZmr7FVxfzLnoo (hay que republicarla a mano, puede quedar vieja). Código en `web/nomenclador/`.
@@ -32,13 +43,18 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 
 ## Pendientes (en orden)
 0. **Cambiar la clave de Anthropic** (quedó pegada en el chat el 13/11): crear una nueva en platform.claude.com → Claves, pegarla en Railway (ANTHROPIC_API_KEY) y borrar la vieja.
-0b. **Decidir cómo mostrar la tarifa por kilo** (web y bot): hoy el flete se cotiza con +15% sobre el peso, así que la tabla por kilo no cierra con el presupuesto. Opción: publicar la tabla con el 15% ya incluido. Lo decide Gustavo.
 1. **Apagar el AI Agent de YCloud** (Inbox > Assignment): si se renueva el crédito, contestarían los dos bots.
 2. **Avisos al 698**: WhatsApp solo los entrega si el 698 le escribió al bot en las últimas 24 h. Instalar la app ntfy y cargar NTFY_TOPIC en Railway.
-3. **Web**: `web/sitio/index.html` sin cotizador (decisión de Gustavo 13/11: cotiza solo el bot); la sección lleva a WhatsApp del bot. FAQ alineada (precio cerrado, La Plata sin retiro). **Falta subirla a Cloudflare** y que el dominio apunte ahí: el 13/11 a la tarde los DNS seguían en Netlify (dns1.p09.nsone.net) y se veía el sitio viejo con el WhatsApp 698.
+3. **Web**: servida por Railway desde el repo (se actualiza sola). www redirigido, Search Console y sitemap listos (13/11). Próximo: Perfil de Google y bot en Instagram.
 4. **Railway**: la prueba vence alrededor del 13/12/2026. Pasar al plan Hobby (USD 5/mes) antes o el bot se apaga.
 5. Seguir revisando el material del curso (ver `docs/curso/README.md`) y aplicarlo.
 6. Revisar en NIC Argentina que la delegación a jen/rocky.ns.cloudflare.com haya quedado guardada (el 13/11 seguía en Netlify). Revisar el mail info@ (registros MX en Cloudflare).
 7. Cargar el mensaje de bienvenida o ausencia en el 698 (`ycloud-agent/whatsapp_698_bienvenida.txt`) y el link del bot en las bios.
 8. Preguntar a Howard: gasto administrativo de DHL, recargo por zona alejada, días de tránsito, si sigue FedEx a 11 USD/kg desde 20 kg.
 9. Limpieza del repo: `ycloud-agent/` y el README viejo (modelo consolidado / modelo fijo) ya no se usan; archivos web viejos; `ncm/fuentes_arca/nom.txt` duplicado.
+
+## Instagram (en curso, 13/11/2026)
+- Código listo: `/instagram` (webhook de Meta), responde con el mismo bot, chats `ig:<id>`. Si Gustavo responde desde Instagram, el bot se pausa en ese chat; `#bot` en ese chat lo reactiva. Avisos de derivación igual que WhatsApp.
+- Token: variable `IG_TOKEN` en Railway (se renueva solo cada día y se guarda en /data/ig_token.json). Opcionales: `IG_VERIFY_TOKEN`, `IG_APP_SECRET` (verifica la firma de Meta).
+- Página de privacidad para Meta: https://puertobox.com.ar/privacidad
+- Falta del lado de Meta: cuenta @puertobox.ok profesional, app en developers.facebook.com (Instagram API con inicio de sesión de Instagram), token, webhook https://puertobox.com.ar/instagram suscripto a `messages`, app en modo Live.

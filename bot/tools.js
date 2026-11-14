@@ -3,6 +3,7 @@
 const path = require('path');
 const { presupuesto } = require('../src/flete_directo');
 const { crear } = require('../src/nomenclador');
+const NEG = require('../src/negocio').datos();
 
 // Mismos datos que el Nomenclador PuertoBox (web/nomenclador/data), generados desde ARCA.
 let motor = null;
@@ -22,7 +23,7 @@ const definiciones = [
   },
   {
     name: 'cotizar',
-    description: 'Calcula el presupuesto de PuertoBox: flete firme con 15% de margen + handling fijo (lo cobra PuertoBox) + impuestos y gasto administrativo estimados (los paga el cliente al courier). Usar SIEMPRE para dar precios.',
+    description: 'Calcula el presupuesto de PuertoBox: flete con precio cerrado + gestión fija (lo cobra PuertoBox) + impuestos y gasto administrativo estimados (los paga el cliente al courier). Usar SIEMPRE para dar precios.',
     input_schema: {
       type: 'object',
       properties: {
@@ -87,7 +88,7 @@ function ejecutar(nombre, input, ctx) {
         impuestos_y_gastos_estimados_usd: r.impuestos_estimados_usd.total,
         detalle_impuestos: r.impuestos_estimados_usd,
         total_estimado_usd: r.total_estimado_usd,
-        reglas: 'El flete es FIRME: ya incluye un 15% de margen sobre lo que declara el proveedor. Se suma un handling fijo de USD 10 por envío. Solo se ajusta si la caja llega más de 15% más pesada o grande (con foto de la balanza). Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier al llegar (puede ser DHL, UPS o FedEx; no nombres uno salvo que pregunten).',
+        reglas: `El flete es PRECIO CERRADO: se respeta aunque la caja llegue hasta ${NEG.precio_cerrado_hasta_pct}% más pesada o grande; si supera eso, se ajusta con foto de la balanza. Se suma una gestión fija de USD ${NEG.gestion_usd} por envío (mostrala como "Gestión PuertoBox"). Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier al llegar (puede ser DHL, UPS o FedEx; no nombres uno salvo que pregunten).`,
       };
     }
     case 'registrar_lead':

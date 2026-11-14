@@ -35,11 +35,11 @@ test('cotiza con el modelo flete directo y responde al cliente', async () => {
     (body) => { r = JSON.parse(body.messages.at(-1).content[0].content); return txt(`Flete USD ${r.flete_puertobox_usd}`); },
   ]);
   const out = await procesar(msg('5491111111111', 'Quiero traer remeras, 10 kg, factura USD 500'), { fetchImpl, store, debounceMs: 0 });
-  assert.strictEqual(r.kg_presupuestado, 14); // 12 kg volumétricos + 15%
-  assert.strictEqual(r.flete_puertobox_usd, 280); // 14 kg x USD 20
-  assert.strictEqual(r.handling_puertobox_usd, 10);
+  assert.strictEqual(r.kg_presupuestado, 12); // 12 kg volumétricos (sin margen, opción C)
+  assert.strictEqual(r.flete_puertobox_usd, 240); // 12 kg x USD 20
+  assert.strictEqual(r.handling_puertobox_usd, 20);
   assert.ok(r.impuestos_y_gastos_estimados_usd > 0);
-  assert.strictEqual(out[0].body, 'Flete USD 280');
+  assert.strictEqual(out[0].body, 'Flete USD 240');
   assert.strictEqual(llamadas.whatsapp[0].to, '5491111111111');
 });
 
@@ -48,7 +48,7 @@ test('régimen personal con franquicia: sin derechos hasta USD 400', async () =>
   let r;
   const { fetchImpl } = mock([tool('cotizar', { kg: 1, valor_factura_usd: 100, die: 20, regimen: 'personal' }), (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('ok'); }]);
   await procesar(msg('5492', 'auriculares'), { fetchImpl, store, debounceMs: 0 });
-  assert.strictEqual(r.flete_puertobox_usd, 48); // 1,15 kg -> 1,5 kg x 32/kg
+  assert.strictEqual(r.flete_puertobox_usd, 45); // 1 kg -> USD 45 total
   assert.strictEqual(r.detalle_impuestos.derechos_y_tasa, 0);
 });
 
@@ -220,4 +220,29 @@ test('saca muletillas del arranque', () => {
   assert.strictEqual(limpiar('Joya, 600 USD. ¿Sabés cuánto pesa?'), '600 USD. ¿Sabés cuánto pesa?');
   assert.strictEqual(limpiar('Dale'), 'Dale');
   assert.strictEqual(limpiar('Joya. ¿sabés cuánto pesa?'), '¿Sabés cuánto pesa?');
+});
+
+test('Instagram: responde por Instagram, ignora su propio eco y se pausa si responde Gustavo', async () => {
+  const { procesar: proc } = require('../server');
+  const { crearStore } = require('../store');
+  const st = crearStore(null);
+  process.env.IG_TOKEN = 'tok';
+  const llamadas = [];
+  const fetchImpl = async (url, opt) => {
+    llamadas.push({ url, body: opt && opt.body });
+    if (String(url).includes('anthropic')) return { ok: true, json: async () => ({ content: [{ type: 'text', text: 'Hola, gracias por escribir a PuertoBox. ¿Qué producto querés traer?' }], stop_reason: 'end_turn' }) };
+    return { ok: true, json: async () => ({ message_id: 'mid.bot1' }), text: async () => '' };
+  };
+  const ig = (m) => ({ object: 'instagram', entry: [{ id: 'pb', messaging: [m] }] });
+  process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || 'x';
+  await proc(ig({ sender: { id: '777' }, recipient: { id: 'pb' }, message: { mid: 'm1', text: 'Hola' } }), { fetchImpl, store: st, debounceMs: 0 });
+  const envio = llamadas.find((l) => String(l.url).includes('graph.instagram.com'));
+  assert.ok(envio, 'mandó por Instagram');
+  assert.strictEqual(JSON.parse(envio.body).recipient.id, '777');
+  // eco del propio bot: no pausa
+  await proc(ig({ sender: { id: 'pb' }, recipient: { id: '777' }, message: { mid: 'mid.bot1', text: 'x', is_echo: true } }), { fetchImpl, store: st, debounceMs: 0 });
+  assert.strictEqual(st.estaPausado('ig:777'), false);
+  // Gustavo responde desde la app: pausa
+  await proc(ig({ sender: { id: 'pb' }, recipient: { id: '777' }, message: { mid: 'm2', text: 'Hola, soy Gustavo', is_echo: true } }), { fetchImpl, store: st, debounceMs: 0 });
+  assert.strictEqual(st.estaPausado('ig:777'), true);
 });

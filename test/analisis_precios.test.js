@@ -4,10 +4,10 @@ const assert = require('node:assert');
 const { gananciaEnvio, precioCompetidor, analizar } = require('../src/analisis_precios');
 const { revisar } = require('../bot/simulador');
 
-test('ganancia por envío: 5 kg se cotiza como 6 kg y deja ganancia positiva', () => {
+test('ganancia por envío (opción C): 5 kg se cotiza como 5 kg + USD 20 y deja ganancia positiva', () => {
   const g = gananciaEnvio(5);
-  assert.strictEqual(g.kg_cotizado, 6);
-  assert.strictEqual(g.venta, 160);
+  assert.strictEqual(g.kg_cotizado, 5);
+  assert.strictEqual(g.venta, 145);
   assert.ok(g.ganancia > 0 && g.ganancia_peor > 0);
 });
 

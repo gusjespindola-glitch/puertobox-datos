@@ -19,7 +19,41 @@ const soloDigitos = (t) => String(t || '').replace(/\D/g, '');
 const GRAPH = 'https://graph.facebook.com/v21.0';
 const store = crearStore(DATA_FILE);
 
+// Mensajes que mandó el bot por Instagram: su eco no debe pausar el chat.
+const enviadosIG = new Set();
+// El token de Instagram vence a los 60 días: se renueva solo una vez por día y se guarda junto a los datos.
+const IG_TOKEN_FILE = path.join(path.dirname(DATA_FILE), 'ig_token.json');
+function tokenIG() {
+  try { return JSON.parse(require('fs').readFileSync(IG_TOKEN_FILE, 'utf8')).token || process.env.IG_TOKEN; } catch { return process.env.IG_TOKEN; }
+}
+async function renovarTokenIG(fetchImpl = fetch) {
+  const actual = tokenIG(); if (!actual) return;
+  try {
+    const r = await fetchImpl(`https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(actual)}`);
+    if (!r.ok) { console.error('No se pudo renovar el token de Instagram', r.status); return; }
+    const j = await r.json();
+    if (j.access_token) require('fs').writeFileSync(IG_TOKEN_FILE, JSON.stringify({ token: j.access_token, renovado: new Date().toISOString() }));
+  } catch (e) { console.error('Renovar token IG:', e.message); }
+}
+async function enviarInstagram(id, body, fetchImpl) {
+  const token = tokenIG();
+  if (!token) { console.error('Falta IG_TOKEN'); return; }
+  const partes = String(body).match(/[\s\S]{1,950}(\s|$)/g) || [String(body)]; // Instagram: máx. 1000 caracteres
+  for (const texto of partes) {
+    enviadosIG.add(texto.trim());
+    const r = await fetchImpl('https://graph.instagram.com/v21.0/me/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify({ recipient: { id }, message: { text: texto.trim() } }),
+    });
+    if (!r.ok) console.error('Instagram error', r.status, await r.text());
+    else { try { const j = await r.json(); if (j.message_id) enviadosIG.add(j.message_id); } catch { /* sin cuerpo */ } }
+  }
+  if (enviadosIG.size > 500) enviadosIG.clear();
+}
+
 async function enviar(to, body, fetchImpl = fetch) {
+  if (String(to).startsWith('ig:')) return enviarInstagram(String(to).slice(3), body, fetchImpl);
   if (process.env.YCLOUD_API_KEY || YCLOUD_API_KEY) {
     const r = await fetchImpl('https://api.ycloud.com/v2/whatsapp/messages/sendDirectly', {
       method: 'POST',
@@ -47,6 +81,23 @@ function normalizar(payload) {
   if ((payload.type === 'whatsapp.echo_message.created') && payload.whatsappMessage) {
     const m = payload.whatsappMessage;
     ev.push({ tipo: 'eco', to: soloDigitos(m.to), text: m.text });
+  }
+  if (payload.object === 'instagram') {
+    for (const entry of payload.entry || []) {
+      for (const m of entry.messaging || []) {
+        const msg = m.message;
+        if (!msg || msg.is_deleted) continue;
+        if (msg.is_echo) {
+          const t = (msg.text || '').trim();
+          if (enviadosIG.has(msg.mid) || enviadosIG.has(t)) continue; // eco del propio bot
+          ev.push({ tipo: 'eco', to: `ig:${m.recipient.id}`, text: { body: t } });
+          continue;
+        }
+        if (msg.text) ev.push({ tipo: 'mensaje', id: msg.mid, from: `ig:${m.sender.id}`, type: 'text', text: { body: msg.text } });
+        else ev.push({ tipo: 'mensaje', id: msg.mid, from: `ig:${m.sender.id}`, type: (msg.attachments?.[0]?.type) || 'adjunto', text: null });
+      }
+    }
+    return ev;
   }
   for (const entry of payload.entry || []) {
     for (const change of entry.changes || []) {
@@ -143,7 +194,10 @@ async function atender(tel, texto, st, fetchImpl, owner) {
     }
     if (resp) { await enviar(tel, resp, fetchImpl); salidas.push({ to: tel, body: resp }); }
     for (const d of derivaciones) {
-      const aviso = `🔔 PuertoBox: ${d.motivo.replace(/_/g, ' ')}\nCliente: +${d.telefono}\n${d.resumen}\n(El bot quedó pausado en ese chat. Para reactivarlo mandá: #bot ${d.telefono})`;
+      const esIG = String(d.telefono).startsWith('ig:');
+      const aviso = esIG
+        ? `🔔 PuertoBox (Instagram): ${d.motivo.replace(/_/g, ' ')}\n${d.resumen}\n(Respondele desde los mensajes de Instagram de PuertoBox. El bot quedó pausado en ese chat; para reactivarlo escribí #bot en ese mismo chat.)`
+        : `🔔 PuertoBox: ${d.motivo.replace(/_/g, ' ')}\nCliente: +${d.telefono}\n${d.resumen}\n(El bot quedó pausado en ese chat. Para reactivarlo mandá: #bot ${d.telefono})`;
       await avisarGustavo(owner, aviso, fetchImpl);
       salidas.push({ to: owner, body: aviso });
     }
@@ -153,6 +207,7 @@ async function atender(tel, texto, st, fetchImpl, owner) {
 
 // Nomenclador PuertoBox (web/nomenclador) protegido con ADMIN_KEY: se entra una vez con ?key=... y queda guardado en una cookie.
 const fs = require('fs');
+const paginas = require('../src/paginas');
 const WEB = path.join(__dirname, '..', 'web', 'nomenclador');
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
 function servirNomenclador(req, res, url) {
@@ -176,6 +231,25 @@ function servirNomenclador(req, res, url) {
 function servidor() {
   return http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
+    if (req.method === 'GET' && (url.pathname === '/webhook' || url.pathname === '/instagram') && url.searchParams.has('hub.mode')) {
+      const tok = url.pathname === '/instagram' ? (process.env.IG_VERIFY_TOKEN || VERIFY_TOKEN) : VERIFY_TOKEN;
+      const ok = url.searchParams.get('hub.mode') === 'subscribe' && tok && url.searchParams.get('hub.verify_token') === tok;
+      res.writeHead(ok ? 200 : 403); return res.end(ok ? url.searchParams.get('hub.challenge') : 'forbidden');
+    }
+    if (req.method === 'POST' && url.pathname === '/instagram') {
+      let raw = ''; req.on('data', (c) => (raw += c));
+      req.on('end', () => {
+        const secreto = process.env.IG_APP_SECRET;
+        if (secreto) { // firma de Meta: x-hub-signature-256 = sha256=HMAC(cuerpo)
+          const firma = 'sha256=' + require('crypto').createHmac('sha256', secreto).update(raw).digest('hex');
+          if (req.headers['x-hub-signature-256'] !== firma) { res.writeHead(401); return res.end('firma inválida'); }
+        }
+        res.writeHead(200); res.end('ok');
+        let payload = {}; try { payload = JSON.parse(raw || '{}'); } catch { return; }
+        procesar(payload).catch((e) => console.error(e));
+      });
+      return;
+    }
     if (req.method === 'GET' && url.pathname === '/webhook') {
       const ok = url.searchParams.get('hub.mode') === 'subscribe' && url.searchParams.get('hub.verify_token') === VERIFY_TOKEN;
       res.writeHead(ok ? 200 : 403); return res.end(ok ? url.searchParams.get('hub.challenge') : 'forbidden');
@@ -201,12 +275,20 @@ function servidor() {
         .catch((e) => { res.writeHead(500); res.end('Error: ' + e.message); });
     }
     if (req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) return servirNomenclador(req, res, url);
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      const pag = paginas.servir(url.pathname, url.searchParams);
+      if (pag) { res.writeHead(200, { 'content-type': pag.tipo, 'cache-control': 'public, max-age=300' }); return res.end(req.method === 'HEAD' ? undefined : pag.cuerpo); }
+      if (url.pathname.startsWith('/ncm/') || url.pathname.startsWith('/importar/')) { res.writeHead(404, { 'content-type': 'text/html; charset=utf-8' }); return res.end(paginas.buscador('')); }
+    }
     if (req.method === 'GET' && (url.pathname === '/leads' || url.pathname === '/pruebas')) {
       res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Clave incorrecta. Revisá que sea la de ADMIN_KEY en Railway.');
     }
-    res.writeHead(200); res.end('PuertoBox bot ok');
+    res.writeHead(200); res.end('PuertoBox bot ok'); // /salud y cualquier otra ruta
   });
 }
 
-if (require.main === module) servidor().listen(PORT, () => console.log(`Bot escuchando en :${PORT}`));
+if (require.main === module) {
+  servidor().listen(PORT, () => console.log(`Bot escuchando en :${PORT}`));
+  if (process.env.IG_TOKEN) { renovarTokenIG(); setInterval(renovarTokenIG, 24 * 3600e3).unref(); }
+}
 module.exports = { procesar, servidor, normalizar };
