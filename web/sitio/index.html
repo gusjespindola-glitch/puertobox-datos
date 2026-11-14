@@ -805,8 +805,8 @@ footer{
 
   <div class="hero-bottom">
     <div class="hstat">
-      <div class="hstat-num" id="cnt1">{{usd_kg_desde}}</div>
-      <div class="hstat-lbl">USD/kg desde {{kg_desde}} kg</div>
+      <div class="hstat-num" id="cnt1">{{usd_kg_total_desde}}</div>
+      <div class="hstat-lbl">USD/kg desde {{kg_desde}} kg, gestión incluida</div>
     </div>
     <div class="hstat">
       <div class="hstat-num" id="cnt2">100%</div>
@@ -917,11 +917,11 @@ footer{
 <div class="big-stat">
   <div class="big-stat-inner">
     <div style="position:relative;display:inline-block">
-      <div class="big-num">{{usd_kg_desde}}</div>
-      <div class="big-num-fill" id="bigFill">{{usd_kg_desde}}</div>
+      <div class="big-num">{{usd_kg_total_desde}}</div>
+      <div class="big-num-fill" id="bigFill">{{usd_kg_total_desde}}</div>
     </div>
     <div class="big-stat-label">
-      <strong>USD por kilo</strong> desde {{kg_desde}} kg, de China a tu puerta.<br>
+      <strong>USD por kilo</strong> desde {{kg_desde}} kg, de China a tu puerta, con la gestión incluida.<br>
       Courier aéreo express · Precio de flete firme · Entrega a domicilio.
     </div>
   </div>
@@ -1132,7 +1132,7 @@ function animCount(el,to,suf,ms){
 }
 window.addEventListener('load',()=>{
   setTimeout(()=>{
-    animCount(document.getElementById('cnt1'),{{usd_kg_desde}},'',1100);
+    animCount(document.getElementById('cnt1'),{{usd_kg_total_desde}},'',1100);
     animCount(document.getElementById('cnt2'),100,'%',1500);
     animCount(document.getElementById('cnt3'),0,'',600);
   },900);

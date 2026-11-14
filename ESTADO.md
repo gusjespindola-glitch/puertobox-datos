@@ -43,7 +43,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - Dominio en NIC a nombre de Gustavo, vence 08/04/2027, DNS en Cloudflare.
 
 ## Pendientes (en orden)
--1. **Auditoría completa 14/11** (`docs/auditoria/2026-11-14-completa.md`): después del merge, cargar en Railway `YCLOUD_WEBHOOK_SECRET` (signing secret del webhook en YCloud › Developers › Webhooks) y correr `/pruebas`. Decisiones pendientes listadas en el informe (impuestos inflados en envíos chicos, electrodomésticos de cocina, portada 18 vs 19).
+-1. **Auditoría completa 14/11** (`docs/auditoria/2026-11-14-completa.md`): después del merge, cargar en Railway `YCLOUD_WEBHOOK_SECRET` (signing secret del webhook en YCloud › Developers › Webhooks) y correr `/pruebas`. Decisión pendiente: impuestos inflados en envíos chicos (preguntar a Howard). Electrodomésticos y portada: resueltos.
 0. ✅ Clave de Anthropic rotada el 13/11 (bot-puertobox-2, sin vencimiento).
 1. **Apagar el AI Agent de YCloud** (Inbox > Assignment): si se renueva el crédito, contestarían los dos bots.
 2. ✅ Avisos por ntfy andando (13/11).
