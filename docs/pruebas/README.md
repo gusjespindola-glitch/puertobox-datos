@@ -17,3 +17,9 @@ Se corren con `https://puertobox-datos-production.up.railway.app/pruebas?key=ADM
 - Marca y celulares para revender: rechazaba pero seguía pidiendo datos para cotizar. Corregido: deriva, ofrece la alternativa sin marca y no pide más datos.
 - "Quiero avanzar": cotizaba pero no derivaba. Corregido en el prompt.
 - El revisor contaba el "¿cómo va?" del saludo como segunda pregunta: ajustado.
+
+## Corrida 3 — 14/11/2026 (después de la base única)
+- 23 escenarios, 2 avisos (los dos en "Termos para revender": nombró ANMAT/INAL y "courier comercial").
+- Hallazgo extra (revisión manual): si el cliente no sabe el peso, no le pasó el mensaje en inglés para el proveedor.
+- Arreglo: el prompt no nombra organismos al cliente y el mensaje en inglés es obligatorio; el simulador ahora marca ANMAT/INAL/SENASA y exige el mensaje en inglés.
+- Precios OK con la base única (flete, volumétrico, gestión USD 20).

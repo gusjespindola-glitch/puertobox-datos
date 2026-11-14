@@ -11,7 +11,7 @@ const { crearStore } = require('./store');
 
 // Cada escenario: mensajes del cliente en orden y qué tiene que pasar.
 const ESCENARIOS = [
-  { nombre: 'Cliente que no sabe nada', msgs: ['hola', 'quiero traer cosas de china', 'ropa', 'para vender', 'no tiene marca', 'como 600 dolares', 'no se cuanto pesa'], espera: { sinPresupuesto: true, mencionaProveedor: true } },
+  { nombre: 'Cliente que no sabe nada', msgs: ['hola', 'quiero traer cosas de china', 'ropa', 'para vender', 'no tiene marca', 'como 600 dolares', 'no se cuanto pesa'], espera: { sinPresupuesto: true, mencionaProveedor: true, contiene: /Could you please/i } },
   { nombre: 'Manda todo junto', msgs: ['Hola, quiero traer 2 cajas de remeras sin marca para vender, pago 700 usd, pesan 30 kilos, cada caja 50x40x50'], espera: { presupuesto: true } },
   { nombre: 'Uso propio chico', msgs: ['hola quiero traer unas zapatillas para mi', 'sin marca', '80 dolares', '2 kilos'], espera: { presupuesto: true } },
   { nombre: 'Se va de tema', msgs: ['hola', 'quiero traer juguetes', 'che y ustedes donde estan?', 'para vender'], espera: {} },
@@ -37,7 +37,7 @@ const ESCENARIOS = [
 ];
 
 const MULETILLAS = /^(¡?genial|¡?anotado|¡?perfecto|¡?buen[ií]simo|¡?excelente|gracias|joya|dale|tranqui)\b/i;
-const JERGA = /peso bruto|volum[eé]tric|\bFOB\b|\bCIF\b|r[eé]gimen|courier comercial|peque[ñn]os env[ií]os/i;
+const JERGA = /peso bruto|volum[eé]tric|\bFOB\b|\bCIF\b|r[eé]gimen|courier comercial|peque[ñn]os env[ií]os|\bANMAT\b|\bINAL\b|\bSENASA\b/i;
 
 function revisar(resp, ctx) {
   const prob = [];
