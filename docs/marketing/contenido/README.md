@@ -1,3 +1,5 @@
+**Reglas obligatorias: `REGLAS.md`.**
+
 # Contenido orgánico (TikTok @gusespindola.despachante, 4.539 seguidores, 43 videos)
 
 - **Publicación: Metricool** (marca 8113674, TikTok @gusespindola.despachante conectado 14/11). Claude arma el video, lo sube a `web/media/` (se sirve en https://puertobox.com.ar/media/...) y lo programa en Metricool; Gustavo no toca nada. Mejores horarios según Metricool: lunes 10 y 18 h, domingo 10 h. TikTok no deja agregar música automática a videos por API: los videos van con su propio sonido.
