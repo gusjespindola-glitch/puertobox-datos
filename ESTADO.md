@@ -70,6 +70,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - **Recordatorios** (`bot/recordatorios.js`, cada 15 min): cliente derivado (quiere pagar, pide persona, mayorista, reclamo) sin respuesta → aviso a la hora y después cada 3 h, máximo 4. ⭐ importantes primero (quiere pagar, mayorista o pedido de USD 1.000 o más). Nada entre las 22 y las 8.
 - **Resumen diario a las 9:** esperando respuesta, dudas por confirmar y presupuestos sin respuesta del cliente hace más de 24 h (para seguimiento).
 - **Ventana de 24 h de WhatsApp:** la lista muestra cuántas horas quedan para contestar libremente y llega un aviso urgente con menos de 3 h. **Tope:** más de 60 mensajes por día en un chat → se pausa y avisa (tu número no tiene tope). **Resumen de las 9** con los números de las últimas 24 h (consultas → presupuestos → quieren pagar).
+- **Desde el número de Gustavo** (texto o audio, con o sin #): "borrar" / "reiniciar" / "empezar de nuevo" borra su chat de prueba; "pendientes" / "¿quién me falta atender?" da la lista.
 - **Sin comandos (14/11):** cada notificación trae dos botones: «Ya lo atendí» (marca al cliente y deja de recordarlo) y «Ver pendientes» (página `/pendientes` con la lista y un botón por cliente). Los links van firmados con ADMIN_KEY (no la muestran). Los comandos `#pendientes` y `#listo 549...` siguen andando de respaldo. Si Gustavo contesta desde la app y llega el eco, se marca solo.
 
 ## Avisos y saldo (13/11/2026)
