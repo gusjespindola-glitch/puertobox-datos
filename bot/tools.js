@@ -10,7 +10,7 @@ let motor = null;
 function getMotor() {
   if (!motor) {
     const d = (f) => require(path.join(__dirname, '..', 'web', 'nomenclador', 'data', f));
-    motor = crear({ sim: d('sim.json'), sufijos: {}, intervenciones: d('intervenciones.json'), sinonimos: d('sinonimos.json'), notas: {} });
+    motor = crear({ sim: d('sim.json'), sufijos: {}, intervenciones: d('intervenciones.json'), sinonimos: d('sinonimos.json'), notas: {}, frecuentes: d('productos_frecuentes.json') });
   }
   return motor;
 }
@@ -75,7 +75,9 @@ function ejecutar(nombre, input, ctx) {
         posicion: f.c, die: f.die, impuestos_internos: f.ii, descripcion: m.jerarquia(f).slice(-3).join(' › '),
         intervenciones_posibles: m.intervencionesDe(f).map((i) => i.organismo),
       }));
-      return res.length ? res : { aviso: 'Sin resultados. Probá con otras palabras o derivá a Gustavo.' };
+      if (!res.length) return { aviso: 'Sin resultados. Probá con otras palabras (por ejemplo, de qué material es o para qué se usa) o derivá a Gustavo.' };
+      const guia = m.buscar(input.producto, 1)[0]?.frecuente;
+      return guia ? { como_elegir: guia + ' Elegí la que corresponda según lo que dijo el cliente; si no sabés el material o el tipo, preguntalo. Es orientativa: la confirma nuestro despachante.', posiciones: res } : res;
     }
     case 'cotizar': {
       // Controles antes de dar un precio: datos imposibles o pedidos que no se cotizan por acá.

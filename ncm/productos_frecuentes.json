@@ -1,0 +1,562 @@
+{
+ "_meta": "Productos que más consulta la gente → posición orientativa (subpartida). El buscador (bot y nomenclador) los muestra primero, sin las aperturas 'presentados desmontados'. Lo valida Gustavo: si una está mal, se corrige acá y cambia en todos lados. Siempre orientativa: la confirma nuestro despachante.",
+ "productos": [
+  {
+   "palabras": [
+    "zapatillas deportivas",
+    "zapatillas de running",
+    "zapatillas running",
+    "zapatillas",
+    "zapatilla",
+    "sneakers",
+    "calzado deportivo",
+    "calzado de deporte",
+    "botines"
+   ],
+   "prefijos": [
+    "6404.11",
+    "6402.19"
+   ],
+   "nota": "Calzado deportivo armado. Parte de arriba de tela: 6404.11 (running: 'Para atletismo'; entrenamiento o uso deportivo diario: 'Calzado para tenis, baloncesto, gimnasia, entrenamiento'). Parte de arriba de caucho o plástico (cuero sintético): 6402.19. Si son urbanas (no de deporte) con parte de arriba de tela: 6404.19. Nunca las aperturas 'desmontados' (DIE 0%)."
+  },
+  {
+   "palabras": [
+    "ojotas",
+    "chinelas",
+    "pantuflas",
+    "sandalias"
+   ],
+   "prefijos": [
+    "6404.19",
+    "6402.20",
+    "6402.99"
+   ],
+   "nota": "Ojotas y pantuflas de tela: 6404.19. De goma o plástico: 6402.20 (tira entre los dedos) o 6402.99."
+  },
+  {
+   "palabras": [
+    "remeras",
+    "remera",
+    "t-shirt",
+    "camisetas"
+   ],
+   "prefijos": [
+    "6109.10",
+    "6109.90"
+   ],
+   "nota": "6109.10 algodón; 6109.90 sintéticas."
+  },
+  {
+   "palabras": [
+    "buzos",
+    "buzo",
+    "sweaters",
+    "sueteres",
+    "hoodies",
+    "hoodie",
+    "canguro"
+   ],
+   "prefijos": [
+    "6110.20",
+    "6110.30"
+   ],
+   "nota": "6110.20 algodón; 6110.30 sintéticos."
+  },
+  {
+   "palabras": [
+    "camperas",
+    "campera",
+    "rompevientos",
+    "parkas"
+   ],
+   "prefijos": [
+    "6201.40",
+    "6202.40"
+   ],
+   "nota": "Sintéticas: 6201.40 hombre, 6202.40 mujer. Si son de punto (tejidas), van en 6101/6102."
+  },
+  {
+   "palabras": [
+    "jeans",
+    "jean",
+    "pantalones de jean"
+   ],
+   "prefijos": [
+    "6203.42",
+    "6204.62"
+   ],
+   "nota": "Algodón: 6203.42 hombre, 6204.62 mujer."
+  },
+  {
+   "palabras": [
+    "medias",
+    "soquetes"
+   ],
+   "prefijos": [
+    "6115.95",
+    "6115.96"
+   ],
+   "nota": "6115.95 algodón; 6115.96 sintéticas."
+  },
+  {
+   "palabras": [
+    "gorras",
+    "gorra",
+    "gorros"
+   ],
+   "prefijos": [
+    "6505.00"
+   ],
+   "nota": "Gorras y gorros textiles."
+  },
+  {
+   "palabras": [
+    "auriculares",
+    "auricular",
+    "airpods",
+    "earbuds"
+   ],
+   "prefijos": [
+    "8518.30"
+   ],
+   "nota": "Auriculares, con o sin micrófono. Si son inalámbricos (Bluetooth) para reventa: ENACOM."
+  },
+  {
+   "palabras": [
+    "parlantes",
+    "parlante",
+    "altavoces"
+   ],
+   "prefijos": [
+    "8518.22",
+    "8518.21",
+    "8518.29"
+   ],
+   "nota": "Parlantes. Si son Bluetooth para reventa: ENACOM."
+  },
+  {
+   "palabras": [
+    "smartwatch",
+    "reloj inteligente",
+    "relojes inteligentes"
+   ],
+   "prefijos": [
+    "8517.62"
+   ],
+   "nota": "Reloj inteligente (se conecta al celular): 8517.62, ENACOM para reventa."
+  },
+  {
+   "palabras": [
+    "relojes",
+    "reloj"
+   ],
+   "prefijos": [
+    "9102.11",
+    "9102.12"
+   ],
+   "nota": "Relojes pulsera comunes. 9102.11 de agujas; 9102.12 digitales."
+  },
+  {
+   "palabras": [
+    "notebook",
+    "notebooks",
+    "laptop",
+    "tablet",
+    "tablets"
+   ],
+   "prefijos": [
+    "8471.30"
+   ],
+   "nota": "Notebooks y tablets."
+  },
+  {
+   "palabras": [
+    "cargadores",
+    "cargador"
+   ],
+   "prefijos": [
+    "8504.40"
+   ],
+   "nota": "Cargadores: 8504.40.10."
+  },
+  {
+   "palabras": [
+    "cables usb",
+    "cable usb",
+    "cables",
+    "cable"
+   ],
+   "prefijos": [
+    "8544.42"
+   ],
+   "nota": "Cables con conectores, hasta 80 V."
+  },
+  {
+   "palabras": [
+    "fundas de celular",
+    "funda de celular",
+    "fundas",
+    "funda"
+   ],
+   "prefijos": [
+    "3926.90",
+    "4202.32"
+   ],
+   "nota": "Fundas de silicona o plástico rígidas: 3926.90. Tipo estuche o billetera: 4202.32."
+  },
+  {
+   "palabras": [
+    "mochilas",
+    "mochila"
+   ],
+   "prefijos": [
+    "4202.92"
+   ],
+   "nota": "Mochilas de tela o plástico."
+  },
+  {
+   "palabras": [
+    "bolsos",
+    "bolso",
+    "riñoneras",
+    "riñonera"
+   ],
+   "prefijos": [
+    "4202.92"
+   ],
+   "nota": "Bolsos de tela o plástico (de viaje, deportivos, térmicos)."
+  },
+  {
+   "palabras": [
+    "carteras",
+    "cartera"
+   ],
+   "prefijos": [
+    "4202.22",
+    "4202.21"
+   ],
+   "nota": "Carteras: 4202.22 tela o plástico; 4202.21 cuero."
+  },
+  {
+   "palabras": [
+    "billeteras",
+    "billetera"
+   ],
+   "prefijos": [
+    "4202.32",
+    "4202.31"
+   ],
+   "nota": "4202.32 plástico o tela; 4202.31 cuero."
+  },
+  {
+   "palabras": [
+    "anteojos de sol",
+    "lentes de sol",
+    "gafas de sol"
+   ],
+   "prefijos": [
+    "9004.10"
+   ],
+   "nota": "Anteojos de sol."
+  },
+  {
+   "palabras": [
+    "juguetes",
+    "juguete",
+    "peluches",
+    "peluche",
+    "muñecas",
+    "muñeca"
+   ],
+   "prefijos": [
+    "9503.00"
+   ],
+   "nota": "Juguetes: llevan certificación de seguridad de juguetes para reventa."
+  },
+  {
+   "palabras": [
+    "drones",
+    "drone",
+    "dron"
+   ],
+   "prefijos": [
+    "8806"
+   ],
+   "nota": "Drones: ANAC/ENACOM. Derivar."
+  },
+  {
+   "palabras": [
+    "impresora 3d",
+    "impresoras 3d"
+   ],
+   "prefijos": [
+    "8485.20"
+   ],
+   "nota": "Impresoras 3D de filamento."
+  },
+  {
+   "palabras": [
+    "tiras led",
+    "tira led",
+    "luces led",
+    "luminarias",
+    "lamparas de pie",
+    "veladores"
+   ],
+   "prefijos": [
+    "9405.42",
+    "9405.11",
+    "9405.21"
+   ],
+   "nota": "Luminarias y tiras LED. Lámparas o focos LED sueltos: 8539.52. Seguridad eléctrica para reventa."
+  },
+  {
+   "palabras": [
+    "lamparas led",
+    "focos led",
+    "bombitas led",
+    "lamparitas led"
+   ],
+   "prefijos": [
+    "8539.52"
+   ],
+   "nota": "Lámparas/focos LED sueltos. Seguridad eléctrica para reventa."
+  },
+  {
+   "palabras": [
+    "taladros",
+    "taladro"
+   ],
+   "prefijos": [
+    "8467.21"
+   ],
+   "nota": "Taladros eléctricos. Seguridad eléctrica para reventa."
+  },
+  {
+   "palabras": [
+    "perfumes",
+    "perfume",
+    "fragancias",
+    "colonias"
+   ],
+   "prefijos": [
+    "3303.00"
+   ],
+   "nota": "Perfumes: ANMAT. Derivar para reventa."
+  },
+  {
+   "palabras": [
+    "maquillaje",
+    "cosmeticos",
+    "sombras",
+    "rimmel"
+   ],
+   "prefijos": [
+    "3304.20",
+    "3304.99",
+    "3304.10"
+   ],
+   "nota": "Cosméticos: ANMAT. Derivar para reventa."
+  },
+  {
+   "palabras": [
+    "joysticks",
+    "joystick",
+    "controles de play",
+    "consolas",
+    "consola"
+   ],
+   "prefijos": [
+    "9504.50"
+   ],
+   "nota": "Consolas y joysticks. Inalámbricos para reventa: ENACOM."
+  },
+  {
+   "palabras": [
+    "teclados",
+    "teclado",
+    "mouse"
+   ],
+   "prefijos": [
+    "8471.60"
+   ],
+   "nota": "Teclados y mouse. Inalámbricos para reventa: ENACOM."
+  },
+  {
+   "palabras": [
+    "monitores",
+    "monitor"
+   ],
+   "prefijos": [
+    "8528.52"
+   ],
+   "nota": "Monitores para computadora."
+  },
+  {
+   "palabras": [
+    "pendrives",
+    "pendrive",
+    "memorias usb",
+    "memoria usb",
+    "memorias",
+    "memoria",
+    "tarjetas de memoria",
+    "tarjeta de memoria",
+    "micro sd",
+    "microsd",
+    "discos ssd",
+    "disco ssd",
+    "ssd"
+   ],
+   "prefijos": [
+    "8523.51"
+   ],
+   "nota": "Pendrives, tarjetas de memoria y SSD: 8523.51 (tarjetas de memoria 8523.51.10; pendrives y SSD 8523.51.90)."
+  },
+  {
+   "palabras": [
+    "bicicletas",
+    "bicicleta"
+   ],
+   "prefijos": [
+    "8712.00"
+   ],
+   "nota": "Bicicletas sin motor. Eléctricas: 8711.60."
+  },
+  {
+   "palabras": [
+    "cascos",
+    "casco"
+   ],
+   "prefijos": [
+    "6506.10"
+   ],
+   "nota": "Cascos de seguridad (moto, bici). Certificación para reventa."
+  },
+  {
+   "palabras": [
+    "termos",
+    "termo"
+   ],
+   "prefijos": [
+    "9617.00"
+   ],
+   "nota": "Termos."
+  },
+  {
+   "palabras": [
+    "pesas",
+    "mancuernas",
+    "mats de yoga",
+    "mat de yoga",
+    "mats",
+    "colchonetas",
+    "bandas elasticas",
+    "articulos de gimnasio"
+   ],
+   "prefijos": [
+    "9506.91"
+   ],
+   "nota": "Artículos para gimnasia y cultura física."
+  },
+  {
+   "palabras": [
+    "bandejas de reposteria",
+    "moldes de reposteria",
+    "utensilios de reposteria",
+    "moldes de silicona",
+    "utensilios de cocina",
+    "bandejas"
+   ],
+   "prefijos": [
+    "3924.10",
+    "7323.93",
+    "7615.10"
+   ],
+   "nota": "Utensilios de cocina: 3924.10 plástico/silicona; 7323.93 acero inoxidable; 7615.10 aluminio. Tocan alimentos: permiso sanitario (envases) para reventa."
+  },
+  {
+   "palabras": [
+    "licuadoras",
+    "licuadora",
+    "batidoras",
+    "batidora",
+    "procesadoras",
+    "procesadora"
+   ],
+   "prefijos": [
+    "8509.40"
+   ],
+   "nota": "Electrodomésticos de cocina: sin permiso de envases, sí seguridad eléctrica para reventa."
+  },
+  {
+   "palabras": [
+    "cafeteras",
+    "cafetera",
+    "pavas electricas",
+    "pava electrica"
+   ],
+   "prefijos": [
+    "8516.71",
+    "8516.10"
+   ],
+   "nota": "Cafeteras 8516.71; pavas eléctricas 8516.10. Seguridad eléctrica para reventa."
+  },
+  {
+   "palabras": [
+    "freidoras de aire",
+    "freidora de aire",
+    "air fryer",
+    "hornos electricos",
+    "horno electrico"
+   ],
+   "prefijos": [
+    "8516.60"
+   ],
+   "nota": "Freidoras de aire y hornos eléctricos. Seguridad eléctrica para reventa."
+  },
+  {
+   "palabras": [
+    "correas de perro",
+    "correa de perro",
+    "collares de perro",
+    "collar de perro",
+    "pretales"
+   ],
+   "prefijos": [
+    "4201.00"
+   ],
+   "nota": "Artículos para mascotas (correas, collares)."
+  },
+  {
+   "palabras": [
+    "bijouterie",
+    "bijou",
+    "aros",
+    "collares",
+    "pulseras",
+    "anillos"
+   ],
+   "prefijos": [
+    "7117.19",
+    "7117.90"
+   ],
+   "nota": "Bijouterie: 7117.19 de metal común; 7117.90 de otros materiales."
+  },
+  {
+   "palabras": [
+    "sillas de oficina",
+    "silla de oficina",
+    "sillas gamer",
+    "silla gamer",
+    "sillas giratorias",
+    "silla giratoria"
+   ],
+   "prefijos": [
+    "9401.31",
+    "9401.39"
+   ],
+   "nota": "Sillas giratorias de altura regulable: 9401.31 de madera; 9401.39 las demás."
+  }
+ ]
+}

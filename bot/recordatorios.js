@@ -48,10 +48,19 @@ function describir(c, lead, ahora) {
 }
 
 /** Clasifica todos los chats. Devuelve { esperando, seguimiento, dudas } ordenados (importantes y más viejos primero). */
+/** ¿Es un número de Gustavo? (OWNER_NUMBER y negocio.json → numeros_gustavo): sus pruebas no cuentan como clientes. */
+function esGustavo(tel, owner) {
+  if (!tel) return false;
+  if (tel === owner) return true;
+  let propios = [];
+  try { propios = require('../src/negocio').datos().numeros_gustavo || []; } catch { /* sin datos */ }
+  return propios.includes(String(tel));
+}
+
 function pendientes(store, owner, ahora = Date.now()) {
   const esperando = []; const seguimiento = []; const dudas = [];
   for (const c of store.chats()) {
-    if (!c.telefono || c.telefono === owner) continue;
+    if (!c.telefono || esGustavo(c.telefono, owner)) continue;
     const lead = store.lead ? store.lead(c.telefono) : null;
     const respondio = c.gustavoRespondioEn || 0;
     const ultimoCliente = c.ultimoClienteEn || 0;
@@ -102,11 +111,11 @@ function textoPendientes(store, owner, ahora = Date.now()) {
 /** Números de las últimas 24 h para saber cómo viene la venta: consultas nuevas → presupuestos → quieren pagar. */
 function embudo(store, owner, ahora = Date.now()) {
   const desde = ahora - 24 * H;
-  const leads = (store.leads ? store.leads() : []).filter((l) => l.telefono !== owner && Date.parse(l.creado || 0) >= desde);
+  const leads = (store.leads ? store.leads() : []).filter((l) => !esGustavo(l.telefono, owner) && Date.parse(l.creado || 0) >= desde);
   const cotizados = leads.filter((l) => ['cotizado', 'listo_para_cerrar'].includes(l.estado) || l.precio_usd).length;
   const pagar = leads.filter((l) => l.estado === 'listo_para_cerrar').length;
   // Del anuncio de Meta: chats que entraron por el link del anuncio (aunque el bot todavía no haya guardado datos).
-  const chatsAnuncio = (store.chats ? store.chats() : []).filter((c) => c.origen === 'anuncio' && c.telefono !== owner && (c.origenEn || 0) >= desde);
+  const chatsAnuncio = (store.chats ? store.chats() : []).filter((c) => c.origen === 'anuncio' && !esGustavo(c.telefono, owner) && (c.origenEn || 0) >= desde);
   const leadAnuncio = (tel) => (store.lead ? store.lead(tel) : null) || {};
   const anuncio = {
     chats: chatsAnuncio.length,
@@ -166,4 +175,4 @@ function paginaPendientes(store, owner, linkAtendido, ahora = Date.now()) {
 <body><h1>Pendientes PuertoBox</h1>${cuerpo || '<p>No tenés clientes pendientes. Todo al día.</p>'}</body></html>`;
 }
 
-module.exports = { pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes, embudo };
+module.exports = { esGustavo, pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes, embudo };

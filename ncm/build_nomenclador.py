@@ -75,6 +75,7 @@ for line in raw.splitlines():
 # --- Sufijos (ya procesados) y sinónimos
 (out / "sufijos.json").write_text((here / "sufijos.json").read_text(encoding="utf-8"), encoding="utf-8")
 (out / "sinonimos.json").write_text((here / "sinonimos.json").read_text(encoding="utf-8"), encoding="utf-8")
+(out / "productos_frecuentes.json").write_text((here / "productos_frecuentes.json").read_text(encoding="utf-8"), encoding="utf-8")
 
 # --- Intervenciones orientativas (curadas por PuertoBox) e impuestos internos
 (out / "intervenciones.json").write_text((here / "intervenciones.json").read_text(encoding="utf-8"), encoding="utf-8")
