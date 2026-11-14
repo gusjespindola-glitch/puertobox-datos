@@ -1,216 +1,218 @@
 {
-  "_meta": {
-    "actualizado": "2026-11-13",
-    "aviso": "Lista de precios PuertoBox al cliente. Impuestos se cobran aparte, sin margen.",
-    "iva": "Precios con IVA incluido."
+ "_meta": {
+  "actualizado": "2026-11-13",
+  "aviso": "Lista de precios PuertoBox al cliente. Impuestos se cobran aparte, sin margen.",
+  "iva": "Precios con IVA incluido."
+ },
+ "china_aereo": {
+  "usd_kg": 25,
+  "minimo_facturable_kg": 1,
+  "fee_gestion_usd": 15,
+  "plazo_dias_habiles": "12-20",
+  "cobro": "Flete y fee al ingresar al depósito de origen; impuestos y entrega antes de liberar.",
+  "producto": "Personal"
+ },
+ "usa_aereo": {
+  "usd_kg": null,
+  "nota": "Completar cuando haya costo de proveedor USA."
+ },
+ "entrega": {
+  "retiro": 0,
+  "envio_nacional": "a tarifa del correo/Andreani"
+ },
+ "todo_incluido_promo": {
+  "activo": false,
+  "categorias_permitidas": [
+   "ropa",
+   "calzado"
+  ],
+  "tope_valor_declarado_usd_por_kg": 40
+ },
+ "china_aereo_emprendedor": {
+  "producto": "Emprendedor",
+  "tramos": [
+   {
+    "desde_kg": 10,
+    "usd_kg": 22
+   },
+   {
+    "desde_kg": 20,
+    "usd_kg": 20
+   }
+  ],
+  "fee_gestion_usd": 25,
+  "minimo_kg": 10
+ },
+ "reglas": {
+  "salida": "semanal, mínimo 20 kg consolidados",
+  "caja_max_kg": 23,
+  "cobro_flete": "100% al ingresar al depósito de origen",
+  "cobro_tributos": "antes de liberar; clientes nuevos anticipo 110% estimado",
+  "seguro_opcional": {
+   "porcentaje_fob": 0.03,
+   "minimo_usd": 10
   },
-  "china_aereo": {
-    "usd_kg": 25,
-    "minimo_facturable_kg": 1,
-    "fee_gestion_usd": 15,
-    "plazo_dias_habiles": "12-20",
-    "cobro": "Flete y fee al ingresar al depósito de origen; impuestos y entrega antes de liberar.",
-    "producto": "Personal"
+  "prohibido": [
+   "réplicas o marcas falsificadas",
+   "línea blanca",
+   "baterías sueltas",
+   "líquidos inflamables"
+  ]
+ },
+ "modelo_fijo": {
+  "descripcion": "Todo a nombre de PuertoBox (importador RI), courier comercial, guía consolidada. Precio único para todos.",
+  "usd_por_kg": 28,
+  "porcentaje_valor_factura": 0.55,
+  "minimo_usd": 40,
+  "incluye": "flete, aduana, impuestos, gasto documental, gestión. Puesto en punto de retiro.",
+  "envio_domicilio": "aparte, tarifa fija por zona",
+  "rubros_admitidos_di_max": 0.2,
+  "no_admitidos": [
+   "réplicas/marcas falsas",
+   "cosmética",
+   "alimentos",
+   "rubros con licencia o intervención",
+   "DI mayor a 20%"
+  ],
+  "supuestos": [
+   "IVA de importación como crédito fiscal (RI) — confirmar con contador",
+   "sin percepciones en courier general (material del curso: DI-TE-IVA-Internos-Antidumping)",
+   "CIF de cada guía > USD 500 → gasto documental 9,5%"
+  ],
+  "alternativa_si_no_hay_credito_iva": {
+   "usd_por_kg": 28,
+   "porcentaje_valor_factura": 0.7
   },
-  "usa_aereo": {
-    "usd_kg": null,
-    "nota": "Completar cuando haya costo de proveedor USA."
-  },
-  "entrega": {
-    "retiro": 0,
-    "envio_nacional": "a tarifa del correo/Andreani"
-  },
-  "todo_incluido_promo": {
-    "activo": false,
-    "categorias_permitidas": [
-      "ropa",
-      "calzado"
-    ],
-    "tope_valor_declarado_usd_por_kg": 40
-  },
-  "china_aereo_emprendedor": {
-    "producto": "Emprendedor",
-    "tramos": [
-      {
-        "desde_kg": 10,
-        "usd_kg": 22
-      },
-      {
-        "desde_kg": 20,
-        "usd_kg": 20
-      }
-    ],
-    "fee_gestion_usd": 25,
-    "minimo_kg": 10
-  },
-  "reglas": {
-    "salida": "semanal, mínimo 20 kg consolidados",
-    "caja_max_kg": 23,
-    "cobro_flete": "100% al ingresar al depósito de origen",
-    "cobro_tributos": "antes de liberar; clientes nuevos anticipo 110% estimado",
-    "seguro_opcional": {
-      "porcentaje_fob": 0.03,
-      "minimo_usd": 10
-    },
-    "prohibido": [
-      "réplicas o marcas falsificadas",
-      "línea blanca",
-      "baterías sueltas",
-      "líquidos inflamables"
-    ]
-  },
-  "modelo_fijo": {
-    "descripcion": "Todo a nombre de PuertoBox (importador RI), courier comercial, guía consolidada. Precio único para todos.",
-    "usd_por_kg": 28,
-    "porcentaje_valor_factura": 0.55,
-    "minimo_usd": 40,
-    "incluye": "flete, aduana, impuestos, gasto documental, gestión. Puesto en punto de retiro.",
-    "envio_domicilio": "aparte, tarifa fija por zona",
-    "rubros_admitidos_di_max": 0.2,
-    "no_admitidos": [
-      "réplicas/marcas falsas",
-      "cosmética",
-      "alimentos",
-      "rubros con licencia o intervención",
-      "DI mayor a 20%"
-    ],
-    "supuestos": [
-      "IVA de importación como crédito fiscal (RI) — confirmar con contador",
-      "sin percepciones en courier general (material del curso: DI-TE-IVA-Internos-Antidumping)",
-      "CIF de cada guía > USD 500 → gasto documental 9,5%"
-    ],
-    "alternativa_si_no_hay_credito_iva": {
-      "usd_por_kg": 28,
-      "porcentaje_valor_factura": 0.7
-    },
-    "porcentaje_die_alto": 0.7,
-    "umbral_die_alto": 20
-  },
-  "flete_directo": {
-    "descripcion": "Modelo vigente desde 13/11/2026. Envío a nombre y domicilio del cliente por DHL. PuertoBox cobra flete (por peso real de balanza en el depósito de China) + handling fijo, por adelantado. Impuestos y gasto administrativo los paga el cliente al courier.",
-    "courier": "DHL (vía Howard)",
-    "tolerancia": 0,
-    "divisor_volumetrico": 5000,
-    "tramos_venta": [
-      {
-        "desde_kg": 0,
-        "hasta_kg": 1.5,
-        "total_usd": 45
-      },
-      {
-        "desde_kg": 1.5,
-        "hasta_kg": 3,
-        "usd_kg": 32
-      },
-      {
-        "desde_kg": 3,
-        "hasta_kg": 5,
-        "usd_kg": 28
-      },
-      {
-        "desde_kg": 5,
-        "hasta_kg": 10,
-        "usd_kg": 25
-      },
-      {
-        "desde_kg": 10,
-        "hasta_kg": 15,
-        "usd_kg": 20
-      },
-      {
-        "desde_kg": 15,
-        "hasta_kg": 20,
-        "usd_kg": 19
-      },
-      {
-        "desde_kg": 20,
-        "hasta_kg": null,
-        "usd_kg": 18
-      }
-    ],
-    "tramos_costo_dhl": [
-      {
-        "desde_kg": 0,
-        "hasta_kg": 1.5,
-        "total_usd": 38
-      },
-      {
-        "desde_kg": 1.5,
-        "hasta_kg": 3,
-        "usd_kg": 26
-      },
-      {
-        "desde_kg": 3,
-        "hasta_kg": 5,
-        "usd_kg": 23
-      },
-      {
-        "desde_kg": 5,
-        "hasta_kg": 10,
-        "usd_kg": 20
-      },
-      {
-        "desde_kg": 10,
-        "hasta_kg": 15,
-        "usd_kg": 15
-      },
-      {
-        "desde_kg": 15,
-        "hasta_kg": 20,
-        "usd_kg": 14
-      },
-      {
-        "desde_kg": 20,
-        "hasta_kg": null,
-        "usd_kg": 13.5
-      }
-    ],
-    "tramos_costo_ups_referencia": [
-      {
-        "desde_kg": 0,
-        "hasta_kg": 1.5,
-        "total_usd": 46
-      },
-      {
-        "desde_kg": 1.5,
-        "hasta_kg": 3,
-        "usd_kg": 31
-      },
-      {
-        "desde_kg": 3,
-        "hasta_kg": 5,
-        "usd_kg": 24
-      },
-      {
-        "desde_kg": 5,
-        "hasta_kg": 10,
-        "usd_kg": 22
-      },
-      {
-        "desde_kg": 10,
-        "hasta_kg": 15,
-        "usd_kg": 17
-      },
-      {
-        "desde_kg": 15,
-        "hasta_kg": 20,
-        "usd_kg": 15
-      },
-      {
-        "desde_kg": 20,
-        "hasta_kg": null,
-        "usd_kg": 13.5
-      }
-    ],
-    "fuente_costos": "Howard Huang, Alibaba chat 13/11/2026",
-    "pendiente": [
-      "gasto administrativo de DHL en Argentina",
-      "recargo zona remota",
-      "días de tránsito",
-      "¿sigue tarifa 11 USD/kg 20kg+ por FedEx?"
-    ],
-    "handling_usd": 20,
-    "cobro": "Flete por kilo cobrable del proveedor (sin margen) + gestión USD 20. Precio cerrado: se respeta aunque la caja llegue hasta 15% más pesada o grande; si supera eso, se ajusta con foto de la balanza. 100% al ingresar la caja al depósito de China.",
-    "decision": "13/11/2026: opción C (sin 15%, handling USD 20), elegida por Gustavo."
-  }
+  "porcentaje_die_alto": 0.7,
+  "umbral_die_alto": 20
+ },
+ "flete_directo": {
+  "descripcion": "Modelo vigente desde 13/11/2026. Envío a nombre y domicilio del cliente por DHL. PuertoBox cobra flete (por peso real de balanza en el depósito de China) + handling fijo, por adelantado. Impuestos y gasto administrativo los paga el cliente al courier.",
+  "courier": "DHL (vía Howard)",
+  "tolerancia": 0,
+  "divisor_volumetrico": 5000,
+  "tramos_venta": [
+   {
+    "desde_kg": 0,
+    "hasta_kg": 1.5,
+    "total_usd": 45
+   },
+   {
+    "desde_kg": 1.5,
+    "hasta_kg": 3,
+    "usd_kg": 32
+   },
+   {
+    "desde_kg": 3,
+    "hasta_kg": 5,
+    "usd_kg": 28
+   },
+   {
+    "desde_kg": 5,
+    "hasta_kg": 10,
+    "usd_kg": 25
+   },
+   {
+    "desde_kg": 10,
+    "hasta_kg": 15,
+    "usd_kg": 20
+   },
+   {
+    "desde_kg": 15,
+    "hasta_kg": 20,
+    "usd_kg": 19
+   },
+   {
+    "desde_kg": 20,
+    "hasta_kg": null,
+    "usd_kg": 18
+   }
+  ],
+  "tramos_costo_dhl": [
+   {
+    "desde_kg": 0,
+    "hasta_kg": 1.5,
+    "total_usd": 38
+   },
+   {
+    "desde_kg": 1.5,
+    "hasta_kg": 3,
+    "usd_kg": 26
+   },
+   {
+    "desde_kg": 3,
+    "hasta_kg": 5,
+    "usd_kg": 23
+   },
+   {
+    "desde_kg": 5,
+    "hasta_kg": 10,
+    "usd_kg": 20
+   },
+   {
+    "desde_kg": 10,
+    "hasta_kg": 15,
+    "usd_kg": 15
+   },
+   {
+    "desde_kg": 15,
+    "hasta_kg": 20,
+    "usd_kg": 14
+   },
+   {
+    "desde_kg": 20,
+    "hasta_kg": null,
+    "usd_kg": 13.5
+   }
+  ],
+  "tramos_costo_ups_referencia": [
+   {
+    "desde_kg": 0,
+    "hasta_kg": 1.5,
+    "total_usd": 46
+   },
+   {
+    "desde_kg": 1.5,
+    "hasta_kg": 3,
+    "usd_kg": 31
+   },
+   {
+    "desde_kg": 3,
+    "hasta_kg": 5,
+    "usd_kg": 24
+   },
+   {
+    "desde_kg": 5,
+    "hasta_kg": 10,
+    "usd_kg": 22
+   },
+   {
+    "desde_kg": 10,
+    "hasta_kg": 15,
+    "usd_kg": 17
+   },
+   {
+    "desde_kg": 15,
+    "hasta_kg": 20,
+    "usd_kg": 15
+   },
+   {
+    "desde_kg": 20,
+    "hasta_kg": null,
+    "usd_kg": 13.5
+   }
+  ],
+  "fuente_costos": "Howard Huang, Alibaba chat 13/11/2026",
+  "pendiente": [
+   "gasto administrativo de DHL en Argentina",
+   "recargo zona remota",
+   "días de tránsito",
+   "¿sigue tarifa 11 USD/kg 20kg+ por FedEx?"
+  ],
+  "handling_usd": 20,
+  "cobro": "Flete por kilo cobrable del proveedor (sin margen) + gestión USD 20. Precio cerrado: se respeta aunque la caja llegue hasta 15% más pesada o grande; si supera eso, se ajusta con foto de la balanza. 100% al ingresar la caja al depósito de China.",
+  "decision": "13/11/2026: opción C (sin 15%, handling USD 20), elegida por Gustavo.",
+  "flete_declarado_usd_kg": 2.5,
+  "flete_declarado_fuente": "Flete que figura en la factura del courier y usa Aduana para el CIF (no es nuestro flete de venta). Facturas reales: FedEx 2025 USD 146,75 / 58,7 kg = 2,50; UPS 05/01/2026 USD 21 / 8,5 kg = 2,47 (data/facturas_reales.json)."
+ }
 }

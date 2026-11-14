@@ -119,3 +119,12 @@ test('presupuesto: lo de PuertoBox separado de los impuestos del courier (sin to
   assert.match(prompt, /no se paga a PuertoBox/);
   assert.ok(!/Total estimado: USD/.test(prompt));
 });
+
+test('impuestos: el estimado reproduce la factura real de UPS (flete declarado, no el de venta)', () => {
+  const { presupuesto } = require('../src/flete_directo');
+  const f = require('../data/facturas_reales.json').facturas.find((x) => x.id === 'ups-2026-01');
+  const real = f.usd.derechos + f.usd.tasa_estadistica + f.usd.iva_importacion + f.usd.gasto_documental + f.usd.iva_gasto_documental;
+  const bot = presupuesto({ kg: f.kg, valorFactura: f.usd.fob, die: 16.1, regimen: 'comercial' }).impuestos_estimados_usd.total;
+  assert.ok(bot >= real, `el estimado (${bot}) no puede quedar por debajo de lo real (${real})`);
+  assert.ok(bot <= real * 1.05, `el estimado (${bot}) se pasa más de 5% de lo real (${real})`);
+});
