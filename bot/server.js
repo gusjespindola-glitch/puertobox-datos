@@ -135,20 +135,45 @@ async function transcribirAudio(audio, fetchImpl = fetch) {
 }
 
 /** Aviso solo por ntfy (recordatorios y resumen): no gasta mensajes de WhatsApp. */
-async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fetchImpl = fetch) {
+async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fetchImpl = fetch, tel = null) {
   const topic = process.env.NTFY_TOPIC;
   if (!topic) return;
+  const headers = { Title: titulo, Priority: prioridad };
+  const acciones = accionesNtfy(tel);
+  if (acciones) headers.Actions = acciones;
   try {
-    await fetchImpl(`https://ntfy.sh/${encodeURIComponent(topic)}`, { method: 'POST', headers: { Title: titulo, Priority: prioridad }, body: texto });
+    await fetchImpl(`https://ntfy.sh/${encodeURIComponent(topic)}`, { method: 'POST', headers, body: texto });
   } catch (e) { console.error('ntfy error', e.message); }
+}
+
+/**
+ * Botones en la notificación (pedido del 14/11: nada de comandos para acordarse).
+ * "Ya lo atendí" marca al cliente sin abrir nada; "Ver pendientes" abre la lista con un botón por cliente.
+ * Los links llevan una firma por cliente (HMAC con ADMIN_KEY), nunca la clave.
+ */
+const BASE_URL = () => process.env.PUBLIC_URL || `https://${require('../src/negocio').datos().dominio}`;
+function firma(que) {
+  const clave = process.env.ADMIN_KEY || ADMIN_KEY;
+  return clave ? require('crypto').createHmac('sha256', clave).update(String(que)).digest('hex').slice(0, 24) : null;
+}
+function firmaOk(que, dada) {
+  const f = firma(que);
+  return !!(f && dada && f.length === String(dada).length && require('crypto').timingSafeEqual(Buffer.from(f), Buffer.from(String(dada))));
+}
+function accionesNtfy(tel) {
+  const fp = firma('pendientes');
+  if (!fp) return null;
+  const ver = `view, Ver pendientes, ${BASE_URL()}/pendientes?t=${fp}`;
+  if (!tel) return ver;
+  return `http, Ya lo atendí, ${BASE_URL()}/atendido?tel=${encodeURIComponent(tel)}&t=${firma('atendido:' + tel)}, method=POST, clear=true; ${ver}`;
 }
 
 /**
  * Aviso a Gustavo por UN solo canal (pedido del 14/11: no duplicar).
  * Si hay NTFY_TOPIC, solo ntfy (llega siempre y no gasta WhatsApp). Si no, WhatsApp al 698 (solo llega si le escribió al bot en las últimas 24 h).
  */
-async function avisarGustavo(owner, texto, fetchImpl = fetch, titulo = 'PuertoBox: cliente para atender') {
-  if (process.env.NTFY_TOPIC) return avisarNtfy(texto, titulo, 'high', fetchImpl);
+async function avisarGustavo(owner, texto, fetchImpl = fetch, titulo = 'PuertoBox: cliente para atender', tel = null) {
+  if (process.env.NTFY_TOPIC) return avisarNtfy(texto, titulo, 'high', fetchImpl, tel);
   if (owner) await enviar(owner, texto, fetchImpl);
 }
 
@@ -247,7 +272,7 @@ async function atender(tel, texto, st, fetchImpl, owner) {
       const aviso = esIG
         ? `🔔 PuertoBox (Instagram): ${d.motivo.replace(/_/g, ' ')}\n${d.resumen}\n(Respondele desde los mensajes de Instagram de PuertoBox. El bot quedó pausado en ese chat; para reactivarlo escribí #bot en ese mismo chat.)`
         : `🔔 PuertoBox: ${d.motivo.replace(/_/g, ' ')}\nCliente: +${d.telefono}\n${d.resumen}\n(El bot quedó pausado en ese chat. Para reactivarlo mandá: #bot ${d.telefono})`;
-      await avisarGustavo(owner, aviso, fetchImpl);
+      await avisarGustavo(owner, aviso, fetchImpl, undefined, d.telefono);
       salidas.push({ to: owner, body: aviso });
     }
   }
@@ -329,6 +354,20 @@ function servidor() {
       });
       return;
     }
+    if (url.pathname === '/atendido' && (req.method === 'POST' || req.method === 'GET')) {
+      const tel = soloDigitos(url.searchParams.get('tel'));
+      if (!tel || !firmaOk('atendido:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      store.marcar(tel, { gustavoRespondioEn: Date.now(), recordatorios: 0 });
+      const volver = url.searchParams.get('volver');
+      if (volver && firmaOk('pendientes', volver)) { res.writeHead(303, { location: `/pendientes?t=${volver}` }); return res.end(); }
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }); return res.end(`Listo: +${tel} marcado como atendido.`);
+    }
+    if (req.method === 'GET' && url.pathname === '/pendientes') {
+      const t = url.searchParams.get('t');
+      if (!firmaOk('pendientes', t)) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+      return res.end(require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`));
+    }
     if (req.method === 'GET' && url.pathname === '/leads' && ADMIN_KEY && url.searchParams.get('key') === ADMIN_KEY) {
       const leads = store.leads();
       const cols = ['telefono', 'nombre', 'producto', 'posicion', 'kg', 'valor_usd', 'precio_usd', 'tipo', 'estado', 'notas', 'actualizado'];
@@ -359,7 +398,7 @@ if (require.main === module) {
   if (process.env.IG_TOKEN) { renovarTokenIG(); setInterval(renovarTokenIG, 24 * 3600e3).unref(); }
   // Asistente de pendientes: cada 15 minutos revisa clientes sin respuesta y manda avisos por ntfy (y el resumen de las 9).
   const { revisar } = require('./recordatorios');
-  const tic = () => revisar({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), avisar: (t, titulo, prioridad) => avisarNtfy(t, titulo, prioridad) }).catch((e) => console.error('Recordatorios:', e.message));
+  const tic = () => revisar({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), avisar: (t, titulo, prioridad, tel) => avisarNtfy(t, titulo, prioridad, fetch, tel) }).catch((e) => console.error('Recordatorios:', e.message));
   setTimeout(tic, 60e3).unref(); setInterval(tic, 15 * 60e3).unref();
 }
-module.exports = { procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo };
+module.exports = { procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma };

@@ -75,3 +75,4 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - 14/11/2026 (Gustavo): si una mejora implica pagar, mejor no por ahora; seguir con lo que hay. Audios de WhatsApp: quedan para más adelante (la opción gratis es Groq/Whisper).
 - 14/11/2026 (Gustavo): audios sí, si es gratis. Se hizo con Groq (Whisper, plan gratis sin tarjeta).
 - 14/11/2026 (Gustavo): quiere un asistente que le recuerde clientes sin atender, los importantes y los olvidados. Y un solo aviso por cosa: no WhatsApp + ntfy a la vez (era mucho). Se hizo: todo por ntfy, recordatorios con importantes primero, resumen a las 9, silencio de 22 a 8, comandos #pendientes y #listo.
+- 14/11/2026 (Gustavo): no se acuerda de comandos; todo tiene que ser intuitivo. Se reemplazaron por botones en la notificación de ntfy («Ya lo atendí», «Ver pendientes»). No darle comandos para memorizar.
