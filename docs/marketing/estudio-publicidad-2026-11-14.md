@@ -72,9 +72,9 @@ La versión 1 era "de agencia": prolija, con marca y tipografía. La evidencia d
 ### Las piezas nuevas (canvas, fila "Versión 2")
 1. **Chat real cotizando:** se ve como una captura del celular. Muestra la conversación real con el bot (pregunta por la marca, presupuesto con los números del motor). Sin logos ni diseño de agencia.
 2. **Nota "Antes de comprar en China, preguntá esto":** formato de nota del celular con 5 preguntas (impuestos, permisos, precio cerrado, marca, envío dentro de China). Educa, da valor y cierra con "un despachante te las responde gratis antes de que compres". Es la que más se guarda y se comparte.
-3. **La cara del despachante:** foto real de Gustavo (falta la foto) con la frase "Soy despachante de aduana. Antes de que compres en China, te digo cuánto vas a pagar." Es la que más confianza da según los estudios. No lleva el nombre (decisión del 14/11), sí la matrícula.
+3. **Foto real de la balanza** (Gustavo no quiere poner su cara, 14/11): foto real de una caja en la balanza del depósito en Shenzhen, con el peso visible y sin datos del cliente, con "Antes de que tu caja salga de China, te mandamos esta foto". Es una prueba real de algo que la competencia no muestra. Falta la foto (pedírsela a Howard).
 
 ### Recomendación
-- Prueba con las 3 nativas (1 y 2 ya; 3 cuando esté la foto). La versión 1 queda de respaldo.
+- Prueba con las 3 nativas (1 y 2 ya; 3 cuando esté la foto de la balanza). La versión 1 queda de respaldo.
 - **El mejor anuncio probablemente ya lo tiene Gustavo: sus videos de TikTok que más funcionaron.** Contenido propio que ya demostró que engancha: se sube a Meta como anuncio clic a WhatsApp tal cual, sin editar de más.
 - **Reseñas reales:** pedirle a cada cliente que recibió su caja una captura o una frase con permiso para usarla. Con 3 reseñas reales se arma la pieza de prueba social (no se inventan).
