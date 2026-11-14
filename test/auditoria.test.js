@@ -194,7 +194,7 @@ test('al cliente: "nuestro despachante" (no el nombre) y los impuestos se pagan 
 test('respuestas claras: sin "?." y el prompt prohíbe frases vacías como "se pueden evaluar"', () => {
   const { limpiar } = require('../bot/agent');
   assert.strictEqual(limpiar('¿Las fundas tienen alguna marca o logo?.'), '¿Las fundas tienen alguna marca o logo?');
-  assert.strictEqual(limpiar('Listo!. Te escribo.'), 'Listo! Te escribo.');
+  assert.strictEqual(limpiar('Ya está!. Te escribo.'), 'Ya está! Te escribo.');
   const prompt = require('fs').readFileSync(require('path').join(__dirname, '..', 'bot', 'prompt.md'), 'utf8');
   assert.match(prompt, /Sí, las fundas las traemos/);
   assert.match(prompt, /"se puede\(n\) evaluar"/);
