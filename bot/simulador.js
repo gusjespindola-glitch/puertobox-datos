@@ -65,6 +65,8 @@ function revisar(resp, ctx) {
   if (/\p{Extended_Pictographic}/u.test(t)) prob.push('usa emojis');
   if (/^[¿¡]?\p{Ll}/u.test(t.trim())) prob.push('arranca en minúscula');
   if (/Presupuesto PuertoBox/.test(t) && !/\*Presupuesto PuertoBox\*/.test(t)) prob.push('presupuesto sin formato');
+  if (esPresupuesto && !/Total a PuertoBox/i.test(t)) prob.push('presupuesto sin "Total a PuertoBox"');
+  if (esPresupuesto && /total estimado/i.test(t)) prob.push('mezcla PuertoBox e impuestos en un solo total');
   if (/soy (una )?persona|soy humano/i.test(t)) prob.push('dice que es humano');
   return prob;
 }

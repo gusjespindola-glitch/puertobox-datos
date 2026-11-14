@@ -107,3 +107,15 @@ test('envío dentro de China: lo paga el cliente y lo dicen el bot, la web y la 
   const ctx = { store: crearStore(null), telefono: '1', derivaciones: [] };
   assert.match(ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 20, regimen: 'comercial' }, ctx).reglas, /Shenzhen NO está incluido/);
 });
+
+test('presupuesto: lo de PuertoBox separado de los impuestos del courier (sin total mezclado)', () => {
+  const fs = require('fs'); const path = require('path');
+  const ctx = { store: crearStore(null), telefono: '1', derivaciones: [] };
+  const r = ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 20, regimen: 'comercial', largo_cm: 40, ancho_cm: 30, alto_cm: 30 }, ctx);
+  assert.strictEqual(r.total_puertobox_usd, r.flete_puertobox_usd + r.handling_puertobox_usd);
+  assert.strictEqual(r.total_estimado_usd, undefined);
+  const prompt = negocio.render(fs.readFileSync(path.join(__dirname, '..', 'bot', 'prompt.md'), 'utf8'));
+  assert.match(prompt, /\*Total a PuertoBox: USD \[total_puertobox\]\*/);
+  assert.match(prompt, /no se paga a PuertoBox/);
+  assert.ok(!/Total estimado: USD/.test(prompt));
+});
