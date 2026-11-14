@@ -58,3 +58,8 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - Token: variable `IG_TOKEN` en Railway (se renueva solo cada día y se guarda en /data/ig_token.json). Opcionales: `IG_VERIFY_TOKEN`, `IG_APP_SECRET` (verifica la firma de Meta).
 - Página de privacidad para Meta: https://puertobox.com.ar/privacidad
 - Falta del lado de Meta: cuenta @puertobox.ok profesional, app en developers.facebook.com (Instagram API con inicio de sesión de Instagram), token, webhook https://puertobox.com.ar/instagram suscripto a `messages`, app en modo Live.
+
+## Avisos y saldo (13/11/2026)
+- ✅ ntfy andando: tema `puertobox-8b275069` (app ntfy en el celular de Gustavo + NTFY_TOPIC en Railway). Probado: el aviso de derivación llega.
+- Saldo Anthropic: USD 4,42 al 13/11 22:36. Un día entero de pruebas (~70 conversaciones simuladas) gastó ~USD 0,60 → menos de 1 centavo por conversación. No hace falta cargar más por ahora (decisión de Gustavo).
+- Si se queda sin saldo o la clave falla: el cliente recibe mensaje de espera y Gustavo un aviso por ntfy (máx. 1 cada 3 h).

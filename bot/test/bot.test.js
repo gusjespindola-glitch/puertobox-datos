@@ -246,3 +246,18 @@ test('Instagram: responde por Instagram, ignora su propio eco y se pausa si resp
   await proc(ig({ sender: { id: 'pb' }, recipient: { id: '777' }, message: { mid: 'm2', text: 'Hola, soy Gustavo', is_echo: true } }), { fetchImpl, store: st, debounceMs: 0 });
   assert.strictEqual(st.estaPausado('ig:777'), true);
 });
+
+test('sin saldo en Anthropic: el cliente recibe espera y Gustavo un aviso', async () => {
+  const { procesar: proc } = require('../server');
+  const { crearStore } = require('../store');
+  const st = crearStore(null);
+  const enviados = [];
+  const fetchImpl = async (url, opt) => {
+    if (String(url).includes('anthropic')) return { ok: false, status: 400, text: async () => '{"error":{"message":"Your credit balance is too low to access the Anthropic API."}}' };
+    if (opt && opt.body) enviados.push(String(opt.body));
+    return { ok: true, json: async () => ({}), text: async () => '' };
+  };
+  await proc(msg('5499', 'hola'), { fetchImpl, store: st, debounceMs: 0 });
+  assert.ok(enviados.some((b) => b.includes('te va a responder Gustavo')), 'mensaje de espera al cliente');
+  assert.ok(enviados.some((b) => b.includes('SIN SALDO')), 'aviso a Gustavo');
+});
