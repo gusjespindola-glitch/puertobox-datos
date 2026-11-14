@@ -60,3 +60,21 @@ Rompe la objeción más común del emprendedor ("no soy importador, no puedo").
 - Carrusel "3 pasos" (mandás el link → te decimos impuestos y flete → lo recibís en tu casa).
 - Variante de A con otro producto popular (zapatillas, mochilas) usando el motor para los números.
 - Video corto (reel) de pantalla del chat real cotizando, con el mismo gancho.
+
+---
+
+## 7. Versión 2 (14/11, a pedido de Gustavo: "que no sea de bot")
+La versión 1 era "de agencia": prolija, con marca y tipografía. La evidencia dice que en Meta rinde más lo que parece contenido normal del feed y lo que tiene una persona real:
+- **Lo nativo le gana a lo pulido:** en más de 12.000 anuncios, el estilo hecho por usuarios tuvo en Meta 1,88% de clics contra 1,41% de la producción pulida (+33%) (Benly, vía mean.ceo 2026). Para captar clientes, los anuncios "feos" que parecen posteos normales suelen ganarles a los lindos (Geisheker 2026).
+- **La cara genera confianza:** un estudio sobre 500 millones de impresiones (Columbia, Harvard y otras con Taboola, 2026) encontró que una cara humana grande y clara es lo que más hace sentir humano y confiable a un anuncio. Otro estudio (Journal of Retailing and Consumer Services, 2026) mostró que la foto de una persona real genera más credibilidad e intención de compra que una ilustración.
+- **Lo que preocupa a la gente:** estafas (se recomienda buscar opiniones y ver que la empresa sea real), cobros extra al llegar, que no contesten, demoras. Los expertos le dicen al público: "antes de comprar, consultá con un operador". Ese es exactamente el servicio de PuertoBox.
+
+### Las piezas nuevas (canvas, fila "Versión 2")
+1. **Chat real cotizando:** se ve como una captura del celular. Muestra la conversación real con el bot (pregunta por la marca, presupuesto con los números del motor). Sin logos ni diseño de agencia.
+2. **Nota "Antes de comprar en China, preguntá esto":** formato de nota del celular con 5 preguntas (impuestos, permisos, precio cerrado, marca, envío dentro de China). Educa, da valor y cierra con "un despachante te las responde gratis antes de que compres". Es la que más se guarda y se comparte.
+3. **La cara del despachante:** foto real de Gustavo (falta la foto) con la frase "Soy despachante de aduana. Antes de que compres en China, te digo cuánto vas a pagar." Es la que más confianza da según los estudios. No lleva el nombre (decisión del 14/11), sí la matrícula.
+
+### Recomendación
+- Prueba con las 3 nativas (1 y 2 ya; 3 cuando esté la foto). La versión 1 queda de respaldo.
+- **El mejor anuncio probablemente ya lo tiene Gustavo: sus videos de TikTok que más funcionaron.** Contenido propio que ya demostró que engancha: se sube a Meta como anuncio clic a WhatsApp tal cual, sin editar de más.
+- **Reseñas reales:** pedirle a cada cliente que recibió su caja una captura o una frase con permiso para usarla. Con 3 reseñas reales se arma la pieza de prueba social (no se inventan).
