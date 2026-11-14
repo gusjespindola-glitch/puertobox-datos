@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#080808">
 <title>PuertoBox — Courier de China a tu puerta</title>
-<meta name="description" content="Courier aéreo express de China a tu domicilio. Tarifa clara por kilo y, antes de comprar, te decimos cuánto vas a pagar de impuestos. Despachante de Aduana matriculado ante ARCA.">
+<meta name="description" content="Traé de China a tu casa sabiendo cuánto te cuesta cada unidad antes de comprar: flete con precio cerrado e impuestos estimados por un despachante de aduana matriculado. Cotizá gratis por WhatsApp.">
 <link rel="canonical" href="https://{{dominio}}/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://{{dominio}}/">
@@ -180,6 +180,9 @@ nav{
   font-size:15px;line-height:1.65;color:#aaa;max-width:320px;
 }
 .hero-sub strong{color:var(--white);}
+.hero-cta{display:inline-block;margin-top:22px;background:var(--red);color:#fff;font-weight:700;font-size:17px;letter-spacing:.5px;padding:16px 26px;border-radius:999px;text-decoration:none;box-shadow:0 8px 24px rgba(200,20,30,.35);transition:transform .15s}
+.hero-cta:hover{transform:translateY(-2px)}
+.hero-cta-nota{margin:10px 0 0;font-size:13px;color:rgba(255,255,255,.6)}
 .hero-scroll{
   font-family:'Space Mono',monospace;
   font-size:9px;letter-spacing:2px;text-transform:uppercase;
@@ -793,9 +796,13 @@ footer{
       <span class="outline">PUERTA</span>
     </h1>
     <div class="hero-sub-row">
+      <div>
       <p class="hero-sub">
-        <strong>Courier aéreo express, a tu nombre.</strong> Tarifa clara por kilo y, antes de que compres, te decimos cuánto vas a pagar de impuestos. Sin sorpresas al llegar.
+        <strong>Antes de comprar, sabé cuánto te cuesta cada unidad puesta en tu casa.</strong> Courier aéreo express a tu nombre: flete con precio cerrado y los impuestos te los decimos antes de que compres.
       </p>
+      <a href="{{wa_link}}" target="_blank" rel="noopener" data-wa="{{mensaje_whatsapp}}" class="hero-cta">Cotizá gratis por WhatsApp →</a>
+      <p class="hero-cta-nota">Te responde al instante · sin compromiso</p>
+      </div>
       <div class="hero-scroll">
         <div class="hero-scroll-line"></div>
         <span>scroll</span>
