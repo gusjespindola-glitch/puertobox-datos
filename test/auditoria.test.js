@@ -199,3 +199,13 @@ test('respuestas claras: sin "?." y el prompt prohíbe frases vacías como "se p
   assert.match(prompt, /Sí, las fundas las traemos/);
   assert.match(prompt, /"se puede\(n\) evaluar"/);
 });
+
+test('cotizar con unidades: costo por unidad puesta en la casa = (producto + PuertoBox + impuestos) / unidades', () => {
+  const ctx = { store: crearStore(null), telefono: '1', derivaciones: [] };
+  const r = ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 35, regimen: 'comercial', largo_cm: 40, ancho_cm: 30, alto_cm: 20, unidades: 100 }, ctx);
+  const esperado = Math.round(((300 + r.total_puertobox_usd + r.impuestos_y_gastos_estimados_usd) / 100) * 100) / 100;
+  assert.strictEqual(r.costo_por_unidad_usd, esperado);
+  assert.strictEqual(r.producto_por_unidad_usd, 3);
+  const sin = ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 35, regimen: 'comercial' }, ctx);
+  assert.strictEqual(sin.costo_por_unidad_usd, undefined);
+});

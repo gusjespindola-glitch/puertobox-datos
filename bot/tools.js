@@ -34,6 +34,7 @@ const definiciones = [
         internos: { type: 'number', description: 'Impuestos internos (%) si la posición los tiene, si no 0' },
         regimen: { type: 'string', enum: ['personal', 'comercial'], description: 'personal = uso propio, hasta 3 unidades iguales; comercial = para revender' },
         sin_franquicia: { type: 'boolean', description: 'true si el cliente de uso propio ya usó sus envíos con beneficio del año' },
+        unidades: { type: 'number', description: 'Cantidad TOTAL de unidades que trae (por ejemplo 100 remeras). Para revender, siempre que se sepa: con esto se calcula cuánto le queda cada unidad puesta en su casa.' },
         largo_cm: { type: 'number' }, ancho_cm: { type: 'number' }, alto_cm: { type: 'number' },
       },
       required: ['kg', 'valor_factura_usd', 'die', 'regimen'],
@@ -99,15 +100,24 @@ function ejecutar(nombre, input, ctx) {
       const avisos = [];
       if (!conMedidas) avisos.push('No hay medidas de la caja: el flete se confirma con las medidas (una caja grande y liviana se cobra por tamaño). No lo presentes como firme y pasale al cliente el mensaje en inglés para el proveedor.');
       if (cajaPesada) avisos.push(`Hay cajas de más de ${NEG.caja_max_kg} kg: tienen recargo del courier que NO está en este flete. Recomendá dividirlas y no digas que el flete es firme.`);
+      const totalPB = r.flete_puertobox_usd + r.handling_puertobox_usd;
+      // Costo por unidad puesta en la casa del cliente: producto + flete + gestión + impuestos estimados, dividido las unidades.
+      const unidades = Math.round(input.unidades || 0);
+      const porUnidad = unidades > 0 ? {
+        costo_por_unidad_usd: Math.round(((input.valor_factura_usd + totalPB + r.impuestos_estimados_usd.total) / unidades) * 100) / 100,
+        producto_por_unidad_usd: Math.round((input.valor_factura_usd / unidades) * 100) / 100,
+        unidades,
+      } : {};
       return {
         flete_firme: conMedidas && !cajaPesada,
+        ...porUnidad,
         ...(avisos.length ? { aviso: avisos.join(' ') } : {}),
         flete_puertobox_usd: r.flete_puertobox_usd,
         handling_puertobox_usd: r.handling_puertobox_usd,
         kg_presupuestado: r.kg_presupuestado,
         impuestos_y_gastos_estimados_usd: r.impuestos_estimados_usd.total,
         detalle_impuestos: r.impuestos_estimados_usd,
-        total_puertobox_usd: r.flete_puertobox_usd + r.handling_puertobox_usd,
+        total_puertobox_usd: totalPB,
         reglas: `El flete es PRECIO CERRADO: se respeta aunque la caja llegue hasta ${NEG.precio_cerrado_hasta_pct}% más pesada o grande; si supera eso, se ajusta con foto de la balanza. Se suma una gestión fija de USD ${NEG.gestion_usd} por envío. El cliente le paga a PuertoBox SOLO total_puertobox_usd (flete + gestión); los impuestos son un estimado aparte que cobra el courier: nunca los sumes al total de PuertoBox. Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. El envío de la fábrica al depósito en ${NEG.deposito_china} NO está incluido: lo paga el cliente (ideal: que lo incluya el proveedor; si lo paga PuertoBox, se suma aparte a lo que cueste). Impuestos y gasto administrativo son ESTIMADOS y se pagan directo a la empresa de transporte cuando entrega el paquete (decí "la empresa de transporte"; puede ser DHL, UPS o FedEx, no nombres una salvo que pregunten).`,
       };
     }
