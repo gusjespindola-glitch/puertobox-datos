@@ -168,3 +168,17 @@ test('el 3034 (WhatsApp personal de Gustavo) tampoco cuenta como cliente', () =>
   assert.ok(esGustavo('5492213033034', OWNER));
   assert.strictEqual(embudo(st, OWNER).consultas, 1);
 });
+
+test('página de charlas: muestra clientes con su charla, marca los del anuncio y oculta los números de Gustavo', () => {
+  const { paginaCharlas } = require('../bot/recordatorios');
+  const st = crearStore(null);
+  st.agregar('5491100000055', 'user', 'Hola, quiero cotizar un envío desde China');
+  st.agregar('5491100000055', 'assistant', [{ type: 'text', text: '¡Hola! ¿Qué producto querés traer?' }, { type: 'tool_use', id: 'x', name: 'cotizar', input: {} }]);
+  st.marcar('5491100000055', { origen: 'anuncio' });
+  st.agregar('5492213033034', 'user', 'prueba de Gustavo');
+  const html = paginaCharlas(st, OWNER);
+  assert.match(html, /5491100000055/);
+  assert.match(html, /Del anuncio/);
+  assert.match(html, /¿Qué producto querés traer\?/);
+  assert.doesNotMatch(html, /5492213033034|prueba de Gustavo|tool_use/);
+});
