@@ -217,3 +217,10 @@ test('media pública: sirve los videos de web/media y nada fuera de ahí', () =>
   assert.strictEqual(paginas.servir('/media/..%2F..%2Fpackage.json', new URLSearchParams()), null);
   assert.strictEqual(paginas.servir('/media/no-existe.mp4', new URLSearchParams()), null);
 });
+
+test('/wa: link de bio que sale del navegador de TikTok y lleva al bot', () => {
+  const r = paginas.servir('/wa', new URLSearchParams());
+  assert.ok(r && /wa\.me\/5492216826773/.test(r.cuerpo) && /Abrir en el navegador/.test(r.cuerpo));
+  assert.ok(/noindex/.test(r.cuerpo));
+  assert.strictEqual(paginas.servir('/tiktok', new URLSearchParams()).cuerpo, r.cuerpo);
+});

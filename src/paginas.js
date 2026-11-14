@@ -169,6 +169,42 @@ ${aviso()}`,
   });
 }
 
+/**
+ * /wa: link para la bio de TikTok/Instagram. Los navegadores internos de esas apps no dejan abrir WhatsApp,
+ * así que ahí mostramos cómo salir al navegador, un botón que prueba igual y el número para copiar.
+ * Fuera de esas apps redirige directo al chat del bot con el mensaje escrito.
+ */
+function paginaWa() {
+  const d = negocio.datos();
+  const texto = 'Hola, vi su TikTok y quiero cotizar un envío desde China';
+  const web = waLink(texto);
+  const app = `whatsapp://send?phone=${d.whatsapp_bot}&text=${encodeURIComponent(texto)}`;
+  const intent = `intent://send?phone=${d.whatsapp_bot}&text=${encodeURIComponent(texto)}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+  return `<!DOCTYPE html><html lang="es-AR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cotizá por WhatsApp | PuertoBox</title><meta name="robots" content="noindex">
+<style>body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#0b0b0b;color:#f2f2f2;text-align:center;padding:28px 22px}
+.flecha{position:fixed;top:6px;right:14px;font-size:44px;color:#ff1e3c}h1{font-size:24px;margin:52px 0 10px}p{color:#bbb;font-size:17px;line-height:1.45}
+b{color:#fff}.btn{display:block;margin:18px auto;max-width:340px;padding:17px;border-radius:999px;background:#25d366;color:#0b0b0b;font-weight:700;font-size:18px;text-decoration:none;border:0;width:100%;box-sizing:border-box}
+.sec{background:#222;color:#fff}.num{font-size:26px;font-weight:700;color:#fff;letter-spacing:1px}</style></head><body>
+<div id="inapp" hidden><div class="flecha">↗</div>
+<h1>Tocá los 3 puntitos <b>···</b> de arriba</h1>
+<p>y elegí <b>"Abrir en el navegador"</b>.<br>Ahí se abre WhatsApp con el mensaje listo para mandar.</p>
+<a class="btn" id="probar" href="${esc(app)}">Probar abrir WhatsApp</a>
+<p>O agendá este número y escribinos <b>"cotizar"</b>:</p>
+<p class="num">${esc(d.whatsapp_bot_visible)}</p>
+<button class="btn sec" id="copiar">Copiar número</button>
+<p style="font-size:14px">Te responde al instante · sin compromiso</p></div>
+<div id="fuera"><h1>Abriendo WhatsApp…</h1><a class="btn" href="${esc(web)}">Tocá acá si no se abre</a></div>
+<script>(function(){var ua=navigator.userAgent||'';
+var inapp=/musical_ly|Bytedance|TikTok|Instagram|FBAN|FBAV|FB_IAB/i.test(ua);
+if(!inapp){location.replace(${JSON.stringify(web)});return;}
+document.getElementById('fuera').hidden=true;document.getElementById('inapp').hidden=false;
+if(/Android/i.test(ua))document.getElementById('probar').href=${JSON.stringify(intent)};
+document.getElementById('copiar').onclick=function(){var n=${JSON.stringify('+' + d.whatsapp_bot)};var b=this;
+(navigator.clipboard?navigator.clipboard.writeText(n):Promise.reject()).then(function(){b.textContent='¡Copiado!';},function(){prompt('Copiá el número:',n);});};})();</script>
+</body></html>`;
+}
+
 function privacidad() {
   const d = negocio.datos();
   return layout({
@@ -192,7 +228,7 @@ function sitemap() {
 
 function robots() {
   const d = negocio.datos();
-  return `User-agent: *\nAllow: /\nDisallow: /nomenclador\nDisallow: /leads\nDisallow: /pruebas\nDisallow: /webhook\nSitemap: https://${d.dominio}/sitemap.xml\n`;
+  return `User-agent: *\nAllow: /\nDisallow: /nomenclador\nDisallow: /leads\nDisallow: /pruebas\nDisallow: /webhook\nDisallow: /wa\nSitemap: https://${d.dominio}/sitemap.xml\n`;
 }
 
 /** Devuelve { tipo, cuerpo } para la ruta, o null si no es una página pública. */
@@ -203,6 +239,7 @@ function servir(pathname, searchParams) {
   if (pathname.startsWith('/ncm/')) return html(paginaNcm(decodeURIComponent(pathname.slice(5))));
   if (pathname.startsWith('/importar/')) return html(paginaProducto(decodeURIComponent(pathname.slice(10))));
   if (pathname === '/privacidad') return html(privacidad());
+  if (pathname === '/wa' || pathname === '/tiktok') return html(paginaWa());
   // Videos e imágenes públicos para redes (Metricool los toma de acá). Solo archivos de web/media, sin subcarpetas.
   if (pathname.startsWith('/media/')) {
     const nombre = decodeURIComponent(pathname.slice(7));
