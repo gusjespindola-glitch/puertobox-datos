@@ -134,15 +134,22 @@ async function transcribirAudio(audio, fetchImpl = fetch) {
   } catch (err) { console.error('Audio:', err.message); return null; }
 }
 
-/** Aviso a Gustavo: WhatsApp (solo llega si le escribió al bot en las últimas 24 h) + notificación push por ntfy (siempre llega). */
-async function avisarGustavo(owner, texto, fetchImpl) {
-  if (owner) await enviar(owner, texto, fetchImpl);
+/** Aviso solo por ntfy (recordatorios y resumen): no gasta mensajes de WhatsApp. */
+async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fetchImpl = fetch) {
   const topic = process.env.NTFY_TOPIC;
-  if (topic) {
-    try {
-      await fetchImpl(`https://ntfy.sh/${encodeURIComponent(topic)}`, { method: 'POST', headers: { Title: 'PuertoBox: cliente para atender', Priority: 'high' }, body: texto });
-    } catch (e) { console.error('ntfy error', e.message); }
-  }
+  if (!topic) return;
+  try {
+    await fetchImpl(`https://ntfy.sh/${encodeURIComponent(topic)}`, { method: 'POST', headers: { Title: titulo, Priority: prioridad }, body: texto });
+  } catch (e) { console.error('ntfy error', e.message); }
+}
+
+/**
+ * Aviso a Gustavo por UN solo canal (pedido del 14/11: no duplicar).
+ * Si hay NTFY_TOPIC, solo ntfy (llega siempre y no gasta WhatsApp). Si no, WhatsApp al 698 (solo llega si le escribió al bot en las últimas 24 h).
+ */
+async function avisarGustavo(owner, texto, fetchImpl = fetch, titulo = 'PuertoBox: cliente para atender') {
+  if (process.env.NTFY_TOPIC) return avisarNtfy(texto, titulo, 'high', fetchImpl);
+  if (owner) await enviar(owner, texto, fetchImpl);
 }
 
 // Agrupa los mensajes que el cliente manda seguidos y responde una sola vez, de a un chat por vez.
@@ -162,6 +169,7 @@ async function procesar(payload, deps = {}) {
       const txt = e.text?.body?.trim().toLowerCase();
       if (txt === '#bot') st.reanudar(e.to); else st.pausar(e.to, 'gustavo_respondio');
       if (e.text?.body && txt !== '#bot') st.agregar(e.to, 'assistant', `[Gustavo] ${e.text.body}`);
+      if (st.marcar) st.marcar(e.to, { gustavoRespondioEn: Date.now(), recordatorios: 0 });
       continue;
     }
     if (st.yaVisto(e.id)) continue;
@@ -170,7 +178,9 @@ async function procesar(payload, deps = {}) {
     if (owner && tel === owner && e.type === 'text' && e.text.body.trim().startsWith('#')) {
       const [cmd, num] = e.text.body.trim().split(/\s+/);
       const cliente = soloDigitos(num);
-      let r = 'Comandos: #borrar (borra tu chat de prueba) · #borrar 549XXXXXXXXXX (borra el de un cliente) · #pausa 549XXXXXXXXXX (callar el bot en ese chat) · #bot 549XXXXXXXXXX (reactivarlo)';
+      let r = 'Comandos: #pendientes (clientes que esperan respuesta) · #listo 549XXXXXXXXXX (ya lo atendiste: deja de recordártelo) · #borrar (borra tu chat de prueba) · #borrar 549XXXXXXXXXX (borra el de un cliente) · #pausa 549XXXXXXXXXX (callar el bot en ese chat) · #bot 549XXXXXXXXXX (reactivarlo)';
+      if (cmd.toLowerCase() === '#pendientes') r = require('./recordatorios').textoPendientes(st, owner);
+      if (cmd.toLowerCase() === '#listo' && cliente) { st.marcar(cliente, { gustavoRespondioEn: Date.now(), recordatorios: 0 }); r = `Listo, +${cliente} marcado como atendido. No te lo recuerdo más (salvo que vuelva a escribir).`; }
       if (cmd.toLowerCase() === '#borrar') { const t = cliente || owner; st.borrar(t); r = t === owner ? 'Listo, borré tu conversación. Escribí de nuevo como si fueras un cliente nuevo.' : `Listo, borré la conversación con +${t}.`; }
       if (cmd.toLowerCase() === '#pausa' && cliente) { st.pausar(cliente, 'manual'); r = `Bot pausado con +${cliente}.`; }
       if (cmd.toLowerCase() === '#bot' && cliente) { st.reanudar(cliente); r = `Bot reactivado con +${cliente}.`; }
@@ -347,5 +357,9 @@ function servidor() {
 if (require.main === module) {
   servidor().listen(PORT, () => console.log(`Bot escuchando en :${PORT}`));
   if (process.env.IG_TOKEN) { renovarTokenIG(); setInterval(renovarTokenIG, 24 * 3600e3).unref(); }
+  // Asistente de pendientes: cada 15 minutos revisa clientes sin respuesta y manda avisos por ntfy (y el resumen de las 9).
+  const { revisar } = require('./recordatorios');
+  const tic = () => revisar({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), avisar: (t, titulo, prioridad) => avisarNtfy(t, titulo, prioridad) }).catch((e) => console.error('Recordatorios:', e.message));
+  setTimeout(tic, 60e3).unref(); setInterval(tic, 15 * 60e3).unref();
 }
-module.exports = { procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio };
+module.exports = { procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo };

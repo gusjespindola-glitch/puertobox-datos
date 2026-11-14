@@ -111,6 +111,7 @@ function ejecutar(nombre, input, ctx) {
       ctx.store.guardarLead(ctx.telefono, { estado: input.motivo === 'listo_para_cerrar' ? 'listo_para_cerrar' : 'derivado', notas: input.resumen });
       // Solo se pausa el bot cuando Gustavo tiene que tomar el chat. En "duda" el bot sigue atendiendo.
       if (input.motivo !== 'duda') ctx.store.pausar(ctx.telefono, 'derivado');
+      if (ctx.store.marcar) ctx.store.marcar(ctx.telefono, { derivadoEn: Date.now(), derivadoMotivo: input.motivo, derivadoResumen: input.resumen, recordatorios: 0 });
       ctx.derivaciones.push({ telefono: ctx.telefono, ...input });
       return input.motivo === 'duda'
         ? { ok: true, instruccion: 'Decile que ese punto lo confirma Gustavo y seguí atendiendo vos el resto.' }
