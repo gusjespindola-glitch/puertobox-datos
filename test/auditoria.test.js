@@ -209,3 +209,11 @@ test('cotizar con unidades: costo por unidad puesta en la casa = (producto + Pue
   const sin = ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 35, regimen: 'comercial' }, ctx);
   assert.strictEqual(sin.costo_por_unidad_usd, undefined);
 });
+
+test('media pública: sirve los videos de web/media y nada fuera de ahí', () => {
+  const r = paginas.servir('/media/reel01-remeras.mp4', new URLSearchParams());
+  assert.strictEqual(r.tipo, 'video/mp4');
+  assert.ok(r.cuerpo.length > 1000);
+  assert.strictEqual(paginas.servir('/media/..%2F..%2Fpackage.json', new URLSearchParams()), null);
+  assert.strictEqual(paginas.servir('/media/no-existe.mp4', new URLSearchParams()), null);
+});
