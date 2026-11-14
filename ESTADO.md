@@ -2,6 +2,13 @@
 
 Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (material del curso).
 
+
+## Para el próximo chat (13/11/2026 23:15)
+- **Forma de trabajo:** juntar los cambios en **un solo PR por tanda** y pasarle a Gustavo un único link (no puedo hacer merge: lo bloquea el sistema de seguridad). Gustavo usa la app de GitHub.
+- **Hecho hoy:** web limpia y servida por Railway (puertobox.com.ar), base única de datos (`data/`), buscador NCM público + páginas para Google, Search Console, ntfy, clave rotada, caché de prompts, aviso de saldo, dudas comunes (`data/faq.json`), auditoría (`docs/auditoria/2026-11-13-oferta.md`), SIDIP verificado (solo celulares).
+- **Pendiente de Gustavo:** texto para que la proforma diga "pequeños envíos"; qué responde el bot sobre usar el CUIT de otro/de Gustavo; preguntas a Howard (gasto administrativo, foto de balanza, recargo de zona, tránsito, caja máx.).
+- **Próximo:** Meta Ads (ver `docs/marketing/meta-ads.md`; falta verificar que el número del bot esté vinculado a la página en business.facebook.com). Instagram frenado en la verificación de Meta. Railway Hobby antes del ~13/12.
+
 ## Bot de WhatsApp (andando)
 - Línea del bot: **+54 9 221 682-6773**. WhatsApp Business de siempre: 221 698-2199 (aparte, es el número de Gustavo para avisos).
 - Código: `bot/` (prompt en `bot/prompt.md`, herramientas en `bot/tools.js`, precios en `src/flete_directo.js` + `data/precios_venta.json → flete_directo`).
