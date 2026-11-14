@@ -42,7 +42,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - Dominio en NIC a nombre de Gustavo, vence 08/04/2027, delegado a Cloudflare el 13/11 (propagando: el 13/11 todavía mostraba el sitio viejo).
 
 ## Pendientes (en orden)
-0. **Cambiar la clave de Anthropic** (quedó pegada en el chat el 13/11): crear una nueva en platform.claude.com → Claves, pegarla en Railway (ANTHROPIC_API_KEY) y borrar la vieja.
+0. ✅ Clave de Anthropic rotada el 13/11 (bot-puertobox-2, sin vencimiento).
 1. **Apagar el AI Agent de YCloud** (Inbox > Assignment): si se renueva el crédito, contestarían los dos bots.
 2. **Avisos al 698**: WhatsApp solo los entrega si el 698 le escribió al bot en las últimas 24 h. Instalar la app ntfy y cargar NTFY_TOPIC en Railway.
 3. **Web**: servida por Railway desde el repo (se actualiza sola). www redirigido, Search Console y sitemap listos (13/11). Próximo: Perfil de Google y bot en Instagram.
@@ -63,3 +63,5 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - ✅ ntfy andando: tema `puertobox-8b275069` (app ntfy en el celular de Gustavo + NTFY_TOPIC en Railway). Probado: el aviso de derivación llega.
 - Saldo Anthropic: USD 4,42 al 13/11 22:36. Un día entero de pruebas (~70 conversaciones simuladas) gastó ~USD 0,60 → menos de 1 centavo por conversación. No hace falta cargar más por ahora (decisión de Gustavo).
 - Si se queda sin saldo o la clave falla: el cliente recibe mensaje de espera y Gustavo un aviso por ntfy (máx. 1 cada 3 h).
+
+- ✅ 13/11 22:49: clave de Anthropic rotada (nueva `bot-puertobox-2`, sin vencimiento; la vieja …wgAA eliminada). Pendiente 0 resuelto.
