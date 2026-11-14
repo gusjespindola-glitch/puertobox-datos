@@ -21,7 +21,8 @@ async function llamarUnaVez(messages, fetchImpl) {
   const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: MODELO, max_tokens: 1024, system: SYSTEM, tools: definiciones, messages }),
+    // cache_control: las instrucciones y herramientas (iguales en cada llamada) se cachean 5 min → cada mensaje del mismo chat sale más barato.
+    body: JSON.stringify({ model: MODELO, max_tokens: 1024, system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }], tools: definiciones, messages }),
   });
   if (!r.ok) throw new Error(`Anthropic ${r.status}: ${await r.text()}`);
   return r.json();
