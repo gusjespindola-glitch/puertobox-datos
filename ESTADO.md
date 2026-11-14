@@ -57,4 +57,5 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - Código listo: `/instagram` (webhook de Meta), responde con el mismo bot, chats `ig:<id>`. Si Gustavo responde desde Instagram, el bot se pausa en ese chat; `#bot` en ese chat lo reactiva. Avisos de derivación igual que WhatsApp.
 - Token: variable `IG_TOKEN` en Railway (se renueva solo cada día y se guarda en /data/ig_token.json). Opcionales: `IG_VERIFY_TOKEN`, `IG_APP_SECRET` (verifica la firma de Meta).
 - Página de privacidad para Meta: https://puertobox.com.ar/privacidad
+- 13/11 21:45: frenado en el registro de Meta for Developers (no llega el SMS al 2216826773; Meta puede mandarlo por WhatsApp y ese número es del bot). Para retomar: usar otro celular con chip o verificar con tarjeta.
 - Falta del lado de Meta: cuenta @puertobox.ok profesional, app en developers.facebook.com (Instagram API con inicio de sesión de Instagram), token, webhook https://puertobox.com.ar/instagram suscripto a `messages`, app en modo Live.
