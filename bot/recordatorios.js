@@ -52,6 +52,7 @@ function describir(c, lead, ahora) {
 function esGustavo(tel, owner) {
   if (!tel) return false;
   if (tel === owner) return true;
+  if (['447974905090', '447480784000', '16505434800', '13105850000'].includes(String(tel))) return true; // números de Meta (códigos de verificación): no son clientes
   let propios = [];
   try { propios = require('../src/negocio').datos().numeros_gustavo || []; } catch { /* sin datos */ }
   return propios.includes(String(tel));

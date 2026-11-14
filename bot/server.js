@@ -202,6 +202,8 @@ function esMensajeAnuncio(texto) {
   return !!m && normalizarTexto(texto).startsWith(normalizarTexto(m));
 }
 
+const NUMEROS_META = new Set(['447974905090', '447480784000', '16505434800', '13105850000']);
+
 async function procesar(payload, deps = {}) {
   const fetchImpl = deps.fetchImpl || fetch;
   const st = deps.store || store;
@@ -246,6 +248,9 @@ async function procesar(payload, deps = {}) {
     const texto = e.type === 'text' ? e.text.body
       : transcripto ? `[Audio del cliente, pasado a texto automáticamente] ${transcripto}`
       : `[El cliente mandó un ${e.type}${e.image?.caption ? `: ${e.image.caption}` : ''}. Pedile que lo describa por texto o derivá si hace falta.]`;
+    // Códigos de verificación de Meta/Facebook (llegan desde números oficiales, como +44 7974 905090): no son clientes.
+    // WhatsApp no deja leerlos por la API (llegan como "unsupported"): no se contestan ni se derivan.
+    if (NUMEROS_META.has(tel)) continue;
     // BAJA: el que no quiere más mensajes de la difusión. Se lo saca y no se le vuelve a escribir.
     if (e.type === 'text' && require('./difusion').esBaja(e.text.body)) {
       require('./difusion').darDeBaja(st, tel);
