@@ -23,7 +23,7 @@ const definiciones = [
   },
   {
     name: 'cotizar',
-    description: 'Calcula el presupuesto de PuertoBox: flete con precio cerrado + gestión fija (lo cobra PuertoBox) + impuestos y gasto administrativo estimados (los paga el cliente al courier). Usar SIEMPRE para dar precios.',
+    description: 'Calcula el presupuesto de PuertoBox: flete con precio cerrado + gestión fija (lo cobra PuertoBox) + impuestos y gasto administrativo estimados (los paga el cliente a la empresa de transporte). Usar SIEMPRE para dar precios.',
     input_schema: {
       type: 'object',
       properties: {
@@ -106,7 +106,7 @@ function ejecutar(nombre, input, ctx) {
         impuestos_y_gastos_estimados_usd: r.impuestos_estimados_usd.total,
         detalle_impuestos: r.impuestos_estimados_usd,
         total_puertobox_usd: r.flete_puertobox_usd + r.handling_puertobox_usd,
-        reglas: `El flete es PRECIO CERRADO: se respeta aunque la caja llegue hasta ${NEG.precio_cerrado_hasta_pct}% más pesada o grande; si supera eso, se ajusta con foto de la balanza. Se suma una gestión fija de USD ${NEG.gestion_usd} por envío. El cliente le paga a PuertoBox SOLO total_puertobox_usd (flete + gestión); los impuestos son un estimado aparte que cobra el courier: nunca los sumes al total de PuertoBox. Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. El envío de la fábrica al depósito en ${NEG.deposito_china} NO está incluido: lo paga el cliente (ideal: que lo incluya el proveedor; si lo paga PuertoBox, se suma aparte a lo que cueste). Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier al llegar (puede ser DHL, UPS o FedEx; no nombres uno salvo que pregunten).`,
+        reglas: `El flete es PRECIO CERRADO: se respeta aunque la caja llegue hasta ${NEG.precio_cerrado_hasta_pct}% más pesada o grande; si supera eso, se ajusta con foto de la balanza. Se suma una gestión fija de USD ${NEG.gestion_usd} por envío. El cliente le paga a PuertoBox SOLO total_puertobox_usd (flete + gestión); los impuestos son un estimado aparte que cobra el courier: nunca los sumes al total de PuertoBox. Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. El envío de la fábrica al depósito en ${NEG.deposito_china} NO está incluido: lo paga el cliente (ideal: que lo incluya el proveedor; si lo paga PuertoBox, se suma aparte a lo que cueste). Impuestos y gasto administrativo son ESTIMADOS y se pagan directo a la empresa de transporte cuando entrega el paquete (decí "la empresa de transporte"; puede ser DHL, UPS o FedEx, no nombres una salvo que pregunten).`,
       };
     }
     case 'registrar_lead':
@@ -119,8 +119,8 @@ function ejecutar(nombre, input, ctx) {
       if (ctx.store.marcar) ctx.store.marcar(ctx.telefono, { derivadoEn: Date.now(), derivadoMotivo: input.motivo, derivadoResumen: input.resumen, recordatorios: 0 });
       ctx.derivaciones.push({ telefono: ctx.telefono, ...input });
       return input.motivo === 'duda'
-        ? { ok: true, instruccion: 'Decile que ese punto lo confirma Gustavo y seguí atendiendo vos el resto.' }
-        : { ok: true, instruccion: 'Decile al cliente que Gustavo le escribe enseguida.' };
+        ? { ok: true, instruccion: 'Decile que ese punto lo confirma nuestro despachante (no digas el nombre de Gustavo) y seguí atendiendo vos el resto.' }
+        : { ok: true, instruccion: 'Decile al cliente que nuestro despachante le escribe enseguida (no digas el nombre de Gustavo).' };
     default:
       return { error: `Herramienta desconocida: ${nombre}` };
   }

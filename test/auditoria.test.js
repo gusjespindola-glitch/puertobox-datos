@@ -178,3 +178,15 @@ test('Gustavo: "borrar" por audio también borra la conversación', async () => 
   assert.strictEqual(st.historial('5492216982199').length, 0);
   delete process.env.GROQ_API_KEY;
 });
+
+test('al cliente: "nuestro despachante" (no el nombre) y los impuestos se pagan a "la empresa de transporte"', () => {
+  const fs = require('fs'); const path = require('path');
+  const prompt = negocio.render(fs.readFileSync(path.join(__dirname, '..', 'bot', 'prompt.md'), 'utf8'));
+  assert.ok(!/(lo confirma|le escribe|lo asesora|revisa que)[^.\n]{0,15}Gustavo|Gustavo (lo confirma|confirma el plazo|le escribe|lo asesora|revisa)/.test(prompt.replace(/derivá a Gustavo/g, '')), 'el prompt le hace decir "Gustavo" al cliente');
+  assert.match(prompt, /Se los pagás a la empresa de transporte cuando te entrega el paquete/);
+  assert.ok(!/pagás al courier|Se los pagás al courier/.test(prompt));
+  const faq = JSON.stringify(require('../data/faq.json'));
+  assert.ok(!/Gustavo/.test(faq.replace(/"_meta"[^]*?",/, '')), 'faq.json nombra a Gustavo');
+  const web = paginas.home();
+  assert.ok(!/al courier/.test(web), 'la web dice "al courier"');
+});
