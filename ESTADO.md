@@ -9,6 +9,7 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - Variables en Railway: ANTHROPIC_API_KEY, YCLOUD_API_KEY, BUSINESS_NUMBER, OWNER_NUMBER (5492216982199), ADMIN_KEY, DATA_FILE (/data/data.json), YCLOUD_WEBHOOK_SECRET (firma del webhook; sin ella cualquiera puede mandar mensajes falsos). Opcional: NTFY_TOPIC, PAUSA_HORAS (24 por defecto), GROQ_API_KEY (audios a texto, gratis).
 - IA: Anthropic, Claude Haiku 5.5, USD 5 cargados, **recarga automática apagada**, clave "bot-puertobox" sin vencimiento.
 - YCloud: plan Free, webhook activo a `/webhook` (evento whatsapp.inbound_message.received). El AI Agent de YCloud quedó sin crédito.
+- **Charlas (14/11):** `https://puertobox-datos-production.up.railway.app/charlas?key=ADMIN_KEY` (o el botón "Ver charlas" del resumen de las 9 y de la página de pendientes, con firma). Muestra los clientes de los últimos 3 días con la charla completa, marca 📣 los del anuncio y oculta los números de Gustavo. Es la única forma de ver las charlas: el 6773 no tiene app de WhatsApp.
 - Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`. Los números de Gustavo (698, 3034 y 9132 del trabajo, `negocio.json` → `numeros_gustavo`) no cuentan como clientes en el resumen ni en pendientes.
 
 

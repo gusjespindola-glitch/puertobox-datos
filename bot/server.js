@@ -164,7 +164,8 @@ function accionesNtfy(tel) {
   const fp = firma('pendientes');
   if (!fp) return null;
   const ver = `view, Ver pendientes, ${BASE_URL()}/pendientes?t=${fp}`;
-  if (!tel) return ver;
+  const charlas = `view, Ver charlas, ${BASE_URL()}/charlas?t=${firma('charlas')}`;
+  if (!tel) return `${ver}; ${charlas}`;
   return `http, Ya lo atendí, ${BASE_URL()}/atendido?tel=${encodeURIComponent(tel)}&t=${firma('atendido:' + tel)}, method=POST, clear=true; ${ver}`;
 }
 
@@ -401,7 +402,14 @@ function servidor() {
       const t = url.searchParams.get('t');
       if (!firmaOk('pendientes', t)) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
-      return res.end(require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`));
+      const html = require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`);
+      return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`));
+    }
+    if (req.method === 'GET' && url.pathname === '/charlas') {
+      const clave = process.env.ADMIN_KEY || ADMIN_KEY;
+      if (!(firmaOk('charlas', url.searchParams.get('t')) || (clave && url.searchParams.get('key') === clave))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER)));
     }
     if (req.method === 'GET' && url.pathname === '/leads' && ADMIN_KEY && url.searchParams.get('key') === ADMIN_KEY) {
       const leads = store.leads();

@@ -175,4 +175,36 @@ function paginaPendientes(store, owner, linkAtendido, ahora = Date.now()) {
 <body><h1>Pendientes PuertoBox</h1>${cuerpo || '<p>No tenés clientes pendientes. Todo al día.</p>'}</body></html>`;
 }
 
-module.exports = { esGustavo, pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes, embudo };
+/** Texto legible de un mensaje guardado (string o bloques de la IA); deja afuera las herramientas internas. */
+function textoMensaje(content) {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content.filter((b) => b && b.type === 'text').map((b) => b.text).join('\n');
+}
+
+/**
+ * Página "Charlas": lo que hablaron los clientes con el bot en los últimos días (pedido del 14/11:
+ * Gustavo no tiene la app de WhatsApp del 6773, que está conectado a la API). Sin sus propios números.
+ */
+function paginaCharlas(store, owner, ahora = Date.now(), dias = 3) {
+  const desde = ahora - dias * 24 * 3600e3;
+  const chats = (store.chats ? store.chats() : [])
+    .filter((c) => !esGustavo(c.telefono, owner) && (c.ultimo || 0) >= desde && (c.mensajes || []).length)
+    .sort((a, b) => (b.ultimo || 0) - (a.ultimo || 0));
+  const ESTADO = { nuevo: 'Consultó', cotizado: 'Tiene presupuesto', derivado: 'Derivado a vos', listo_para_cerrar: 'Quiere pagar' };
+  const tarjeta = (c) => {
+    const l = (store.lead ? store.lead(c.telefono) : null) || {};
+    const msgs = c.mensajes.map((m) => ({ quien: m.role === 'user' ? 'cliente' : 'bot', txt: textoMensaje(m.content).trim() })).filter((m) => m.txt);
+    const ultimoCliente = [...msgs].reverse().find((m) => m.quien === 'cliente');
+    const cabecera = [c.origen === 'anuncio' ? '📣 Del anuncio' : '', l.estado ? ESTADO[l.estado] || l.estado : 'Sin datos todavía', hace(ahora - c.ultimo)].filter(Boolean).join(' · ');
+    return `<li><details><summary><b>+${esc(c.telefono)}${l.nombre ? ' · ' + esc(l.nombre) : ''}</b>${l.producto ? '<br>' + esc(l.producto) : ''}<br><small>${esc(cabecera)}</small>${ultimoCliente ? `<p>“${esc(ultimoCliente.txt.slice(0, 120))}”</p>` : ''}<span class="ver">Ver charla ▾</span></summary>
+<div class="chat">${msgs.map((m) => `<div class="m ${m.quien}">${esc(m.txt).replace(/\n/g, '<br>')}</div>`).join('')}</div></details></li>`;
+  };
+  const delAnuncio = chats.filter((c) => c.origen === 'anuncio').length;
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Charlas PuertoBox</title>
+<style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f5f5f5;color:#111}h1{font-size:20px;margin:0 0 4px}.sub{color:#555;font-size:14px;margin:0 0 16px}ul{list-style:none;padding:0;margin:0}li{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px}summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}p{margin:6px 0 0;font-size:14px;color:#444}small{color:#666}.ver{display:block;margin-top:8px;color:#1a5fb4;font-size:14px}.chat{margin-top:12px;display:flex;flex-direction:column;gap:6px}.m{max-width:85%;padding:8px 10px;border-radius:10px;font-size:14px;line-height:1.35}.cliente{background:#eee;align-self:flex-start}.bot{background:#dcf8c6;align-self:flex-end}</style></head>
+<body><h1>Charlas con el bot</h1><p class="sub">Últimos ${dias} días · ${chats.length} clientes${delAnuncio ? ` · ${delAnuncio} del anuncio` : ''}. Tus números no aparecen. Tocá un cliente para ver la charla.</p>
+${chats.length ? `<ul>${chats.map(tarjeta).join('')}</ul>` : '<p>Ningún cliente le escribió al bot en estos días.</p>'}</body></html>`;
+}
+
+module.exports = { esGustavo, pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes, paginaCharlas, embudo };
