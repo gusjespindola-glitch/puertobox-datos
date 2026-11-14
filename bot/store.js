@@ -25,6 +25,7 @@ function crearStore(archivo) {
       const c = chat(tel);
       if (role === 'user' && c.ultimo && Date.now() - c.ultimo > RESET_HORAS * 3600e3) c.mensajes = [];
       c.ultimo = Date.now();
+      if (role === 'user') c.ultimoClienteEn = c.ultimo;
       c.mensajes.push({ role, content });
       if (c.mensajes.length > HISTORIAL_MAX) c.mensajes = c.mensajes.slice(-HISTORIAL_MAX);
       while (c.mensajes.length && c.mensajes[0].role !== 'user') c.mensajes.shift();
@@ -47,6 +48,11 @@ function crearStore(archivo) {
       guardar();
     },
     leads: () => Object.values(db.leads),
+    lead: (tel) => db.leads[tel],
+    /** Guarda datos sueltos del chat (derivación, respuesta de Gustavo, recordatorios). */
+    marcar(tel, datos) { Object.assign(chat(tel), datos); guardar(); },
+    chats: () => Object.entries(db.chats).map(([telefono, c]) => ({ telefono, ...c })),
+    meta(clave, valor) { db.meta ||= {}; if (valor !== undefined) { db.meta[clave] = valor; guardar(); } return db.meta[clave]; },
   };
 }
 

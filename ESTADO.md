@@ -63,6 +63,12 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - Página de privacidad para Meta: https://puertobox.com.ar/privacidad
 - Falta del lado de Meta: cuenta @puertobox.ok profesional, app en developers.facebook.com (Instagram API con inicio de sesión de Instagram), token, webhook https://puertobox.com.ar/instagram suscripto a `messages`, app en modo Live.
 
+## Asistente de pendientes (14/11/2026)
+- **Un solo aviso:** si está NTFY_TOPIC, todo llega solo por ntfy (antes llegaba WhatsApp + ntfy). Sin ntfy, por WhatsApp al 698.
+- **Recordatorios** (`bot/recordatorios.js`, cada 15 min): cliente derivado (quiere pagar, pide persona, mayorista, reclamo) sin respuesta → aviso a la hora y después cada 3 h, máximo 4. ⭐ importantes primero (quiere pagar, mayorista o pedido de USD 1.000 o más). Nada entre las 22 y las 8.
+- **Resumen diario a las 9:** esperando respuesta, dudas por confirmar y presupuestos sin respuesta del cliente hace más de 24 h (para seguimiento).
+- Comandos desde el 698 al bot: `#pendientes` (lista en el momento) y `#listo 549...` (ya lo atendí, no recordar más). Si Gustavo contesta desde la app y llega el eco, se marca solo.
+
 ## Avisos y saldo (13/11/2026)
 - ✅ ntfy andando: tema `puertobox-8b275069` (app ntfy en el celular de Gustavo + NTFY_TOPIC en Railway). Probado: el aviso de derivación llega.
 - Saldo Anthropic: USD 4,42 al 13/11 22:36. Un día entero de pruebas (~70 conversaciones simuladas) gastó ~USD 0,60 → menos de 1 centavo por conversación. No hace falta cargar más por ahora (decisión de Gustavo).

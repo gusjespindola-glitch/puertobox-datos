@@ -74,3 +74,4 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - 14/11/2026 (Gustavo): el presupuesto tiene que dejar claro qué le paga el cliente a PuertoBox (flete + gestión = "Total a PuertoBox"). Los impuestos del courier van aparte, como dato estimado ("no se paga a PuertoBox"). Nunca un total que sume las dos cosas.
 - 14/11/2026 (Gustavo): si una mejora implica pagar, mejor no por ahora; seguir con lo que hay. Audios de WhatsApp: quedan para más adelante (la opción gratis es Groq/Whisper).
 - 14/11/2026 (Gustavo): audios sí, si es gratis. Se hizo con Groq (Whisper, plan gratis sin tarjeta).
+- 14/11/2026 (Gustavo): quiere un asistente que le recuerde clientes sin atender, los importantes y los olvidados. Y un solo aviso por cosa: no WhatsApp + ntfy a la vez (era mucho). Se hizo: todo por ntfy, recordatorios con importantes primero, resumen a las 9, silencio de 22 a 8, comandos #pendientes y #listo.
