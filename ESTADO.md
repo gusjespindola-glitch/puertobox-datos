@@ -52,3 +52,9 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 7. Cargar el mensaje de bienvenida o ausencia en el 698 (`ycloud-agent/whatsapp_698_bienvenida.txt`) y el link del bot en las bios.
 8. Preguntar a Howard: gasto administrativo de DHL, recargo por zona alejada, días de tránsito, si sigue FedEx a 11 USD/kg desde 20 kg.
 9. Limpieza del repo: `ycloud-agent/` y el README viejo (modelo consolidado / modelo fijo) ya no se usan; archivos web viejos; `ncm/fuentes_arca/nom.txt` duplicado.
+
+## Instagram (en curso, 13/11/2026)
+- Código listo: `/instagram` (webhook de Meta), responde con el mismo bot, chats `ig:<id>`. Si Gustavo responde desde Instagram, el bot se pausa en ese chat; `#bot` en ese chat lo reactiva. Avisos de derivación igual que WhatsApp.
+- Token: variable `IG_TOKEN` en Railway (se renueva solo cada día y se guarda en /data/ig_token.json). Opcionales: `IG_VERIFY_TOKEN`, `IG_APP_SECRET` (verifica la firma de Meta).
+- Página de privacidad para Meta: https://puertobox.com.ar/privacidad
+- Falta del lado de Meta: cuenta @puertobox.ok profesional, app en developers.facebook.com (Instagram API con inicio de sesión de Instagram), token, webhook https://puertobox.com.ar/instagram suscripto a `messages`, app en modo Live.
