@@ -96,8 +96,8 @@ async function revisar({ store, owner, avisar, ahora = Date.now() }) {
       const espera = ahora - p.desde;
       const toca = veces === 0 ? espera >= PRIMER_AVISO_MIN * 60e3 : ahora - (p.c.ultimoRecordatorio || 0) >= CADA_HORAS * H;
       if (!toca || veces >= MAX_AVISOS) continue;
-      const texto = `${p.importante ? '⭐ IMPORTANTE. ' : ''}Cliente esperando tu respuesta ${hace(espera)}:\n${describir(p.c, p.lead, ahora)}\nMotivo: ${NOMBRE_MOTIVO[p.c.derivadoMotivo] || p.c.derivadoMotivo}${p.c.derivadoResumen ? `\n${String(p.c.derivadoResumen).slice(0, 300)}` : ''}\nSi ya lo atendiste, mandale al bot: #listo ${p.c.telefono}`;
-      await avisar(texto, p.importante ? 'PuertoBox: cliente importante esperando' : 'PuertoBox: cliente esperando', p.importante ? 'high' : 'default');
+      const texto = `${p.importante ? '⭐ IMPORTANTE. ' : ''}Cliente esperando tu respuesta ${hace(espera)}:\n${describir(p.c, p.lead, ahora)}\nMotivo: ${NOMBRE_MOTIVO[p.c.derivadoMotivo] || p.c.derivadoMotivo}${p.c.derivadoResumen ? `\n${String(p.c.derivadoResumen).slice(0, 300)}` : ''}\nSi ya lo atendiste, tocá «Ya lo atendí».`;
+      await avisar(texto, p.importante ? 'PuertoBox: cliente importante esperando' : 'PuertoBox: cliente esperando', p.importante ? 'high' : 'default', p.c.telefono);
       store.marcar(p.c.telefono, { recordatorios: veces + 1, ultimoRecordatorio: ahora });
       enviados.push(p.c.telefono);
     }
@@ -111,4 +111,17 @@ async function revisar({ store, owner, avisar, ahora = Date.now() }) {
   return enviados;
 }
 
-module.exports = { pendientes, textoPendientes, revisar, silencio, horaAR };
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/** Página para el celular: lista de pendientes con un botón "Ya lo atendí" por cliente. */
+function paginaPendientes(store, owner, linkAtendido, ahora = Date.now()) {
+  const { esperando, seguimiento, dudas } = pendientes(store, owner, ahora);
+  const fila = (p, conBoton) => `<li><div><b>${p.importante ? '⭐ ' : ''}${esc(describir(p.c, p.lead, ahora))}</b><br><small>${esc(NOMBRE_MOTIVO[p.c.derivadoMotivo] || '')}${p.c.derivadoMotivo ? ' · ' : ''}${esc(hace(ahora - p.desde))}</small>${p.c.derivadoResumen ? `<p>${esc(String(p.c.derivadoResumen).slice(0, 300))}</p>` : ''}</div>${conBoton ? `<form method="post" action="${esc(linkAtendido(p.c.telefono))}"><button>Ya lo atendí</button></form>` : ''}</li>`;
+  const bloque = (titulo, lista, conBoton) => lista.length ? `<h2>${titulo} (${lista.length})</h2><ul>${lista.map((p) => fila(p, conBoton)).join('')}</ul>` : '';
+  const cuerpo = bloque('Esperan tu respuesta', esperando, true) + bloque('Dudas para confirmar', dudas, true) + bloque('Presupuesto enviado, no volvieron a escribir', seguimiento, true);
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Pendientes PuertoBox</title>
+<style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f5f5f5;color:#111}h1{font-size:20px}h2{font-size:16px;margin-top:24px}ul{list-style:none;padding:0}li{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px}p{margin:6px 0 0;font-size:14px;color:#444}small{color:#666}button{width:100%;padding:12px;font-size:16px;border:0;border-radius:10px;background:#1a7f37;color:#fff}.wa{display:inline-block;margin-top:8px;font-size:14px}</style></head>
+<body><h1>Pendientes PuertoBox</h1>${cuerpo || '<p>No tenés clientes pendientes. Todo al día.</p>'}</body></html>`;
+}
+
+module.exports = { pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes };

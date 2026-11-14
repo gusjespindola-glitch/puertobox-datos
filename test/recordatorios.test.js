@@ -38,7 +38,7 @@ test('recordatorio: avisa a la hora, después cada 3 h, como mucho 4 veces', asy
   const avisar = async (t, titulo, prio) => avisos.push({ t, titulo, prio });
   assert.deepStrictEqual(await revisar({ store: st, owner: OWNER, avisar, ahora: TARDE }), ['5491100000001']);
   assert.strictEqual(avisos[0].prio, 'high');
-  assert.match(avisos[0].t, /#listo 5491100000001/);
+  assert.match(avisos[0].t, /Ya lo atendí/);
   assert.deepStrictEqual(await revisar({ store: st, owner: OWNER, avisar, ahora: TARDE + 45 * 60e3 }), ['5491100000002'], 'el de 20 min ya cumplió la hora (65 min); Ana no repite antes de 3 h');
   for (let i = 1; i <= 5; i++) await revisar({ store: st, owner: OWNER, avisar, ahora: TARDE + i * 3 * H + 60e3 });
   // Ana: 4 avisos como máximo (algunos caen en horario de silencio y no cuentan)
@@ -81,4 +81,35 @@ test('un solo aviso: con ntfy no manda además WhatsApp', async () => {
   delete process.env.NTFY_TOPIC; urls.length = 0;
   await avisarGustavo(OWNER, 'cliente', fetchImpl);
   assert.deepStrictEqual(urls.map((u) => new URL(u).host), ['api.ycloud.com']);
+});
+
+test('botones: la notificación trae "Ya lo atendí" y "Ver pendientes", con firma y sin la clave', async () => {
+  process.env.ADMIN_KEY = 'clave-secreta'; process.env.PUBLIC_URL = 'https://puertobox.com.ar';
+  const { accionesNtfy } = require('../bot/server');
+  const a = accionesNtfy('5491100000001');
+  assert.match(a, /^http, Ya lo atendí, https:\/\/puertobox\.com\.ar\/atendido\?tel=5491100000001&t=[0-9a-f]{24}, method=POST, clear=true; view, Ver pendientes, https:\/\/puertobox\.com\.ar\/pendientes\?t=[0-9a-f]{24}$/);
+  assert.ok(!a.includes('clave-secreta'));
+  const headers = [];
+  process.env.NTFY_TOPIC = 'prueba';
+  await avisarGustavo(OWNER, 'cliente', async (u, o) => { headers.push(o.headers); return { ok: true }; }, undefined, '5491100000001');
+  assert.match(headers[0].Actions, /Ya lo atendí/);
+  delete process.env.NTFY_TOPIC;
+});
+
+test('botones: "Ya lo atendí" y la página de pendientes funcionan solo con firma válida', async () => {
+  process.env.ADMIN_KEY = 'clave-secreta'; process.env.OWNER_NUMBER = OWNER; process.env.DATA_FILE = require('path').join(require('os').tmpdir(), `pb-${process.pid}.json`);
+  delete require.cache[require.resolve('../bot/server')];
+  const srv = require('../bot/server');
+  const { firma } = srv;
+  const s = srv.servidor().listen(0); await new Promise((r) => s.once('listening', r));
+  const base = `http://127.0.0.1:${s.address().port}`;
+  assert.strictEqual((await fetch(`${base}/pendientes?t=mal`)).status, 401);
+  const pag = await fetch(`${base}/pendientes?t=${firma('pendientes')}`);
+  assert.strictEqual(pag.status, 200);
+  assert.match(await pag.text(), /Pendientes PuertoBox/);
+  assert.strictEqual((await fetch(`${base}/atendido?tel=5491100000009&t=mal`, { method: 'POST' })).status, 401);
+  const ok = await fetch(`${base}/atendido?tel=5491100000009&t=${firma('atendido:5491100000009')}`, { method: 'POST' });
+  assert.strictEqual(ok.status, 200);
+  assert.match(await ok.text(), /marcado como atendido/);
+  s.close();
 });
