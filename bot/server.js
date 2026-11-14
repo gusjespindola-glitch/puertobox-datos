@@ -244,8 +244,17 @@ async function procesar(payload, deps = {}) {
   return salidas;
 }
 
+const TOPE_DIARIO = Number(process.env.TOPE_MENSAJES_DIA || 60);
 async function atender(tel, texto, st, fetchImpl, owner) {
   const salidas = [];
+  // Tope de respuestas del bot por chat por día: si alguien manda mensajes sin parar, se pausa ese chat y se avisa una vez.
+  if (tel !== owner && st.contarRespuesta && st.contarRespuesta(tel) > TOPE_DIARIO) { // Gustavo probando desde su número no tiene tope
+    st.pausar(tel, 'derivado');
+    if (st.marcar) st.marcar(tel, { derivadoEn: Date.now(), derivadoMotivo: 'pide_humano', derivadoResumen: `Más de ${TOPE_DIARIO} mensajes hoy: pausé el bot en este chat para cuidar el saldo.`, recordatorios: 0 });
+    const aviso = `⚠️ PuertoBox: el cliente +${tel} mandó más de ${TOPE_DIARIO} mensajes hoy. Pausé el bot en ese chat para cuidar el saldo.`;
+    await avisarGustavo(owner, aviso, fetchImpl, 'PuertoBox: chat pausado por exceso de mensajes', tel);
+    return [{ to: owner, body: aviso }];
+  }
   {
     const derivaciones = [];
     let resp;
@@ -327,11 +336,11 @@ function servidor() {
     if (req.method === 'POST' && url.pathname === '/instagram') {
       let raw = ''; req.on('data', (c) => (raw += c));
       req.on('end', () => {
+        // Sin IG_APP_SECRET no se procesa nada: si no, cualquiera podría mandar mensajes falsos y gastar el saldo de la IA.
         const secreto = process.env.IG_APP_SECRET;
-        if (secreto) { // firma de Meta: x-hub-signature-256 = sha256=HMAC(cuerpo)
-          const firma = 'sha256=' + require('crypto').createHmac('sha256', secreto).update(raw).digest('hex');
-          if (req.headers['x-hub-signature-256'] !== firma) { res.writeHead(401); return res.end('firma inválida'); }
-        }
+        if (!secreto) { res.writeHead(503); return res.end('Instagram sin configurar (falta IG_APP_SECRET)'); }
+        const firmaMeta = 'sha256=' + require('crypto').createHmac('sha256', secreto).update(raw).digest('hex');
+        if (req.headers['x-hub-signature-256'] !== firmaMeta) { res.writeHead(401); return res.end('firma inválida'); }
         res.writeHead(200); res.end('ok');
         let payload = {}; try { payload = JSON.parse(raw || '{}'); } catch { return; }
         procesar(payload).catch((e) => console.error(e));
@@ -354,7 +363,7 @@ function servidor() {
       });
       return;
     }
-    if (url.pathname === '/atendido' && (req.method === 'POST' || req.method === 'GET')) {
+    if (url.pathname === '/atendido' && req.method === 'POST') {
       const tel = soloDigitos(url.searchParams.get('tel'));
       if (!tel || !firmaOk('atendido:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
       store.marcar(tel, { gustavoRespondioEn: Date.now(), recordatorios: 0 });
@@ -383,7 +392,7 @@ function servidor() {
     if (req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) return servirNomenclador(req, res, url);
     if (req.method === 'GET' || req.method === 'HEAD') {
       const pag = paginas.servir(url.pathname, url.searchParams);
-      if (pag) { res.writeHead(200, { 'content-type': pag.tipo, 'cache-control': 'public, max-age=300' }); return res.end(req.method === 'HEAD' ? undefined : pag.cuerpo); }
+      if (pag) { res.writeHead(200, { 'content-type': pag.tipo, 'cache-control': 'public, max-age=60, s-maxage=60' }); return res.end(req.method === 'HEAD' ? undefined : pag.cuerpo); }
       if (url.pathname.startsWith('/ncm/') || url.pathname.startsWith('/importar/')) { res.writeHead(404, { 'content-type': 'text/html; charset=utf-8' }); return res.end(paginas.buscador('')); }
     }
     if (req.method === 'GET' && (url.pathname === '/leads' || url.pathname === '/pruebas')) {

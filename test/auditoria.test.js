@@ -128,3 +128,34 @@ test('impuestos: el estimado reproduce la factura real de UPS (flete declarado, 
   assert.ok(bot >= real, `el estimado (${bot}) no puede quedar por debajo de lo real (${real})`);
   assert.ok(bot <= real * 1.05, `el estimado (${bot}) se pasa más de 5% de lo real (${real})`);
 });
+
+test('cotizar deja el lead como cotizado (para el seguimiento)', () => {
+  const st = crearStore(null);
+  const ctx = { store: st, telefono: '5491100000007', derivaciones: [] };
+  ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 20, regimen: 'comercial' }, ctx);
+  assert.strictEqual(st.lead('5491100000007').estado, 'cotizado');
+  st.guardarLead('5491100000007', { estado: 'listo_para_cerrar' });
+  ejecutar('cotizar', { kg: 6, valor_factura_usd: 300, die: 20, regimen: 'comercial' }, ctx);
+  assert.strictEqual(st.lead('5491100000007').estado, 'listo_para_cerrar', 'no lo baja de estado');
+});
+
+test('tope diario: un chat que manda mensajes sin parar se pausa y avisa una vez', async () => {
+  process.env.TOPE_MENSAJES_DIA = '3';
+  delete require.cache[require.resolve('../bot/server')];
+  const { procesar } = require('../bot/server');
+  const st = crearStore(null);
+  for (let i = 0; i < 3; i++) st.contarRespuesta('5491100000008');
+  const salidas = await procesar({ type: 'whatsapp.inbound_message.received', whatsappInboundMessage: { id: 'spam4', from: '+5491100000008', type: 'text', text: { body: 'hola' } } }, { store: st, debounceMs: 0, fetchImpl: async () => ({ ok: true, json: async () => ({}), text: async () => '' }) });
+  assert.ok(st.estaPausado('5491100000008'));
+  assert.match(salidas[0].body, /más de 3 mensajes/);
+  delete process.env.TOPE_MENSAJES_DIA;
+});
+
+test('instagram: sin IG_APP_SECRET no procesa nada (no se puede gastar el saldo con mensajes falsos)', async () => {
+  delete process.env.IG_APP_SECRET;
+  const { servidor } = require('../bot/server');
+  const s = servidor().listen(0); await new Promise((r) => s.once('listening', r));
+  const r = await fetch(`http://127.0.0.1:${s.address().port}/instagram`, { method: 'POST', body: '{"object":"instagram","entry":[]}' });
+  assert.strictEqual(r.status, 503);
+  s.close();
+});

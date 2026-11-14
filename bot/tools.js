@@ -89,6 +89,11 @@ function ejecutar(nombre, input, ctx) {
         valorFactura: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen,
         conFranquicia: !input.sin_franquicia,
       });
+      // Lead cotizado (si todavía no avanzó a otro estado): así aparece en el seguimiento si el cliente no vuelve.
+      const previo = ctx.store.lead ? ctx.store.lead(ctx.telefono) : null;
+      if (!previo || !previo.estado || previo.estado === 'nuevo' || previo.estado === 'cotizado') {
+        ctx.store.guardarLead(ctx.telefono, { estado: 'cotizado', kg: input.kg, valor_usd: input.valor_factura_usd, precio_usd: r.flete_puertobox_usd + r.handling_puertobox_usd });
+      }
       const avisos = [];
       if (!conMedidas) avisos.push('No hay medidas de la caja: el flete se confirma con las medidas (una caja grande y liviana se cobra por tamaño). No lo presentes como firme y pasale al cliente el mensaje en inglés para el proveedor.');
       if (cajaPesada) avisos.push(`Hay cajas de más de ${NEG.caja_max_kg} kg: tienen recargo del courier que NO está en este flete. Recomendá dividirlas y no digas que el flete es firme.`);
