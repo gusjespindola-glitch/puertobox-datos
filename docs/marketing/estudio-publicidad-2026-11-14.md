@@ -78,3 +78,18 @@ La versión 1 era "de agencia": prolija, con marca y tipografía. La evidencia d
 - Prueba con las 3 nativas (1 y 2 ya; 3 cuando esté la foto de la balanza). La versión 1 queda de respaldo.
 - **El mejor anuncio probablemente ya lo tiene Gustavo: sus videos de TikTok que más funcionaron.** Contenido propio que ya demostró que engancha: se sube a Meta como anuncio clic a WhatsApp tal cual, sin editar de más.
 - **Reseñas reales:** pedirle a cada cliente que recibió su caja una captura o una frase con permiso para usarla. Con 3 reseñas reales se arma la pieza de prueba social (no se inventan).
+
+---
+
+## 8. Todo en Instagram (14/11, decisión de Gustavo: "ahí atraigo gente, ahí quiero la publi")
+Qué dicen los datos de Instagram 2026:
+- **La imagen sola está en caída:** alcance −21,96%, interacciones −25,41% y engagement −45,98% en un año (Metricool, 24 millones de posteos).
+- **El carrusel es el formato más fuerte del feed:** 9 veces más guardados que una imagen, más del doble de alcance y casi 4 veces más interacciones (Metricool 2026). Como anuncio: 2,5% de clics contra 1,9% de la imagen sola. Instagram vuelve a mostrar el carrusel a quien no lo deslizó.
+- **Reels es la ubicación más barata para aparecer** (CPM 20–50% menor que el feed) y **las historias, la más barata por clic**.
+
+### Plan
+1. **Pieza principal: carrusel de 7 diapositivas** (1:1, formato de nota del celular): "5 cosas que tenés que saber antes de comprar en China" → impuestos, permisos, precio cerrado, marca, envío hasta el depósito → "Nosotros te respondemos las 5, gratis, antes de que compres". Da valor (se guarda y se comparte) y lleva al WhatsApp.
+2. **Historia 9:16: chat real cotizando**, en el formato de un chat real, con espacio libre arriba y abajo para la interfaz de Instagram.
+3. **Reel (siguiente paso, cuesta cero):** grabar la pantalla del celular mientras se cotiza con el bot de verdad (15–20 segundos), con el texto arriba "Así te decimos cuánto pagás antes de comprar". Es lo más nativo que hay y Reels es lo más barato.
+4. **Campaña:** clic a WhatsApp (el bot de Instagram todavía no está activo), ubicaciones solo Instagram (feed, historias, reels, explorar). Los mejores posteos orgánicos de @puertobox.ok también se pueden promocionar tal cual.
+5. **Horario:** Metricool marca de 19 a 21 h como el pico de interacción; publicar el carrusel orgánico en ese horario antes de pautarlo.
