@@ -31,7 +31,8 @@ test('ficha de 6404.19 trae DIE 20%, jerarquía e intervenciones', () => {
   assert.ok(f.posicion.startsWith('6404.19'));
   assert.strictEqual(f.die, 20);
   assert.ok(f.jerarquia.length >= 2);
-  assert.ok(f.intervenciones.some((i) => i.organismo === 'SIDIP'));
+  assert.ok(f.intervenciones.some((i) => i.organismo === 'Etiquetado textil y calzado'));
+  assert.ok(!f.intervenciones.some((i) => i.organismo === 'SIDIP'), 'SIDIP hoy solo alcanza celulares');
   assert.ok(f.notas.includes('CAPITULO 64'));
 });
 
