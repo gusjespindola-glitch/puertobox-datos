@@ -17,6 +17,5 @@
     "envios_por_anio": 5,
     "unidades_iguales": 3
   },
-  "tope_por_envio_usd": 3000,
-  "derivar_pedidos_desde_usd": 15000
+  "tope_por_envio_usd": 3000
 }
