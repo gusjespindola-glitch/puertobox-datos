@@ -189,7 +189,7 @@ test('chat derivado: si el cliente escribe, recibe aviso de espera (no visto)', 
   store.pausar('5482', 'derivado');
   const { fetchImpl } = mock([]);
   const out = await procesar(msg('5482', '¿y?'), { fetchImpl, store, debounceMs: 0 });
-  assert.ok(/Gustavo/.test(out[0].body));
+  assert.ok(/nuestro despachante/.test(out[0].body) && !/Gustavo/.test(out[0].body));
   const out2 = await procesar(msg('5482', 'hola??'), { fetchImpl, store, debounceMs: 0 });
   assert.strictEqual(out2.length, 0);
 });
@@ -258,6 +258,6 @@ test('sin saldo en Anthropic: el cliente recibe espera y Gustavo un aviso', asyn
     return { ok: true, json: async () => ({}), text: async () => '' };
   };
   await proc(msg('5499', 'hola'), { fetchImpl, store: st, debounceMs: 0 });
-  assert.ok(enviados.some((b) => b.includes('te va a responder Gustavo')), 'mensaje de espera al cliente');
+  assert.ok(enviados.some((b) => b.includes('te va a responder nuestro despachante')), 'mensaje de espera al cliente');
   assert.ok(enviados.some((b) => b.includes('SIN SALDO')), 'aviso a Gustavo');
 });

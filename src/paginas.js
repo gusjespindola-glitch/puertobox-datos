@@ -65,7 +65,7 @@ function aviso() {
 function bloquePrecio() {
   const d = negocio.datos();
   return `<div class="card"><strong>Envío de China a tu domicilio por courier aéreo express.</strong><br>
-Un envío chico arranca en unos USD ${d.envio_minimo_usd} entre flete y gestión, y el kilo baja mientras más pesa: desde ${d.kg_desde} kg, USD ${d.usd_kg_desde} el kilo de flete más USD ${d.gestion_usd} de gestión por envío. Precio cerrado. Los impuestos se pagan aparte al courier y te los estimamos antes de que compres.</div>`;
+Un envío chico arranca en unos USD ${d.envio_minimo_usd} entre flete y gestión, y el kilo baja mientras más pesa: desde ${d.kg_desde} kg, USD ${d.usd_kg_desde} el kilo de flete más USD ${d.gestion_usd} de gestión por envío. Precio cerrado. Los impuestos se pagan aparte a la empresa de transporte y te los estimamos antes de que compres.</div>`;
 }
 
 // ── Web principal ──

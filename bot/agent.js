@@ -77,11 +77,11 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
       else messages.push({ role: 'user', content: [aviso] });
       continue;
     }
-    const resp = derivaciones.length ? 'Ya derivé tu consulta a Gustavo, nuestro despachante de aduana. Te va a escribir a la brevedad.' : 'Disculpá, no llegué a entender tu mensaje. ¿Me lo podés repetir?';
+    const resp = derivaciones.length ? 'Ya le pasé tu consulta a nuestro despachante de aduana. Te va a escribir a la brevedad.' : 'Disculpá, no llegué a entender tu mensaje. ¿Me lo podés repetir?';
     store.agregar(telefono, 'assistant', resp);
     return resp;
   }
-  return 'Dame un segundo que lo reviso con Gustavo y te escribimos.';
+  return 'Dame un segundo que lo reviso con nuestro despachante y te escribimos.';
 }
 
 module.exports = { responder, limpiar };

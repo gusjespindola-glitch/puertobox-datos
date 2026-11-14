@@ -238,7 +238,7 @@ async function procesar(payload, deps = {}) {
       st.agregar(tel, 'user', texto);
       // Chat derivado a Gustavo: nunca clavar el visto. Aviso de espera, como mucho uno cada 3 horas.
       if (st.motivoPausa(tel) === 'derivado' && st.avisoEsperaVencido(tel, 3)) {
-        const r = 'Tu consulta ya está con Gustavo, nuestro despachante de aduana, y te va a escribir a la brevedad. Si querés, podés dejar acá cualquier dato adicional.';
+        const r = 'Tu consulta ya está con nuestro despachante de aduana, que te va a escribir a la brevedad. Si querés, podés dejar acá cualquier dato adicional.';
         await enviar(tel, r, fetchImpl); salidas.push({ to: tel, body: r });
       }
       continue;
@@ -283,7 +283,7 @@ async function atender(tel, texto, st, fetchImpl, owner) {
       const msg = String(err && err.message);
       if (/credit balance|billing|\b401\b|invalid x-api-key|authentication/i.test(msg)) {
         // Sin saldo o clave inválida: el cliente no queda colgado y Gustavo se entera (una vez cada 3 horas).
-        resp = 'Gracias por escribir a PuertoBox. En este momento te va a responder Gustavo, nuestro despachante de aduana, a la brevedad.';
+        resp = 'Gracias por escribir a PuertoBox. En este momento te va a responder nuestro despachante de aduana a la brevedad.';
         if (!avisoSaldo.ultimo || Date.now() - avisoSaldo.ultimo > 3 * 3600e3) {
           avisoSaldo.ultimo = Date.now();
           const que = /credit balance|billing/i.test(msg) ? 'se quedó SIN SALDO en Anthropic. Cargá crédito en platform.claude.com (Facturación).' : 'la clave de Anthropic no funciona. Revisá ANTHROPIC_API_KEY en Railway.';

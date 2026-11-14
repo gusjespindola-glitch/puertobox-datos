@@ -15,7 +15,7 @@
     },
     {
       "pregunta": "¿Puedo vender por mayor siendo monotributista?",
-      "respuesta": "Sí, por courier hasta USD 3.000 por envío. Para pedidos más grandes, un contenedor o carga marítima, Gustavo arma la cotización a medida."
+      "respuesta": "Sí, por courier hasta USD 3.000 por envío. Para pedidos más grandes, un contenedor o carga marítima, nuestro despachante arma la cotización a medida."
     },
     {
       "pregunta": "¿Necesito CUIT?",
@@ -23,7 +23,7 @@
     },
     {
       "pregunta": "¿Puedo traer a nombre de otra persona o usar el CUIT de otro?",
-      "respuesta": "El envío va a nombre de quien importa y paga los impuestos. Si necesitás que vaya a nombre de otra persona o empresa, Gustavo te explica cómo hacerlo en regla."
+      "respuesta": "El envío va a nombre de quien importa y paga los impuestos. Si necesitás que vaya a nombre de otra persona o empresa, nuestro despachante te explica cómo hacerlo en regla."
     },
     {
       "pregunta": "¿Cuántos envíos puedo hacer por año?",
@@ -31,11 +31,11 @@
     },
     {
       "pregunta": "¿Tengo que hacer algún trámite en ARCA?",
-      "respuesta": "No. Los impuestos se pagan a través del courier cuando llega el envío; ARCA no te va a contactar para cobrarte nada aparte."
+      "respuesta": "No. Los impuestos se pagan a la empresa de transporte cuando te entrega el paquete; ARCA no te va a contactar para cobrarte nada aparte."
     },
     {
       "pregunta": "¿El IVA de la importación me sirve como crédito fiscal?",
-      "respuesta": "En general no: en courier el IVA lo cobra el courier y la factura no queda a tu nombre como importador, así que no siempre se puede computar como crédito fiscal. Si sos Responsable Inscripto, se puede pedir al courier una factura con los tributos discriminados a tu nombre; Gustavo te dice si en tu caso sirve. Por las dudas, tomalo como costo."
+      "respuesta": "En general no: el IVA lo cobra la empresa de transporte y la factura no queda a tu nombre como importador, así que no siempre se puede computar como crédito fiscal. Si sos Responsable Inscripto, se puede pedir a la empresa de transporte una factura con los tributos discriminados a tu nombre; nuestro despachante te dice si en tu caso sirve. Por las dudas, tomalo como costo."
     },
     {
       "pregunta": "¿Pago percepciones de IVA o Ganancias?",

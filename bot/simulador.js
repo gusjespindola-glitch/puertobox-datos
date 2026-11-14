@@ -69,6 +69,8 @@ function revisar(resp, ctx) {
   if (/Presupuesto PuertoBox/.test(t) && !/\*Presupuesto PuertoBox\*/.test(t)) prob.push('presupuesto sin formato');
   if (esPresupuesto && !/Total a PuertoBox/i.test(t)) prob.push('presupuesto sin "Total a PuertoBox"');
   if (esPresupuesto && /total estimado/i.test(t)) prob.push('mezcla PuertoBox e impuestos en un solo total');
+  if (/Gustavo/.test(t)) prob.push('nombra a Gustavo (tiene que decir "nuestro despachante")');
+  if (/(pag[aá]s|paga|pagan)[^.]{0,20}al courier/i.test(t)) prob.push('dice que se paga al courier (tiene que decir "la empresa de transporte")');
   if (/soy (una )?persona|soy humano/i.test(t)) prob.push('dice que es humano');
   return prob;
 }
