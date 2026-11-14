@@ -182,3 +182,41 @@ test('página de charlas: muestra clientes con su charla, marca los del anuncio 
   assert.match(html, /¿Qué producto querés traer\?/);
   assert.doesNotMatch(html, /5492213033034|prueba de Gustavo|tool_use/);
 });
+
+test('empujón: uno solo, entre 4 y 22 h, de 9 a 21, después de un mensaje del bot; nunca a Gustavo ni a pausados', () => {
+  const { paraEmpujar } = require('../bot/recordatorios');
+  const st = crearStore(null);
+  st.agregar('5491100000061', 'user', 'Hola, quiero cotizar'); st.agregar('5491100000061', 'assistant', '¿Qué producto querés traer?');
+  st.agregar('5491100000062', 'user', 'remeras'); st.agregar('5491100000062', 'assistant', 'Presupuesto...'); st.guardarLead('5491100000062', { estado: 'cotizado', precio_usd: 145 });
+  st.agregar('5491100000063', 'user', 'hola'); st.agregar('5491100000063', 'assistant', 'hola'); st.pausar('5491100000063', 'derivado');
+  st.agregar('5492213033034', 'user', 'prueba'); st.agregar('5492213033034', 'assistant', 'ok');
+  st.agregar('5491100000064', 'user', 'último es del cliente');
+  const base = Date.now();
+  const a15 = base + 5 * 3600e3; // 5 h después
+  const horaArg = (t) => (new Date(t - 3 * 3600e3)).getUTCHours();
+  // Buscar un momento 5 h después que caiga entre 9 y 21 h de Argentina.
+  let t = a15; while (horaArg(t) < 9 || horaArg(t) >= 21) t += 3600e3;
+  const pasaron = (t - base) / 3600e3;
+  const r = paraEmpujar(st, OWNER, t);
+  if (pasaron <= 22) {
+    assert.deepStrictEqual(r.map((x) => x.telefono).sort(), ['5491100000061', '5491100000062']);
+    assert.strictEqual(r.find((x) => x.telefono === '5491100000062').cotizado, true);
+    st.marcar('5491100000061', { empujonEn: t });
+    assert.ok(!paraEmpujar(st, OWNER, t + 60e3).some((x) => x.telefono === '5491100000061'));
+  }
+  assert.deepStrictEqual(paraEmpujar(st, OWNER, base + 3600e3), []); // antes de 4 h, nada
+  assert.deepStrictEqual(paraEmpujar(st, OWNER, base + 23 * 3600e3), []); // pasada la ventana, nada
+});
+
+test('empujón: la IA recibe la charla y escribe un mensaje que queda en el historial', async () => {
+  const { empujon } = require('../bot/agent');
+  const st = crearStore(null);
+  st.agregar('5491100000071', 'user', 'remeras'); st.agregar('5491100000071', 'assistant', 'Presupuesto: USD 145');
+  let cuerpo;
+  const fetchImpl = async (u, o) => { cuerpo = JSON.parse(o.body); return { ok: true, json: async () => ({ content: [{ type: 'text', text: '¿Te quedó alguna duda con el presupuesto?' }] }) }; };
+  const txt = await empujon({ telefono: '5491100000071', store: st, horas: 6, cotizado: true, fetchImpl });
+  assert.strictEqual(txt, '¿Te quedó alguna duda con el presupuesto?');
+  assert.deepStrictEqual(cuerpo.tool_choice, { type: 'none' });
+  assert.match(cuerpo.messages.at(-1).content, /Sistema, no lo escribió el cliente/);
+  assert.strictEqual(st.historial('5491100000071').at(-1).content, txt);
+});

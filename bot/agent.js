@@ -8,21 +8,21 @@ const { definiciones, ejecutar } = require('./tools');
 const SYSTEM = require('../src/negocio').render(fs.readFileSync(path.join(__dirname, 'prompt.md'), 'utf8'));
 const MODELO = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 
-async function llamarClaude(messages, fetchImpl, intentos = 3) {
+async function llamarClaude(messages, fetchImpl, intentos = 3, sinHerramientas = false) {
   for (let i = 1; ; i++) {
-    try { return await llamarUnaVez(messages, fetchImpl); } catch (e) {
+    try { return await llamarUnaVez(messages, fetchImpl, sinHerramientas); } catch (e) {
       if (i >= intentos || /\b(400|401|403)\b/.test(e.message)) throw e;
       await new Promise((r) => setTimeout(r, (process.env.NODE_ENV === 'test' ? 1 : 1500) * i));
     }
   }
 }
 
-async function llamarUnaVez(messages, fetchImpl) {
+async function llamarUnaVez(messages, fetchImpl, sinHerramientas = false) {
   const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
     // cache_control: las instrucciones y herramientas (iguales en cada llamada) se cachean 5 min → cada mensaje del mismo chat sale más barato.
-    body: JSON.stringify({ model: MODELO, max_tokens: 1024, system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }], tools: definiciones, messages }),
+    body: JSON.stringify({ model: MODELO, max_tokens: 1024, system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }], tools: definiciones, ...(sinHerramientas ? { tool_choice: { type: 'none' } } : {}), messages }),
   });
   if (!r.ok) throw new Error(`Anthropic ${r.status}: ${await r.text()}`);
   return r.json();
@@ -85,4 +85,28 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
   return 'Dame un segundo que lo reviso con nuestro despachante y te escribimos.';
 }
 
-module.exports = { responder, limpiar };
+/**
+ * Empujón (seguimiento automático, pedido de Gustavo del 14/11): el cliente dejó de contestar y se le escribe
+ * UN mensaje corto, dentro de las 24 h de WhatsApp, para retomar. La IA lo escribe con el contexto de la charla.
+ */
+const INSTRUCCION_EMPUJON = (horas, cotizado) => `[Sistema, no lo escribió el cliente: el cliente no contesta hace unas ${horas} horas. Escribile UN solo mensaje corto (2 o 3 líneas) para retomar la charla, cordial y profesional, sin presionar. ${cotizado
+  ? 'Ya tiene presupuesto: no lo repitas entero. Ayudalo a decidir: recordale en una línea lo que le conviene (precio cerrado, te decimos los impuestos antes de comprar, llega a su casa; si es para revender y sabés las unidades, el costo por unidad) y preguntale si le quedó alguna duda o si quiere avanzar.'
+  : 'Todavía no tiene presupuesto: retomá la última pregunta que le hiciste, de forma simple, y recordale que la cotización es gratis y sin compromiso.'} No digas que es un mensaje automático ni que pasaron horas. No uses herramientas.]`;
+
+async function empujon({ telefono, store, horas, cotizado, fetchImpl = fetch }) {
+  const messages = [];
+  for (const m of store.historial(telefono)) {
+    const last = messages[messages.length - 1];
+    if (last && last.role === m.role) last.content += `\n${m.content}`;
+    else messages.push({ role: m.role, content: m.content });
+  }
+  if (!messages.length || messages[messages.length - 1].role !== 'assistant') return null;
+  messages.push({ role: 'user', content: INSTRUCCION_EMPUJON(horas, cotizado) });
+  const res = await llamarClaude(messages, fetchImpl, 3, true);
+  const txt = limpiar((res.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim());
+  if (!txt) return null;
+  store.agregar(telefono, 'assistant', txt);
+  return txt;
+}
+
+module.exports = { responder, limpiar, empujon };

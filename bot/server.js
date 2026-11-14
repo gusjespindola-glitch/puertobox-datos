@@ -390,6 +390,17 @@ function servidor() {
       });
       return;
     }
+    if (url.pathname === '/seguir-bot' && req.method === 'POST') {
+      // "Que lo siga el bot": Gustavo devuelve el chat al bot (se despausa y deja de figurar como esperando).
+      const tel = soloDigitos(url.searchParams.get('tel'));
+      if (!tel || !firmaOk('bot:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      store.reanudar(tel); store.marcar(tel, { gustavoRespondioEn: Date.now(), recordatorios: 0 });
+      const lead = store.lead && store.lead(tel);
+      if (lead && ['derivado', 'listo_para_cerrar'].includes(lead.estado)) store.guardarLead(tel, { estado: lead.precio_usd ? 'cotizado' : 'nuevo' });
+      const volver = url.searchParams.get('volver');
+      if (volver && firmaOk('pendientes', volver)) { res.writeHead(303, { location: `/pendientes?t=${volver}` }); return res.end(); }
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }); return res.end(`Listo: el bot sigue con +${tel}.`);
+    }
     if (url.pathname === '/atendido' && req.method === 'POST') {
       const tel = soloDigitos(url.searchParams.get('tel'));
       if (!tel || !firmaOk('atendido:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
@@ -402,7 +413,7 @@ function servidor() {
       const t = url.searchParams.get('t');
       if (!firmaOk('pendientes', t)) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
-      const html = require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`);
+      const html = require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`, Date.now(), (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&volver=${t}`);
       return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`));
     }
     if (req.method === 'GET' && url.pathname === '/charlas') {
@@ -442,7 +453,7 @@ if (require.main === module) {
   if (process.env.IG_TOKEN) { renovarTokenIG(); setInterval(renovarTokenIG, 24 * 3600e3).unref(); }
   // Asistente de pendientes: cada 15 minutos revisa clientes sin respuesta y manda avisos por ntfy (y el resumen de las 9).
   const { revisar } = require('./recordatorios');
-  const tic = () => revisar({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), avisar: (t, titulo, prioridad, tel) => avisarNtfy(t, titulo, prioridad, fetch, tel) }).catch((e) => console.error('Recordatorios:', e.message));
+  const tic = () => revisar({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), avisar: (t, titulo, prioridad, tel) => avisarNtfy(t, titulo, prioridad, fetch, tel), empujar: async (p) => { const txt = await require('./agent').empujon({ telefono: p.telefono, store, horas: p.horas, cotizado: p.cotizado }); if (txt) await enviar(p.telefono, txt); return !!txt; } }).catch((e) => console.error('Recordatorios:', e.message));
   setTimeout(tic, 60e3).unref(); setInterval(tic, 15 * 60e3).unref();
 }
 module.exports = { procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo };
