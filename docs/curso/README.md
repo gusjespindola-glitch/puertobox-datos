@@ -21,5 +21,5 @@ Estado: ✅ leído y resumido · ⏳ pendiente · ➖ no aplica a PuertoBox (exp
 ## Módulo V (Incoterms) · ⏳
 ## Módulo VI (sistemas y operativa) · ⏳ liquidaciones, formulario de valor, VUCE, SIM
 ## Normativa · ⏳ Intervención ANMAT · Declaración anticipada · Envases en contacto con alimentos
-## Anotaciones · ⏳ Resumen del curso (.docx)
+## Anotaciones · 🟡 Resumen del curso (.docx): leída la parte de courier y aplicada en `docs/auditoria/2026-11-13-oferta.md` (monotributo, IVA no computable, domisanitarios, proforma "pequeños envíos", volumétrico /5000). Falta el resto.
 ## Vademecum · ⏳

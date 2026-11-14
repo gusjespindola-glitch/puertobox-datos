@@ -28,6 +28,10 @@
     {
       "pregunta": "¿Tengo que hacer algún trámite en ARCA?",
       "respuesta": "No. Los impuestos se pagan a través del courier cuando llega el envío; ARCA no te va a contactar para cobrarte nada aparte."
+    },
+    {
+      "pregunta": "¿El IVA de la importación me sirve como crédito fiscal?",
+      "respuesta": "No. En courier el IVA lo cobra el courier y no se puede computar como crédito fiscal, aunque seas Responsable Inscripto. Tenelo en cuenta como costo."
     }
   ]
 }
