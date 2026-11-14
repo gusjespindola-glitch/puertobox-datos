@@ -86,6 +86,7 @@ test('web: WhatsApp con link real y vista previa para compartir', () => {
   assert.ok(h.includes(`href="${d.wa_link}"`));
   assert.ok(h.includes('og:title') && h.includes('rel="canonical"'));
   assert.ok(!/id="cnt1">0</.test(h), 'el número de la portada arranca en 0');
+  assert.ok(h.includes(`id="cnt1">${d.usd_kg_total_desde}<`), 'la portada muestra el kilo con la gestión incluida, igual que el bot');
 });
 
 test('textos: el depósito de China no es "nuestro" y en Argentina no hay depósito', () => {
