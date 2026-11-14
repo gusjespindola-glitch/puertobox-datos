@@ -22,10 +22,17 @@ function tramo(kg, tabla) {
   return tabla.find((t) => kg >= t.desde_kg && (t.hasta_kg === null || kg < t.hasta_kg));
 }
 
-/** Flete que cobra PuertoBox para un kg cobrable. */
+const precioTramo = (t, kg) => (t.total_usd !== undefined ? t.total_usd : r2(t.usd_kg * kg));
+
+/**
+ * Flete que cobra PuertoBox para un kg cobrable.
+ * Nunca más caro que el arranque de un tramo siguiente: sin esto 9,5 kg (USD 237,50) costaba más que 10 kg (USD 200),
+ * y lo mismo en 4,5, 14,5 y 19,5 kg. Un cliente que pesa menos no puede pagar más.
+ */
 function fleteVenta(kg) {
   const t = tramo(kg, M.tramos_venta);
-  return t.total_usd !== undefined ? t.total_usd : r2(t.usd_kg * kg);
+  const siguientes = M.tramos_venta.filter((x) => x.desde_kg > kg).map((x) => precioTramo(x, x.desde_kg));
+  return Math.min(precioTramo(t, kg), ...siguientes);
 }
 
 /** Lo que le paga PuertoBox al forwarder. */
@@ -63,12 +70,12 @@ function estimarImpuestos({ valorFactura, flete, die, internos = 0, regimen = 'c
 }
 
 /** Presupuesto estimado para el cliente (flete final = peso de balanza). */
-function presupuesto({ kg, largo, ancho, alto, cajas = 1, valorFactura, die = 0, internos = 0, regimen = 'comercial' }) {
+function presupuesto({ kg, largo, ancho, alto, cajas = 1, valorFactura, die = 0, internos = 0, regimen = 'comercial', conFranquicia = true }) {
   const declarado = kgCobrable({ kg, largo, ancho, alto, cajas });
   const kgPres = Math.ceil(declarado * (1 + (M.tolerancia || 0)) * 2) / 2;
   const flete = fleteVenta(kgPres);
   const handling = M.handling_usd || 0;
-  const imp = estimarImpuestos({ valorFactura, flete, die, internos, regimen });
+  const imp = estimarImpuestos({ valorFactura, flete, die, internos, regimen, conFranquicia });
   return {
     kg_declarado_cobrable: declarado,
     kg_presupuestado: kgPres,

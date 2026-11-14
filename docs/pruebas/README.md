@@ -1,6 +1,6 @@
 # Pruebas del bot
 
-El simulador tiene 23 escenarios (se sumaron el 13/11: juguetes y cargadores con certificación, caja de más de 23 kg, uso propio de más de USD 400, valor no creíble, plazo, forma de pago, audio, zona alejada y repuestos).
+El simulador tiene 29 escenarios (14/11: auriculares bluetooth para vender, uso propio con más de 3 iguales y presupuesto sin medidas; el 13/11 se sumaron: juguetes y cargadores con certificación, caja de más de 23 kg, uso propio de más de USD 400, valor no creíble, plazo, forma de pago, audio, zona alejada y repuestos).
 
 Se corren con `https://puertobox-datos-production.up.railway.app/pruebas?key=ADMIN_KEY` o `npm run simular`. Lo más nuevo, arriba.
 

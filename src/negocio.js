@@ -16,10 +16,7 @@ function datos() {
   const fd = leer('precios_venta.json').flete_directo;
   const tramos = fd.tramos_venta;
   const gestion = fd.handling_usd;
-  const precioKg = (kg) => { // mismo criterio que src/flete_directo.js: desde_kg <= kg < hasta_kg
-    const t = tramos.find((x) => kg >= x.desde_kg && (x.hasta_kg == null || kg < x.hasta_kg)) || tramos[0];
-    return t.total_usd != null ? t.total_usd : t.usd_kg * kg;
-  };
+  const precioKg = require('./flete_directo').fleteVenta; // un solo cálculo de flete para bot, web y páginas
   const ultimo = tramos[tramos.length - 1];
   const filas = tramos.map((t, i) => {
     const desde = i === 0 ? null : t.desde_kg;

@@ -36,6 +36,9 @@ const ESCENARIOS = [
   { nombre: 'Zona alejada', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja', 'mi codigo postal es 9410, ushuaia'], espera: { presupuesto: true, contiene: /recargo|zona/i } },
   { nombre: 'Monotributista', msgs: ['soy monotributista, puedo importar para vender?'], espera: { sinPresupuesto: true, contiene: /s[ií]/i, noContiene: /responsable inscripto es obligatorio/i } },
   { nombre: 'Envíos por año', msgs: ['cuantos envios puedo hacer por año?'], espera: { contiene: /5/ } },
+  { nombre: 'Auriculares bluetooth para vender', msgs: ['quiero traer auriculares bluetooth sin marca para vender'], espera: { sinPresupuesto: true } },
+  { nombre: 'Uso propio con más de 3 iguales', msgs: ['quiero traer 6 remeras sin marca para mi, 60 dolares, 2 kilos'], espera: { contiene: /vender|iguales|misma/i } },
+  { nombre: 'Sin medidas: flete no firme', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja, no tengo las medidas'], espera: { presupuesto: true, contiene: /Could you please/i, noContiene: /\(firme\)/i } },
   { nombre: 'Repuestos de auto', msgs: ['repuestos de auto genericos para vender, 800 dolares, 20 kilos, 2 cajas'], espera: { presupuesto: true } },
 ];
 
