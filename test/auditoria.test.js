@@ -96,3 +96,14 @@ test('textos: el depósito de China no es "nuestro" y en Argentina no hay depós
     assert.ok(!/nuestro depósito|depósito de PuertoBox|sin depósito físico/i.test(t), f);
   }
 });
+
+test('envío dentro de China: lo paga el cliente y lo dicen el bot, la web y la herramienta', () => {
+  const fs = require('fs'); const path = require('path');
+  const prompt = negocio.render(fs.readFileSync(path.join(__dirname, '..', 'bot', 'prompt.md'), 'utf8'));
+  assert.match(prompt, /fábrica al depósito en Shenzhen lo paga el cliente/);
+  assert.match(prompt, /include the delivery to my forwarder's warehouse in Shenzhen/);
+  assert.match(paginas.home(), /Ese envío dentro de China lo pagás vos/);
+  assert.match(paginas.home(), /Quién paga el envío de la fábrica/);
+  const ctx = { store: crearStore(null), telefono: '1', derivaciones: [] };
+  assert.match(ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 20, regimen: 'comercial' }, ctx).reglas, /Shenzhen NO está incluido/);
+});
