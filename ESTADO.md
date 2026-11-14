@@ -54,7 +54,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 6. ✅ Delegación a Cloudflare activa (13/11). Falta revisar que el mail info@ funcione (registros MX en Cloudflare).
 7. Cargar el mensaje de bienvenida o ausencia en el 698 (`ycloud-agent/whatsapp_698_bienvenida.txt`) y el link del bot en las bios.
 8. Preguntar a Howard: gasto administrativo de DHL, recargo por zona alejada, días de tránsito, si sigue FedEx a 11 USD/kg desde 20 kg.
-10. **Audios de WhatsApp (código listo 14/11)**: el bot pasa los audios a texto con Whisper en Groq (plan gratis, sin tarjeta, 2.000 por día). Falta que Gustavo cree la cuenta en console.groq.com y cargue `GROQ_API_KEY` en Railway. Sin la clave, el bot sigue pidiendo que lo escriban.
+10. ✅ **Audios de WhatsApp andando (14/11 8:36)**: el bot los pasa a texto con Whisper en Groq (plan gratis, sin tarjeta, 2.000 por día). `GROQ_API_KEY` cargada en Railway. Probado con audios reales (luces LED Philips → detectó la marca y derivó bien).
 9. Limpieza del repo: `ycloud-agent/` y el README viejo (modelo consolidado / modelo fijo) ya no se usan; archivos web viejos; `ncm/fuentes_arca/nom.txt` duplicado.
 
 ## Instagram (en curso, 13/11/2026)
