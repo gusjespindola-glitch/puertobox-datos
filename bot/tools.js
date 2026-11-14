@@ -77,18 +77,32 @@ function ejecutar(nombre, input, ctx) {
       return res.length ? res : { aviso: 'Sin resultados. Probá con otras palabras o derivá a Gustavo.' };
     }
     case 'cotizar': {
-      const r = presupuesto({
-        kg: input.kg, cajas: input.cantidad_cajas || 1, largo: input.largo_cm, ancho: input.ancho_cm, alto: input.alto_cm,
-        valorFactura: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen,
+      // Tope del courier: USD 3.000 FOB POR ENVÍO (sin límite de envíos para vender). Si el pedido pasa el tope, se divide en varios envíos.
+      const tope = NEG.tope_por_envio_usd;
+      const envios = Math.max(1, Math.ceil((input.valor_factura_usd || 0) / tope));
+      const cajas = input.cantidad_cajas || 1;
+      const uno = presupuesto({
+        kg: input.kg / envios, cajas: Math.max(1, Math.ceil(cajas / envios)), largo: input.largo_cm, ancho: input.ancho_cm, alto: input.alto_cm,
+        valorFactura: input.valor_factura_usd / envios, die: input.die, internos: input.internos || 0, regimen: envios > 1 ? 'comercial' : input.regimen,
       });
+      const x = (n) => Math.round(n * envios * 100) / 100;
+      const r = envios === 1 ? uno : {
+        flete_puertobox_usd: x(uno.flete_puertobox_usd), handling_puertobox_usd: x(uno.handling_puertobox_usd), kg_presupuestado: uno.kg_presupuestado * envios,
+        impuestos_estimados_usd: Object.fromEntries(Object.entries(uno.impuestos_estimados_usd).map(([k, v]) => [k, x(v)])),
+        total_estimado_usd: x(uno.total_estimado_usd),
+      };
+      const extra = envios > 1
+        ? ` PEDIDO DIVIDIDO: el courier permite hasta USD ${tope} por envío, así que este pedido va en ${envios} envíos separados (cada uno con su propia factura del proveedor de hasta USD ${tope}, y al menos una caja por envío). Explicáselo al cliente en una línea, mostrá los TOTALES (ya suman los ${envios} envíos) y aclará que la gestión es por envío. Si tiene menos cajas que envíos, pedile que le pida al proveedor separarlo en ${envios} cajas.`
+        : '';
       return {
+        envios,
         flete_puertobox_usd: r.flete_puertobox_usd,
         handling_puertobox_usd: r.handling_puertobox_usd,
         kg_presupuestado: r.kg_presupuestado,
         impuestos_y_gastos_estimados_usd: r.impuestos_estimados_usd.total,
         detalle_impuestos: r.impuestos_estimados_usd,
         total_estimado_usd: r.total_estimado_usd,
-        reglas: `El flete es PRECIO CERRADO: se respeta aunque la caja llegue hasta ${NEG.precio_cerrado_hasta_pct}% más pesada o grande; si supera eso, se ajusta con foto de la balanza. Se suma una gestión fija de USD ${NEG.gestion_usd} por envío (mostrala como "Gestión PuertoBox"). Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier al llegar (puede ser DHL, UPS o FedEx; no nombres uno salvo que pregunten).`,
+        reglas: `El flete es PRECIO CERRADO: se respeta aunque la caja llegue hasta ${NEG.precio_cerrado_hasta_pct}% más pesada o grande; si supera eso, se ajusta con foto de la balanza. Se suma una gestión fija de USD ${NEG.gestion_usd} por envío (mostrala como "Gestión PuertoBox"). Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. Impuestos y gasto administrativo son ESTIMADOS y se pagan directo al courier al llegar (puede ser DHL, UPS o FedEx; no nombres uno salvo que pregunten).${extra}`,
       };
     }
     case 'registrar_lead':

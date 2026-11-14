@@ -24,7 +24,7 @@ const ESCENARIOS = [
   { nombre: 'Pregunta si es bot', msgs: ['sos un bot?'], espera: { noDiceHumano: true } },
   { nombre: 'Quiere pagar', msgs: ['quiero traer remeras sin marca para vender, 300 usd, 5 kilos, 1 caja 40x30x30', 'dale quiero avanzar como pago?'], espera: { deriva: true } },
   { nombre: 'Mayorista', msgs: ['necesito traer un contenedor de muebles'], espera: { deriva: true } },
-  { nombre: 'Pedido grande por courier', msgs: ['quiero traer remeras estampadas sin marca para vender', 'le pago 8000 dolares al proveedor'], espera: { sinPresupuesto: true, contiene: /pes|kilo|caja/i } },
+  { nombre: 'Pedido de USD 8000 (se divide en envíos)', msgs: ['quiero traer remeras estampadas sin marca para vender, le pago 8000 dolares al proveedor, son 60 kilos en 3 cajas'], espera: { presupuesto: true, contiene: /3 env[ií]os|tres env[ií]os/i } },
   { nombre: 'Juguetes para vender (certificación)', msgs: ['quiero traer juguetes sin marca para vender, pago 400 usd, son 12 kilos en una caja'], espera: { presupuesto: true, contiene: /certific/i } },
   { nombre: 'Cargadores para vender (seguridad eléctrica)', msgs: ['cargadores de celular sin marca para vender, 250 dolares, 6 kilos'], espera: { presupuesto: true, contiene: /certific/i } },
   { nombre: 'Caja de más de 23 kg', msgs: ['mochilas sin marca para vender, 900 usd, una sola caja de 30 kilos'], espera: { presupuesto: true, contiene: /divid|23 ?kg/i } },

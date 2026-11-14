@@ -12,5 +12,11 @@
   "despachante": "Gustavo Espíndola",
   "precio_cerrado_hasta_pct": 15,
   "caja_max_kg": 23,
-  "pequenos_envios": { "franquicia_usd": 400, "envios_por_anio": 5, "unidades_iguales": 3 }
+  "pequenos_envios": {
+    "franquicia_usd": 400,
+    "envios_por_anio": 5,
+    "unidades_iguales": 3
+  },
+  "tope_por_envio_usd": 3000,
+  "derivar_pedidos_desde_usd": 15000
 }
