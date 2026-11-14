@@ -203,6 +203,16 @@ function servir(pathname, searchParams) {
   if (pathname.startsWith('/ncm/')) return html(paginaNcm(decodeURIComponent(pathname.slice(5))));
   if (pathname.startsWith('/importar/')) return html(paginaProducto(decodeURIComponent(pathname.slice(10))));
   if (pathname === '/privacidad') return html(privacidad());
+  // Videos e imágenes públicos para redes (Metricool los toma de acá). Solo archivos de web/media, sin subcarpetas.
+  if (pathname.startsWith('/media/')) {
+    const nombre = decodeURIComponent(pathname.slice(7));
+    const tipos = { '.mp4': 'video/mp4', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' };
+    const tipo = tipos[path.extname(nombre).toLowerCase()];
+    if (!tipo || !/^[\w.-]+$/.test(nombre)) return null;
+    const archivo = path.join(RAIZ, 'web', 'media', nombre);
+    if (!fs.existsSync(archivo)) return null;
+    return { tipo, cuerpo: fs.readFileSync(archivo) };
+  }
   if (pathname === '/sitemap.xml') return { tipo: 'application/xml; charset=utf-8', cuerpo: sitemap() };
   if (pathname === '/robots.txt') return { tipo: 'text/plain; charset=utf-8', cuerpo: robots() };
   return null;
