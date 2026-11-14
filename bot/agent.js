@@ -43,6 +43,11 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
   store.agregar(telefono, 'user', texto);
   // La API exige alternar user/assistant: se unen los mensajes seguidos del mismo rol.
   const messages = [];
+  // Si le escribimos nosotros primero (difusión a clientes del 698), la IA tiene que saber qué le dijimos.
+  const datosChat = store.chats ? store.chats().find((c) => c.telefono === telefono) : null;
+  if (datosChat && datosChat.difusionEn && store.historial(telefono).length === 1) {
+    messages.push({ role: 'user', content: `[Contexto, no lo escribió el cliente: hace poco le mandamos este mensaje desde PuertoBox: "${require('./difusion').PLANTILLA.text}". Lo que sigue es su respuesta.]` });
+  }
   for (const m of store.historial(telefono)) {
     const last = messages[messages.length - 1];
     if (last && last.role === m.role) last.content += `\n${m.content}`;
