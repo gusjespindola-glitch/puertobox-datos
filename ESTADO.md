@@ -15,6 +15,7 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 ## Base única (desde 13/11/2026)
 Cambiás un dato en un solo lugar y cambia en el bot, la web, el buscador y las páginas:
 - **Precios** (tramos del flete, gestión): `data/precios_venta.json` → `flete_directo`.
+- **Dudas comunes** (CUIT, monotributo, Responsable Inscripto, envíos por año…): `data/faq.json`. Las responde el bot y aparecen en la web.
 - **Contacto y reglas** (WhatsApp, Instagram, mail, horario, precio cerrado %, franquicia, caja máx.): `data/negocio.json`.
 - El resto (envío mínimo, USD/kg desde 20 kg, tabla de la web) se calcula solo (`src/negocio.js`).
 - Plantillas con `{{dato}}`: `bot/prompt.md`, `web/sitio/index.html`. Un test falla si alguien escribe un precio o el teléfono a mano.
