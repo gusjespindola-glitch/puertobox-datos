@@ -146,3 +146,16 @@ test('resumen de las 9: trae los números del día (consultas → presupuestos �
   assert.deepStrictEqual([e.consultas, e.cotizados, e.pagar], [3, 2, 1]);
   assert.match(e.texto, /3 consultas nuevas · 2 con presupuesto · 1 quieren pagar/);
 });
+
+test('anuncio de Meta: el chat que entra con el texto del anuncio queda marcado y sale en el resumen', async () => {
+  const { embudo } = require('../bot/recordatorios');
+  const st = crearStore(null);
+  const fetchImpl = async () => ({ ok: true, json: async () => ({}), text: async () => '' });
+  st.pausar('5491100000077', 'manual'); st.pausar('5491100000078', 'manual'); // pausados: no llama a la IA
+  await procesar({ type: 'whatsapp.inbound_message.received', whatsappInboundMessage: { id: 'ad1', from: '+5491100000077', type: 'text', text: { body: 'Hola, quiero cotizar un envío desde China' } } }, { store: st, fetchImpl, debounceMs: 0 });
+  await procesar({ type: 'whatsapp.inbound_message.received', whatsappInboundMessage: { id: 'web1', from: '+5491100000078', type: 'text', text: { body: 'Hola, vi la web y quiero cotizar un envío desde China' } } }, { store: st, fetchImpl, debounceMs: 0 });
+  st.guardarLead('5491100000077', { estado: 'cotizado', precio_usd: 120 });
+  const e = embudo(st, OWNER);
+  assert.deepStrictEqual(e.anuncio, { chats: 1, cotizados: 1, pagar: 0 });
+  assert.match(e.texto, /Del anuncio de Meta: 1 escribieron · 1 con presupuesto/);
+});
