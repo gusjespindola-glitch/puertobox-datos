@@ -93,3 +93,15 @@ Qué dicen los datos de Instagram 2026:
 3. **Reel (siguiente paso, cuesta cero):** grabar la pantalla del celular mientras se cotiza con el bot de verdad (15–20 segundos), con el texto arriba "Así te decimos cuánto pagás antes de comprar". Es lo más nativo que hay y Reels es lo más barato.
 4. **Campaña:** clic a WhatsApp (el bot de Instagram todavía no está activo), ubicaciones solo Instagram (feed, historias, reels, explorar). Los mejores posteos orgánicos de @puertobox.ok también se pueden promocionar tal cual.
 5. **Horario:** Metricool marca de 19 a 21 h como el pico de interacción; publicar el carrusel orgánico en ese horario antes de pautarlo.
+
+---
+
+## 9. La pieza para pautar (14/11, corrección de Gustavo)
+Gustavo mostró su anuncio viejo que **le trajo muchas consultas**: fondo oscuro, logo PuertoBox, "IMPORTÁ DE CHINA · USD 35/KG · TODO INCLUIDO (flete + impuestos + entrega) · COTIZÁ GRATIS", en video vertical de 15 s. La competencia en Instagram pauta igual: precio por kilo gigante + botón. **Su propio resultado pesa más que los estudios generales: se pauta en ese formato.**
+
+Pieza nueva (`docs/marketing/piezas/`): mismo formato con los números de hoy y sin prometer lo que no es:
+"IMPORTÁ DE CHINA · USD 19/KG · FLETE + GESTIÓN desde 20 kg · envíos chicos desde USD 65 · Impuestos: te los decimos ANTES de que compres · COTIZÁ GRATIS". En 9:16 (imagen y video de 15 s con zoom lento) y 4:5.
+
+**No dice "todo incluido"**: el modelo actual (flete + gestión, impuestos aparte) no lo es. Si Gustavo quiere volver al gancho "todo incluido", hay que definir un precio todo incluido con tope de valor por kilo (ejemplo: ropa y calzado hasta cierto USD/kg de mercadería), porque los impuestos dependen del valor.
+
+El carrusel y el chat quedan como contenido orgánico y de apoyo; la pauta principal es esta.
