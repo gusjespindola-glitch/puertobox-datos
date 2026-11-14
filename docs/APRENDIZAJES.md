@@ -59,3 +59,4 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - 13/11/2026: Gustavo: "si cambio una cosa, que cambie todo". Base única: precios en precios_venta.json, contacto y reglas en negocio.json; bot, web y páginas leen de ahí. Nada que complique; todo lo que traiga clientes.
 - 13/11/2026: dominio conectado a Railway con el botón Connect (Cloudflare). Antes hubo que sacar puertobox.com.ar y www del Worker (registro AAAA 100:: con candado). El trial de Railway permite un solo dominio propio.
 - 13/11/2026: Gustavo no tiene local (trabaja desde su casa): nada de Perfil de Google ni dirección publicada. Sí al bot en Instagram.
+- 13/11/2026: no pedir cargas de saldo "por las dudas": primero medir el gasto real. El bot gasta menos de 1 centavo por conversación.

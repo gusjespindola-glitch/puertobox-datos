@@ -124,6 +124,7 @@ async function avisarGustavo(owner, texto, fetchImpl) {
 const DEBOUNCE_MS = Number(process.env.DEBOUNCE_MS || 6000);
 const pendientes = new Map(); // tel -> { textos: [], timer }
 const colas = new Map(); // tel -> Promise
+const avisoSaldo = { ultimo: 0 };
 
 async function procesar(payload, deps = {}) {
   const fetchImpl = deps.fetchImpl || fetch;
@@ -190,7 +191,18 @@ async function atender(tel, texto, st, fetchImpl, owner) {
       resp = await responder({ telefono: tel, texto, store: st, fetchImpl, derivaciones });
     } catch (err) {
       console.error(err);
-      resp = 'Disculpá, tuvimos un inconveniente momentáneo. ¿Me podés repetir tu último mensaje?';
+      const msg = String(err && err.message);
+      if (/credit balance|billing|\b401\b|invalid x-api-key|authentication/i.test(msg)) {
+        // Sin saldo o clave inválida: el cliente no queda colgado y Gustavo se entera (una vez cada 3 horas).
+        resp = 'Gracias por escribir a PuertoBox. En este momento te va a responder Gustavo, nuestro despachante de aduana, a la brevedad.';
+        if (!avisoSaldo.ultimo || Date.now() - avisoSaldo.ultimo > 3 * 3600e3) {
+          avisoSaldo.ultimo = Date.now();
+          const que = /credit balance|billing/i.test(msg) ? 'se quedó SIN SALDO en Anthropic. Cargá crédito en platform.claude.com (Facturación).' : 'la clave de Anthropic no funciona. Revisá ANTHROPIC_API_KEY en Railway.';
+          await avisarGustavo(owner, `⚠️ PuertoBox: el bot ${que} Mientras tanto los clientes reciben un mensaje de espera. Último cliente: ${tel}`, fetchImpl);
+        }
+      } else {
+        resp = 'Disculpá, tuvimos un inconveniente momentáneo. ¿Me podés repetir tu último mensaje?';
+      }
     }
     if (resp) { await enviar(tel, resp, fetchImpl); salidas.push({ to: tel, body: resp }); }
     for (const d of derivaciones) {
