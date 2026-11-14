@@ -217,6 +217,20 @@ async function atender(tel, texto, st, fetchImpl, owner) {
   return salidas;
 }
 
+/**
+ * Verifica la firma de YCloud: header "YCloud-Signature: t=TIMESTAMP,s=FIRMA", FIRMA = HMAC-SHA256(secreto, `${t}.${cuerpo}`) en hex.
+ * Sin secreto configurado acepta todo (como antes). Rechaza firmas de más de 5 minutos (reenvíos de mensajes viejos).
+ */
+function firmaYCloudOk(header, raw, secreto, ahora = Date.now()) {
+  if (!secreto) return true;
+  const partes = Object.fromEntries(String(header || '').split(',').map((p) => p.trim().split('=')));
+  const t = Number(partes.t);
+  if (!partes.s || !t || Math.abs(ahora / 1000 - t) > 300) return false;
+  const crypto = require('crypto');
+  const esperada = crypto.createHmac('sha256', secreto).update(`${partes.t}.${raw}`).digest('hex');
+  return esperada.length === partes.s.length && crypto.timingSafeEqual(Buffer.from(esperada), Buffer.from(partes.s));
+}
+
 // Nomenclador PuertoBox (web/nomenclador) protegido con ADMIN_KEY: se entra una vez con ?key=... y queda guardado en una cookie.
 const fs = require('fs');
 const paginas = require('../src/paginas');
@@ -269,8 +283,12 @@ function servidor() {
     if (req.method === 'POST' && url.pathname === '/webhook') {
       let raw = ''; req.on('data', (c) => (raw += c));
       req.on('end', () => {
+        // Firma de YCloud (si está YCLOUD_WEBHOOK_SECRET en Railway): sin esto, cualquiera podría mandar mensajes falsos
+        // haciéndose pasar por un cliente o por Gustavo (#borrar, #pausa) y gastar el saldo de la IA.
+        if (!firmaYCloudOk(req.headers['ycloud-signature'], raw, process.env.YCLOUD_WEBHOOK_SECRET)) { res.writeHead(401); return res.end('firma inválida'); }
         res.writeHead(200); res.end('ok'); // Meta pide responder rápido
-        procesar(JSON.parse(raw || '{}')).catch((e) => console.error(e));
+        let payload; try { payload = JSON.parse(raw || '{}'); } catch { return; } // un cuerpo roto no puede tirar el servidor
+        procesar(payload).catch((e) => console.error(e));
       });
       return;
     }
@@ -303,4 +321,4 @@ if (require.main === module) {
   servidor().listen(PORT, () => console.log(`Bot escuchando en :${PORT}`));
   if (process.env.IG_TOKEN) { renovarTokenIG(); setInterval(renovarTokenIG, 24 * 3600e3).unref(); }
 }
-module.exports = { procesar, servidor, normalizar };
+module.exports = { procesar, servidor, normalizar, firmaYCloudOk };

@@ -1,4 +1,4 @@
-# PuertoBox — estado al 13/11/2026
+# PuertoBox — estado al 14/11/2026
 
 Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (material del curso).
 
@@ -6,7 +6,7 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - Línea del bot: **+54 9 221 682-6773**. WhatsApp Business de siempre: 221 698-2199 (aparte, es el número de Gustavo para avisos).
 - Código: `bot/` (prompt en `bot/prompt.md`, herramientas en `bot/tools.js`, precios en `src/flete_directo.js` + `data/precios_venta.json → flete_directo`).
 - Corre en **Railway**: proyecto "sublime-amazement", servicio `puertobox-datos`, dominio `puertobox-datos-production.up.railway.app`, volumen en `/data`. Despliega solo cada vez que se aprueba un PR en `main`.
-- Variables en Railway: ANTHROPIC_API_KEY, YCLOUD_API_KEY, BUSINESS_NUMBER, OWNER_NUMBER (5492216982199), ADMIN_KEY, DATA_FILE (/data/data.json). Opcional: NTFY_TOPIC.
+- Variables en Railway: ANTHROPIC_API_KEY, YCLOUD_API_KEY, BUSINESS_NUMBER, OWNER_NUMBER (5492216982199), ADMIN_KEY, DATA_FILE (/data/data.json), YCLOUD_WEBHOOK_SECRET (firma del webhook; sin ella cualquiera puede mandar mensajes falsos). Opcional: NTFY_TOPIC, PAUSA_HORAS (24 por defecto).
 - IA: Anthropic, Claude Haiku 5.5, USD 5 cargados, **recarga automática apagada**, clave "bot-puertobox" sin vencimiento.
 - YCloud: plan Free, webhook activo a `/webhook` (evento whatsapp.inbound_message.received). El AI Agent de YCloud quedó sin crédito.
 - Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`.
@@ -39,10 +39,11 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - Simulador de clientes: `bot/simulador.js` (13 escenarios con revisión automática). Se corre con `ANTHROPIC_API_KEY=... npm run simular` o abriendo `https://puertobox-datos-production.up.railway.app/pruebas?key=ADMIN_KEY` (usa la clave del servidor, gasta centavos). Informes en `docs/pruebas/`.
 
 ## Web
-- Archivo vigente: `web/sitio/index.html`. Hosting: Cloudflare Worker `royal-mode-b440` (cuenta gusjespindola@gmail.com).
-- Dominio en NIC a nombre de Gustavo, vence 08/04/2027, delegado a Cloudflare el 13/11 (propagando: el 13/11 todavía mostraba el sitio viejo).
+- Archivo vigente: `web/sitio/index.html`. La sirve Railway desde el repo y se actualiza sola con cada merge (el Worker `royal-mode-b440` ya no se usa).
+- Dominio en NIC a nombre de Gustavo, vence 08/04/2027, DNS en Cloudflare.
 
 ## Pendientes (en orden)
+-1. **Auditoría completa 14/11** (`docs/auditoria/2026-11-14-completa.md`): después del merge, cargar en Railway `YCLOUD_WEBHOOK_SECRET` (signing secret del webhook en YCloud › Developers › Webhooks) y correr `/pruebas`. Decisiones pendientes listadas en el informe (impuestos inflados en envíos chicos, electrodomésticos de cocina, portada 18 vs 19).
 0. ✅ Clave de Anthropic rotada el 13/11 (bot-puertobox-2, sin vencimiento).
 1. **Apagar el AI Agent de YCloud** (Inbox > Assignment): si se renueva el crédito, contestarían los dos bots.
 2. ✅ Avisos por ntfy andando (13/11).

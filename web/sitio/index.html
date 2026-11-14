@@ -6,6 +6,13 @@
 <meta name="theme-color" content="#080808">
 <title>PuertoBox — Courier de China a tu puerta</title>
 <meta name="description" content="Courier aéreo express de China a tu domicilio. Tarifa clara por kilo y, antes de comprar, te decimos cuánto vas a pagar de impuestos. Despachante de Aduana matriculado ante ARCA.">
+<link rel="canonical" href="https://{{dominio}}/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://{{dominio}}/">
+<meta property="og:title" content="PuertoBox — Courier de China a tu puerta">
+<meta property="og:description" content="Traé tus compras de China a tu casa. Antes de comprar te decimos la posición arancelaria y cuánto vas a pagar de impuestos. Despachante de aduana matriculado.">
+<meta property="og:image" content="https://images.unsplash.com/photo-1494412519320-aa613dfb7738?w=1200&amp;q=80">
+<meta property="og:locale" content="es_AR">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
 <style>
 /* ─── RESET & BASE ─── */
@@ -739,7 +746,7 @@ footer{
     <li><a href="#contacto">Contacto</a></li>
   </ul>
   <div class="nav-right">
-    <a href="#" data-wa="{{mensaje_whatsapp}}" class="nav-cta">Cotizá Gratis</a>
+    <a href="{{wa_link}}" target="_blank" rel="noopener" data-wa="{{mensaje_whatsapp}}" class="nav-cta">Cotizá Gratis</a>
     <button class="hamburger" id="hbg" onclick="toggleMenu()" aria-label="Menú">
       <span></span><span></span><span></span>
     </button>
@@ -756,7 +763,7 @@ footer{
   <a href="#contacto" onclick="closeMenu()">Contacto</a>
   <div class="menu-footer">
     <a href="https://instagram.com/{{instagram}}" target="_blank">Instagram</a>
-    <a href="#" data-wa="{{mensaje_whatsapp}}">WhatsApp</a>
+    <a href="{{wa_link}}" target="_blank" rel="noopener" data-wa="{{mensaje_whatsapp}}">WhatsApp</a>
   </div>
 </div>
 
@@ -798,11 +805,11 @@ footer{
 
   <div class="hero-bottom">
     <div class="hstat">
-      <div class="hstat-num" id="cnt1">0</div>
+      <div class="hstat-num" id="cnt1">{{usd_kg_desde}}</div>
       <div class="hstat-lbl">USD/kg desde {{kg_desde}} kg</div>
     </div>
     <div class="hstat">
-      <div class="hstat-num" id="cnt2">0%</div>
+      <div class="hstat-num" id="cnt2">100%</div>
       <div class="hstat-lbl">Impuestos antes de comprar</div>
     </div>
     <div class="hstat">
@@ -873,7 +880,7 @@ footer{
       <div class="serv-i-num">04</div>
       <div class="serv-i-body">
         <div class="serv-i-title">Almacén en China</div>
-        <div class="serv-i-desc">Tu proveedor envía a nuestro depósito en China. Pesamos, medimos y te mandamos foto antes de despachar.</div>
+        <div class="serv-i-desc">Tu proveedor envía al depósito en China con el que trabajamos. Pesamos, medimos y te mandamos foto antes de despachar.</div>
         <span class="serv-tag">Consolidación</span>
       </div>
       <div class="serv-arrow">→</div>
@@ -938,7 +945,7 @@ footer{
       <div class="paso-n">02</div>
       <div>
         <div class="paso-t">Comprás en Alibaba</div>
-        <div class="paso-d">Tu proveedor envía la caja a nuestro depósito en China, con la factura a tu nombre y el valor real.</div>
+        <div class="paso-d">Tu proveedor envía la caja al depósito en China con el que trabajamos, con la factura a tu nombre y el valor real.</div>
       </div>
     </div>
     <div class="paso-item rev">
@@ -969,7 +976,7 @@ footer{
   <table class="tar-table rev">
     {{tabla_html}}
   </table>
-  <p style="margin-top:20px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--gray);line-height:1.8">* El flete es precio cerrado: se respeta aunque la caja llegue hasta un {{precio_cerrado_hasta_pct}}% más pesada o grande que lo informado. Si supera ese margen, se ajusta con foto de la balanza. Se paga cuando la caja llega a nuestro depósito en China y se pesa. Zonas alejadas pueden tener recargo del courier.</p>
+  <p style="margin-top:20px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--gray);line-height:1.8">* El flete es precio cerrado: se respeta aunque la caja llegue hasta un {{precio_cerrado_hasta_pct}}% más pesada o grande que lo informado. Si supera ese margen, se ajusta con foto de la balanza. Nunca pagás más que el arranque del tramo siguiente (por ejemplo, 9,5 kg paga lo mismo que 10 kg). Se paga cuando la caja llega al depósito en China y se pesa. Zonas alejadas pueden tener recargo del courier.</p>
 </section>
 
 <!-- ─── BUSCADOR NCM ─── -->
@@ -994,9 +1001,9 @@ footer{
   <div class="faq rev" style="margin-top:40px">
     {{faq_html}}
     <details><summary>¿El precio incluye los impuestos?</summary><p>No. El flete lo pagás a PuertoBox. Los impuestos de importación y el gasto administrativo del courier se pagan directo al courier cuando llega. Antes de que compres te decimos cuánto van a ser aproximadamente.</p></details>
-    <details><summary>¿Cuándo pago el flete?</summary><p>Cuando la caja llega a nuestro depósito en China. La pesamos, te mandamos foto de la balanza y pagás. Recién ahí sale el envío.</p></details>
+    <details><summary>¿Cuándo pago el flete?</summary><p>Cuando la caja llega al depósito en China. La pesamos, te mandamos foto de la balanza y pagás. Recién ahí sale el envío.</p></details>
     <details><summary>¿Y si la caja pesa más de lo que dijo el proveedor?</summary><p>El flete es precio cerrado: se respeta aunque la caja llegue hasta un {{precio_cerrado_hasta_pct}}% más pesada o grande que lo que informó el proveedor. Solo se ajusta si supera ese margen, y siempre con foto de la balanza.</p></details>
-    <details><summary>¿Dónde están? ¿Puedo retirar?</summary><p>Somos de La Plata. Trabajamos online y sin depósito físico para bajar costos, así el envío te sale más barato. No hay retiro: la caja te llega a domicilio por courier.</p></details>
+    <details><summary>¿Dónde están? ¿Puedo retirar?</summary><p>Somos de La Plata. Trabajamos online, sin local ni depósito en Argentina, para bajar costos, así el envío te sale más barato. No hay retiro: la caja te llega a domicilio por courier.</p></details>
     <details><summary>¿Necesito tener empresa?</summary><p>No. Para uso propio va por pequeños envíos: los primeros USD {{franquicia_usd}} sin derechos de importación, hasta {{envios_por_anio}} envíos por año y hasta {{unidades_iguales}} unidades iguales. Para revender va por courier comercial con tu CUIT.</p></details>
     <details><summary>¿Qué no se puede traer?</summary><p>Réplicas o marcas falsificadas, medicamentos, alimentos y suplementos, cosmética y perfumes, baterías sueltas, líquidos inflamables y productos que requieran permisos (ANMAT, INAL, ENACOM) sin autorización. Hasta USD 3.000 por envío y 50 kg por caja.</p></details>
     <details><summary>¿Llegan a todo el país? ¿Cuánto tarda?</summary><p>Sí, puerta a puerta por courier aéreo express. En algunas zonas alejadas el courier cobra un recargo. El plazo te lo confirmamos al cotizar, según la fecha de salida, y te pasamos el número de guía para seguirlo.</p></details>
@@ -1011,12 +1018,12 @@ footer{
     <p class="s-body">Cotización gratis por WhatsApp. Te respondemos en minutos con flete e impuestos estimados.</p>
   </div>
   <div class="contact-grid rev">
-    <div class="contact-item"><div class="contact-ico">💬</div><div><div class="contact-lbl">WhatsApp</div><div class="contact-val"><a href="#" data-wa="{{mensaje_whatsapp}}">{{whatsapp_bot_visible}}</a></div></div></div>
+    <div class="contact-item"><div class="contact-ico">💬</div><div><div class="contact-lbl">WhatsApp</div><div class="contact-val"><a href="{{wa_link}}" target="_blank" rel="noopener" data-wa="{{mensaje_whatsapp}}">{{whatsapp_bot_visible}}</a></div></div></div>
     <div class="contact-item"><div class="contact-ico">📷</div><div><div class="contact-lbl">Instagram</div><div class="contact-val"><a href="https://instagram.com/{{instagram}}" target="_blank">@{{instagram}}</a></div></div></div>
     <div class="contact-item"><div class="contact-ico">📧</div><div><div class="contact-lbl">Email</div><div class="contact-val"><a href="mailto:{{email}}">{{email}}</a></div></div></div>
     <div class="contact-item"><div class="contact-ico">🕐</div><div><div class="contact-lbl">Horario</div><div class="contact-val">{{horario}}</div></div></div>
   </div>
-  <div class="rev" style="margin-top:32px"><a href="#" data-wa="{{mensaje_whatsapp}}" class="wa-btn-out" style="display:inline-flex;text-decoration:none"><span>💬</span> Cotizar por WhatsApp</a></div>
+  <div class="rev" style="margin-top:32px"><a href="{{wa_link}}" target="_blank" rel="noopener" data-wa="{{mensaje_whatsapp}}" class="wa-btn-out" style="display:inline-flex;text-decoration:none"><span>💬</span> Cotizar por WhatsApp</a></div>
 </section>
 
 <!-- ─── FOOTER ─── -->
@@ -1050,7 +1057,7 @@ footer{
   <div class="foot-bottom">
     <div class="foot-socials">
       <a href="https://instagram.com/{{instagram}}" class="foot-social" target="_blank">Instagram</a>
-      <a href="#" data-wa="{{mensaje_whatsapp}}" class="foot-social">WhatsApp</a>
+      <a href="{{wa_link}}" target="_blank" rel="noopener" data-wa="{{mensaje_whatsapp}}" class="foot-social">WhatsApp</a>
       <a href="mailto:{{email}}" class="foot-social">Email</a>
     </div>
     <span>© 2026 PuertoBox · Gustavo Espíndola, Despachante de Aduana matriculado ante <strong style="color:var(--red)">ARCA</strong> · Argentina</span>
@@ -1058,7 +1065,7 @@ footer{
   </div>
 </footer>
 
-<a href="#" data-wa="{{mensaje_whatsapp}}" class="wa-float" title="WhatsApp">💬</a>
+<a href="{{wa_link}}" target="_blank" rel="noopener" data-wa="{{mensaje_whatsapp}}" class="wa-float" title="WhatsApp">💬</a>
 
 <script>
 // ── NAV ──

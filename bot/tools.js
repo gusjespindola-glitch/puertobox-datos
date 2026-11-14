@@ -33,6 +33,7 @@ const definiciones = [
         die: { type: 'number', description: 'Derecho de importación (%) de la posición elegida' },
         internos: { type: 'number', description: 'Impuestos internos (%) si la posición los tiene, si no 0' },
         regimen: { type: 'string', enum: ['personal', 'comercial'], description: 'personal = uso propio, hasta 3 unidades iguales; comercial = para revender' },
+        sin_franquicia: { type: 'boolean', description: 'true si el cliente de uso propio ya usó sus envíos con beneficio del año' },
         largo_cm: { type: 'number' }, ancho_cm: { type: 'number' }, alto_cm: { type: 'number' },
       },
       required: ['kg', 'valor_factura_usd', 'die', 'regimen'],
@@ -77,11 +78,23 @@ function ejecutar(nombre, input, ctx) {
       return res.length ? res : { aviso: 'Sin resultados. Probá con otras palabras o derivá a Gustavo.' };
     }
     case 'cotizar': {
+      // Controles antes de dar un precio: datos imposibles o pedidos que no se cotizan por acá.
+      if (!(input.kg > 0) || !(input.valor_factura_usd > 0)) return { error: 'Faltan el peso o el valor (tienen que ser mayores a 0). Preguntáselos al cliente; no cotices.' };
+      if (input.valor_factura_usd > NEG.tope_por_envio_usd) return { aviso: `Supera el tope de USD ${NEG.tope_por_envio_usd} por envío: no cotices. Seguí las reglas de pedidos grandes (juntá datos y derivá a Gustavo).` };
+      const cajas = input.cantidad_cajas || 1;
+      const conMedidas = !!(input.largo_cm && input.ancho_cm && input.alto_cm);
+      const cajaPesada = input.kg / cajas > NEG.caja_max_kg;
       const r = presupuesto({
         kg: input.kg, cajas: input.cantidad_cajas || 1, largo: input.largo_cm, ancho: input.ancho_cm, alto: input.alto_cm,
         valorFactura: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen,
+        conFranquicia: !input.sin_franquicia,
       });
+      const avisos = [];
+      if (!conMedidas) avisos.push('No hay medidas de la caja: el flete se confirma con las medidas (una caja grande y liviana se cobra por tamaño). No lo presentes como firme y pasale al cliente el mensaje en inglés para el proveedor.');
+      if (cajaPesada) avisos.push(`Hay cajas de más de ${NEG.caja_max_kg} kg: tienen recargo del courier que NO está en este flete. Recomendá dividirlas y no digas que el flete es firme.`);
       return {
+        flete_firme: conMedidas && !cajaPesada,
+        ...(avisos.length ? { aviso: avisos.join(' ') } : {}),
         flete_puertobox_usd: r.flete_puertobox_usd,
         handling_puertobox_usd: r.handling_puertobox_usd,
         kg_presupuestado: r.kg_presupuestado,
