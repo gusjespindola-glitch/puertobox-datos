@@ -17,5 +17,7 @@
     "envios_por_anio": 5,
     "unidades_iguales": 3
   },
-  "tope_por_envio_usd": 3000
+  "tope_por_envio_usd": 3000,
+  "deposito_china": "Shenzhen",
+  "envio_interno_china": "El envío de la fábrica al depósito en Shenzhen lo paga el cliente. Lo ideal es que lo incluya el proveedor. Si lo paga PuertoBox, se le suma al cliente aparte, a lo que cueste."
 }

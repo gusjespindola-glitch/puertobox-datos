@@ -17,6 +17,7 @@ Cambiás un dato en un solo lugar y cambia en el bot, la web, el buscador y las 
 - **Precios** (tramos del flete, gestión): `data/precios_venta.json` → `flete_directo`.
 - **Dudas comunes** (CUIT, monotributo, Responsable Inscripto, envíos por año…): `data/faq.json`. Las responde el bot y aparecen en la web.
 - **Contacto y reglas** (WhatsApp, Instagram, mail, horario, precio cerrado %, franquicia, caja máx.): `data/negocio.json`.
+- **Envío dentro de China** (fábrica → depósito en Shenzhen): lo paga el cliente; si lo paga PuertoBox, se suma aparte a lo que cueste (`negocio.json` → `envio_interno_china`). Lo dicen el bot (en cada presupuesto y en el mensaje al proveedor), la web y las dudas comunes.
 - El resto (envío mínimo, USD/kg desde 20 kg, tabla de la web) se calcula solo (`src/negocio.js`).
 - Plantillas con `{{dato}}`: `bot/prompt.md`, `web/sitio/index.html`. Un test falla si alguien escribe un precio o el teléfono a mano.
 

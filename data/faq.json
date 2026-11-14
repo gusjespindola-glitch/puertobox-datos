@@ -2,6 +2,10 @@
   "_meta": "DUDAS COMUNES. Las usa el bot (las responde solo) y la web (sección Preguntas). Cambiás acá y cambia en los dos. Revisado por Gustavo antes de publicar. Fuentes: RG ARCA 5608/2024 y 5631/2025 (courier hasta USD 3.000 FOB por envío, personas humanas o jurídicas, con o sin fin comercial; pequeños envíos 5 por año, 3 unidades iguales, franquicia USD 400).",
   "preguntas": [
     {
+      "pregunta": "¿Quién paga el envío de la fábrica al depósito en China?",
+      "respuesta": "Vos. El flete de PuertoBox arranca en el depósito de {{deposito_china}}. Lo más simple es pedirle al proveedor que lo incluya en el precio (casi siempre lo hace). Si no lo incluye y lo pagamos nosotros, se te suma aparte, a lo que cueste."
+    },
+    {
       "pregunta": "¿Tengo que ser Responsable Inscripto para importar?",
       "respuesta": "No. Por courier la nacionalización la hace el courier, así que pueden importar personas y empresas (monotributistas incluidos), para uso propio o para vender, hasta USD 3.000 por envío."
     },
