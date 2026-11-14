@@ -26,3 +26,7 @@ Fuente: Drive del curso, `Módulo II/SIDIP - Fraude Marcario - Intervenciones Pr
 - Bot: marca reconocida para reventa → no cotiza y deriva (ya estaba). Reglamentos técnicos → cotiza y avisa que el que revende responde por la certificación en plaza.
 - Pendiente: definir con Gustavo la regla de SIDIP para reventa (ver ⚠️ arriba).
 - Pendiente: avisarle al proveedor que no use pallets o cajones de madera sin NIMF 15.
+
+
+## Actualización 13/11/2026 (investigado)
+SIDIP hoy alcanza **solo celulares (IMEI)**: con la RG 5581 las únicas mercaderías alcanzadas son las del Anexo I; el resto quedó exento y se eliminó el estampillado (textiles, calzado, juguetes, etc.). Por eso ropa, calzado y juguetes **sí** entran por courier general para vender (con sus reglamentos técnicos, control en plaza). Nomenclador corregido.

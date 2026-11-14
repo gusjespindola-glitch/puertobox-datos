@@ -31,7 +31,11 @@
     },
     {
       "pregunta": "¿El IVA de la importación me sirve como crédito fiscal?",
-      "respuesta": "No. En courier el IVA lo cobra el courier y no se puede computar como crédito fiscal, aunque seas Responsable Inscripto. Tenelo en cuenta como costo."
+      "respuesta": "En general no: en courier el IVA lo cobra el courier y la factura no queda a tu nombre como importador, así que no siempre se puede computar como crédito fiscal. Si sos Responsable Inscripto, se puede pedir al courier una factura con los tributos discriminados a tu nombre; Gustavo te dice si en tu caso sirve. Por las dudas, tomalo como costo."
+    },
+    {
+      "pregunta": "¿Pago percepciones de IVA o Ganancias?",
+      "respuesta": "No. Por courier se pagan derechos de importación, tasa de estadística e IVA (más impuestos internos si el producto los tiene). Las percepciones son de la importación tradicional."
     }
   ]
 }

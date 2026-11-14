@@ -2,7 +2,7 @@
   "_meta": {
     "aviso": "Intervenciones ORIENTATIVAS curadas por PuertoBox (no vienen en los archivos de ARCA). Confirmar siempre en VUCE por posición. Gustavo valida y corrige esta tabla.",
     "fuentes": "Curso de despachante (Courier 2025 y SIDIP/Intervenciones, Lic. Padilla); criterios generales de organismos.",
-    "actualizado": "2026-11-13"
+    "actualizado": "2026-11-13 (SIDIP verificado: solo celulares)"
   },
   "organismos": {
     "SENASA": "Sanidad animal y vegetal. Productos de origen animal o vegetal, alimentos para animales, fitosanitarios.",
@@ -12,10 +12,10 @@
     "ENACOM": "Equipos de telecomunicaciones y radio (celulares, WiFi, Bluetooth): homologación.",
     "Seguridad eléctrica": "Reglamento técnico (Secretaría de Comercio). Desde 2025 se controla en plaza, no en Aduana.",
     "Seguridad de juguetes": "Reglamento técnico (Secretaría de Comercio). Control en plaza.",
-    "Etiquetado textil y calzado": "Reglamento técnico de etiquetado. Control en plaza. Revisar SIDIP.",
+    "Etiquetado textil y calzado": "Reglamento técnico de etiquetado (Res. SCI 549/2021). Ingresa por courier; control en plaza.",
     "ANMAC": "Armas, municiones, explosivos y materiales controlados.",
     "SEDRONAR": "Precursores químicos.",
-    "SIDIP": "Sistema Digital de Identificación de Productos (reemplazó al estampillado en 2024). Courier general no admite mercadería alcanzada."
+    "SIDIP": "Sistema Digital de Identificación de Productos (RG 5581/2024, reemplazó al estampillado). Hoy solo alcanza celulares (IMEI). Courier general no admite mercadería alcanzada. Verificado 13/11/2026."
   },
   "reglas": [
     {"prefijos": ["01", "02", "03", "04", "05"], "organismos": ["SENASA", "INAL"]},
@@ -31,12 +31,12 @@
     {"prefijos": ["36"], "organismos": ["ANMAC"]},
     {"prefijos": ["3923", "3924", "4419", "4823.61", "4823.69", "6911", "6912", "7010", "7013", "7323", "7615", "8215", "8211.91"], "organismos": ["ANMAT/INAL envases"], "nota": "Solo si es para contacto con alimentos (vasos, vajilla, termos, utensilios, envases)."},
     {"prefijos": ["9617"], "organismos": ["ANMAT/INAL envases"], "nota": "Termos."},
-    {"prefijos": ["6401", "6402", "6403", "6404", "6405"], "organismos": ["Etiquetado textil y calzado", "SIDIP"]},
-    {"prefijos": ["61", "62", "63"], "organismos": ["Etiquetado textil y calzado", "SIDIP"]},
-    {"prefijos": ["9503", "9504", "9505"], "organismos": ["Seguridad de juguetes", "SIDIP"]},
+    {"prefijos": ["6401", "6402", "6403", "6404", "6405"], "organismos": ["Etiquetado textil y calzado"]},
+    {"prefijos": ["61", "62", "63"], "organismos": ["Etiquetado textil y calzado"]},
+    {"prefijos": ["9503", "9504", "9505"], "organismos": ["Seguridad de juguetes"]},
     {"prefijos": ["8516", "8509", "8508", "8510", "8513", "8504.40", "8536", "8544", "9405", "8414.51", "8418", "8450", "8467", "8471.60", "8528"], "organismos": ["Seguridad eléctrica"]},
     {"prefijos": ["8517.13", "8517.14", "8517.62", "8517.69", "8518.30", "8525", "8526", "8527", "8529"], "organismos": ["ENACOM"], "nota": "Si transmite por radio (celular, WiFi, Bluetooth)."},
-    {"prefijos": ["85", "90", "91"], "organismos": ["SIDIP"], "nota": "Electrónica y óptica: revisar SIDIP."},
+    {"prefijos": ["8517.13", "8517.14"], "organismos": ["SIDIP"], "nota": "Celulares: identificación por IMEI."},
     {"prefijos": ["9018", "9019", "9020", "9021", "9022", "9001.30", "9004"], "organismos": ["ANMAT"], "nota": "Productos médicos (anteojos y lentes de contacto según el caso)."},
     {"prefijos": ["93"], "organismos": ["ANMAC"]},
     {"prefijos": ["8806", "8807"], "organismos": ["ENACOM"], "nota": "Drones: además ANAC."}
