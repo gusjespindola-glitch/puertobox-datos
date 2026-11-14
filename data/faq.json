@@ -1,0 +1,37 @@
+{
+  "_meta": "DUDAS COMUNES. Las usa el bot (las responde solo) y la web (sección Preguntas). Cambiás acá y cambia en los dos. Revisado por Gustavo antes de publicar. Fuentes: RG ARCA 5608/2024 y 5631/2025 (courier hasta USD 3.000 FOB por envío, personas humanas o jurídicas, con o sin fin comercial; pequeños envíos 5 por año, 3 unidades iguales, franquicia USD 400).",
+  "preguntas": [
+    {
+      "pregunta": "¿Tengo que ser Responsable Inscripto para importar?",
+      "respuesta": "No. Por courier la nacionalización la hace el courier, así que pueden importar personas y empresas (monotributistas incluidos), para uso propio o para vender, hasta USD 3.000 por envío."
+    },
+    {
+      "pregunta": "¿Un monotributista puede importar para vender?",
+      "respuesta": "Sí, tranquilamente. La nacionalización la hace el courier, así que la mercadería te llega ya nacionalizada y no necesitás ser Responsable Inscripto ni inscribirte como importador. Va hasta USD 3.000 por envío y sin límite de envíos al año."
+    },
+    {
+      "pregunta": "¿Puedo vender por mayor siendo monotributista?",
+      "respuesta": "Sí, por courier hasta USD 3.000 por envío. Para pedidos más grandes, un contenedor o carga marítima, Gustavo arma la cotización a medida."
+    },
+    {
+      "pregunta": "¿Necesito CUIT?",
+      "respuesta": "Para uso propio alcanza con tus datos personales. Para vender, el envío va a tu nombre con tu CUIT."
+    },
+    {
+      "pregunta": "¿Puedo traer a nombre de otra persona o usar el CUIT de otro?",
+      "respuesta": "El envío va a nombre de quien importa y paga los impuestos. Si necesitás que vaya a nombre de otra persona o empresa, Gustavo te explica cómo hacerlo en regla."
+    },
+    {
+      "pregunta": "¿Cuántos envíos puedo hacer por año?",
+      "respuesta": "Para uso propio con el beneficio de USD {{franquicia_usd}} sin derechos de importación: hasta {{envios_por_anio}} envíos por año y hasta {{unidades_iguales}} unidades iguales por envío. Para vender no hay límite de envíos, solo el tope de USD 3.000 por envío."
+    },
+    {
+      "pregunta": "¿Tengo que hacer algún trámite en ARCA?",
+      "respuesta": "No. Los impuestos se pagan a través del courier cuando llega el envío; ARCA no te va a contactar para cobrarte nada aparte."
+    },
+    {
+      "pregunta": "¿El IVA de la importación me sirve como crédito fiscal?",
+      "respuesta": "No. En courier el IVA lo cobra el courier y no se puede computar como crédito fiscal, aunque seas Responsable Inscripto. Tenelo en cuenta como costo."
+    }
+  ]
+}

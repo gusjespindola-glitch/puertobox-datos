@@ -48,3 +48,12 @@ test('páginas públicas: buscador, posición, producto, sitemap', () => {
   assert.ok(!paginas.buscador('<script>').includes('<script>alert'));
   assert.ok(paginas.buscador('<b>x</b>').includes('&lt;b&gt;'));
 });
+
+test('dudas comunes: las ve el bot y la web desde data/faq.json', () => {
+  const d = negocio.datos();
+  assert.ok(d.faq_texto.includes('monotributista'));
+  assert.ok(!d.faq_texto.includes('{{'));
+  assert.ok(paginas.home().includes('Responsable Inscripto'));
+  const prompt = negocio.render(fs.readFileSync(path.join(RAIZ, 'bot', 'prompt.md'), 'utf8'));
+  assert.ok(prompt.includes('¿Un monotributista puede importar para vender?'));
+});

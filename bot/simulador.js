@@ -34,6 +34,8 @@ const ESCENARIOS = [
   { nombre: 'Pregunta cómo se paga', msgs: ['como se paga?'], espera: { contiene: /dep[oó]sito|pes/i } },
   { nombre: 'Manda un audio', msgs: ['[El cliente mandó un audio. Pedile que lo describa por texto o derivá si hace falta.]'], espera: { contiene: /escrib|texto/i } },
   { nombre: 'Zona alejada', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja', 'mi codigo postal es 9410, ushuaia'], espera: { presupuesto: true, contiene: /recargo|zona/i } },
+  { nombre: 'Monotributista', msgs: ['soy monotributista, puedo importar para vender?'], espera: { sinPresupuesto: true, contiene: /s[ií]/i, noContiene: /responsable inscripto es obligatorio/i } },
+  { nombre: 'Envíos por año', msgs: ['cuantos envios puedo hacer por año?'], espera: { contiene: /5/ } },
   { nombre: 'Repuestos de auto', msgs: ['repuestos de auto genericos para vender, 800 dolares, 20 kilos, 2 cajas'], espera: { presupuesto: true } },
 ];
 

@@ -42,6 +42,11 @@ function datos() {
     tabla_html: filas.map((f) => `<tr><td>${f.rango}</td><td>${f.precio}</td></tr>`).join('\n    '),
     tabla_texto: filas.map((f) => `${f.rango}: ${f.precio}`).join(' · '),
   };
+  const faq = leer('faq.json').preguntas;
+  const sub = (t) => t.replace(/\{\{\s*([a-z0-9_]+)\s*\}\}/gi, (_, k) => { if (!(k in d)) throw new Error(`Falta {{${k}}} en faq.json`); return String(d[k]); });
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  d.faq_texto = faq.map((f) => `- ${f.pregunta} → ${sub(f.respuesta)}`).join('\n');
+  d.faq_html = faq.map((f) => `<details><summary>${esc(f.pregunta)}</summary><p>${esc(sub(f.respuesta))}</p></details>`).join('\n    ');
   return d;
 }
 
