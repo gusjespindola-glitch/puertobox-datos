@@ -42,6 +42,49 @@
         "Sobre los honorarios: IVA 21% + percepción IIBB PBA 3% + CABA 5%. Costo real de la gestión: USD 74,82 = 21,7% del CIF.",
         "El flete declarado en el CIF es el flete real del courier (USD 146,75 por 58,7 kg)."
       ]
+    },
+    {
+      "id": "ups-2026-01",
+      "courier": "UPS de Argentina S.A.",
+      "fecha": "2026-01-05",
+      "origen": "Corea del Sur",
+      "servicio": "Express Saver",
+      "regimen": "courier, con derechos (sin franquicia)",
+      "tipo_cambio_ars_usd": 1475,
+      "bultos": 1,
+      "kg": 8.5,
+      "usd": {
+        "fob": 76.0,
+        "flete": 21.0,
+        "seguro": 0.97,
+        "cif": 97.97,
+        "derechos": 15.78,
+        "tasa_estadistica": 2.94,
+        "iva_importacion": 24.5,
+        "gasto_documental": 19.59,
+        "iva_gasto_documental": 4.11,
+        "total_factura": 66.93
+      },
+      "ars": {
+        "fob": 112100.0,
+        "flete": 30975.0,
+        "seguro": 1430.75,
+        "cif": 144505.76,
+        "derechos": 23273.04,
+        "tasa_estadistica": 4335.17,
+        "iva_importacion": 36143.93,
+        "gasto_documental": 28902.0,
+        "iva_gasto_documental": 6069.42,
+        "total_factura": 98723.56
+      },
+      "lecturas": [
+        "Flete declarado USD 21 por 8,5 kg = 2,47 USD/kg: igual que FedEx (2,50). Aduana calcula el CIF con ese flete, no con lo que cobra PuertoBox.",
+        "Seguro = 1% de (FOB + flete).",
+        "Derechos 16,1% del CIF y tasa de estadística 3% del CIF.",
+        "IVA 21% sobre CIF + derechos + tasa.",
+        "Gasto documental = 20% del CIF (CIF menor a USD 500) + IVA 21%. Sin percepción de IIBB en este caso (en FedEx hubo 8%).",
+        "Total impuestos y gastos USD 66,93 sobre FOB USD 76."
+      ]
     }
   ]
 }

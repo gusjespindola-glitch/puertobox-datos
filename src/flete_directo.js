@@ -75,7 +75,10 @@ function presupuesto({ kg, largo, ancho, alto, cajas = 1, valorFactura, die = 0,
   const kgPres = Math.ceil(declarado * (1 + (M.tolerancia || 0)) * 2) / 2;
   const flete = fleteVenta(kgPres);
   const handling = M.handling_usd || 0;
-  const imp = estimarImpuestos({ valorFactura, flete, die, internos, regimen, conFranquicia });
+  // Aduana calcula el CIF con el flete que declara el courier en su factura (~USD 2,50/kg según facturas reales),
+  // no con lo que cobra PuertoBox. Sin el dato, se usa el flete de venta (más alto: sobreestima).
+  const fleteAduana = M.flete_declarado_usd_kg ? r2(kgPres * M.flete_declarado_usd_kg) : flete;
+  const imp = estimarImpuestos({ valorFactura, flete: fleteAduana, die, internos, regimen, conFranquicia });
   return {
     kg_declarado_cobrable: declarado,
     kg_presupuestado: kgPres,
