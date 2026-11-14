@@ -169,6 +169,18 @@ function accionesNtfy(tel) {
 }
 
 /**
+ * Entiende pedidos cortos de Gustavo sin que tenga que acordarse el comando exacto (pedido del 14/11).
+ * Devuelve el comando ("#borrar", "#pendientes") o null si es un mensaje normal (por ejemplo, probando como cliente).
+ */
+function intencionGustavo(texto) {
+  const t = String(texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!¡¿?,]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!t) return null;
+  if (/^#?\s*(borrar|borra|borra todo|borrar todo|borrar (la |mi )?(conversacion|chat)|borra (la |mi )?(conversacion|chat)|reiniciar|reinicia|reset|resetear|empezar de nuevo|empecemos de nuevo|arrancar de nuevo|nueva conversacion|limpiar( el chat)?)$/.test(t)) return '#borrar';
+  if (/^#?\s*(pendientes|que tengo pendiente|quien me falta( atender)?|a quien me falta( contestar| atender)?)$/.test(t)) return '#pendientes';
+  return null;
+}
+
+/**
  * Aviso a Gustavo por UN solo canal (pedido del 14/11: no duplicar).
  * Si hay NTFY_TOPIC, solo ntfy (llega siempre y no gasta WhatsApp). Si no, WhatsApp al 698 (solo llega si le escribió al bot en las últimas 24 h).
  */
@@ -188,7 +200,7 @@ async function procesar(payload, deps = {}) {
   const st = deps.store || store;
   const owner = soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER);
   const salidas = [];
-  for (const e of normalizar(payload)) {
+  for (let e of normalizar(payload)) {
     if (e.tipo === 'eco') {
       // Gustavo respondió desde la app o la bandeja → pausar el bot en ese chat
       const txt = e.text?.body?.trim().toLowerCase();
@@ -199,9 +211,15 @@ async function procesar(payload, deps = {}) {
     }
     if (st.yaVisto(e.id)) continue;
     const tel = e.from;
+    // Pedidos simples de Gustavo desde su número (texto o audio, con o sin #): "borrar", "reiniciar", "empezar de nuevo", "pendientes".
+    if (owner && tel === owner) {
+      const dicho = e.type === 'text' ? e.text.body : (e.audio ? (e.transcripto = await transcribirAudio(e.audio, fetchImpl)) : '');
+      const intencion = intencionGustavo(dicho);
+      if (intencion) e = { ...e, type: 'text', text: { body: intencion } };
+    }
     // Comandos de Gustavo desde su número personal: "#pausa 549..." o "#bot 549..."
     if (owner && tel === owner && e.type === 'text' && e.text.body.trim().startsWith('#')) {
-      const [cmd, num] = e.text.body.trim().split(/\s+/);
+      const [cmd, num] = e.text.body.trim().replace(/^#\s+/, '#').replace(/[.!¡¿?]+$/, '').split(/\s+/);
       const cliente = soloDigitos(num);
       let r = 'Comandos: #pendientes (clientes que esperan respuesta) · #listo 549XXXXXXXXXX (ya lo atendiste: deja de recordártelo) · #borrar (borra tu chat de prueba) · #borrar 549XXXXXXXXXX (borra el de un cliente) · #pausa 549XXXXXXXXXX (callar el bot en ese chat) · #bot 549XXXXXXXXXX (reactivarlo)';
       if (cmd.toLowerCase() === '#pendientes') r = require('./recordatorios').textoPendientes(st, owner);
@@ -212,7 +230,7 @@ async function procesar(payload, deps = {}) {
       await enviar(owner, r, fetchImpl); salidas.push({ to: owner, body: r });
       continue;
     }
-    const transcripto = e.audio ? await transcribirAudio(e.audio, fetchImpl) : null;
+    const transcripto = e.transcripto !== undefined ? e.transcripto : (e.audio ? await transcribirAudio(e.audio, fetchImpl) : null); // no transcribir dos veces
     const texto = e.type === 'text' ? e.text.body
       : transcripto ? `[Audio del cliente, pasado a texto automáticamente] ${transcripto}`
       : `[El cliente mandó un ${e.type}${e.image?.caption ? `: ${e.image.caption}` : ''}. Pedile que lo describa por texto o derivá si hace falta.]`;
@@ -410,4 +428,4 @@ if (require.main === module) {
   const tic = () => revisar({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), avisar: (t, titulo, prioridad, tel) => avisarNtfy(t, titulo, prioridad, fetch, tel) }).catch((e) => console.error('Recordatorios:', e.message));
   setTimeout(tic, 60e3).unref(); setInterval(tic, 15 * 60e3).unref();
 }
-module.exports = { procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma };
+module.exports = { procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo };

@@ -159,3 +159,22 @@ test('instagram: sin IG_APP_SECRET no procesa nada (no se puede gastar el saldo 
   assert.strictEqual(r.status, 503);
   s.close();
 });
+
+test('Gustavo: "borrar" se entiende escrito como venga (con o sin #, espacio, punto, mayúscula, acento)', () => {
+  const { intencionGustavo } = require('../bot/server');
+  for (const t of ['#borrar', '# borrar', 'Borrar', 'borrar.', 'Borrá todo', 'reiniciar', 'Empezar de nuevo!', '#Borrar ', 'borrar la conversación']) assert.strictEqual(intencionGustavo(t), '#borrar', t);
+  for (const t of ['pendientes', '¿Quién me falta atender?']) assert.strictEqual(intencionGustavo(t), '#pendientes', t);
+  for (const t of ['quiero traer remeras', 'hola', '#borrar 5491111111111', 'no borres nada']) assert.strictEqual(intencionGustavo(t), null, t);
+});
+
+test('Gustavo: "borrar" por audio también borra la conversación', async () => {
+  process.env.OWNER_NUMBER = '5492216982199'; process.env.GROQ_API_KEY = 'gsk_x';
+  delete require.cache[require.resolve('../bot/server')];
+  const { procesar } = require('../bot/server');
+  const st = crearStore(null); st.agregar('5492216982199', 'user', 'hola');
+  const fetchImpl = async (u) => String(u).includes('groq') ? { ok: true, json: async () => ({ text: 'Borrar.' }) } : { ok: true, arrayBuffer: async () => new ArrayBuffer(100), json: async () => ({}), text: async () => '' };
+  const s = await procesar({ type: 'whatsapp.inbound_message.received', whatsappInboundMessage: { id: 'aud1', from: '+5492216982199', type: 'audio', audio: { link: 'https://api.ycloud.com/x' } } }, { store: st, fetchImpl, debounceMs: 0 });
+  assert.match(s[0].body, /borré tu conversación/);
+  assert.strictEqual(st.historial('5492216982199').length, 0);
+  delete process.env.GROQ_API_KEY;
+});
