@@ -246,7 +246,7 @@ function textoMensaje(content) {
  * Página "Charlas": lo que hablaron los clientes con el bot en los últimos días (pedido del 14/11:
  * Gustavo no tiene la app de WhatsApp del 6773, que está conectado a la API). Sin sus propios números.
  */
-function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder = null, abierto = null, aviso = '', linkPresu = null, linkCotizador = null) {
+function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder = null, abierto = null, aviso = '', linkPresu = null) {
   const desde = ahora - dias * 24 * 3600e3;
   const chats = (store.chats ? store.chats() : [])
     .filter((c) => !esGustavo(c.telefono, owner) && (c.ultimo || 0) >= desde && (c.mensajes || []).length)
@@ -254,9 +254,8 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder
   const ESTADO = { nuevo: 'Consultó', cotizado: 'Tiene presupuesto', derivado: 'Derivado a vos', listo_para_cerrar: 'Quiere pagar' };
   // Presupuesto formal en PDF (15/11): se arma solo con la última cotización; lo manda Gustavo con un botón.
   // Botón al cotizador del nomenclador con los datos del cliente ya cargados (15/11: chats sin cotización guardada o para retocarla).
-  const aCotizador = (tel, texto) => (linkCotizador ? `<a class="acot" href="${esc(linkCotizador)}#cot&tel=${esc(tel)}">${texto}</a>` : '');
   const presu = (c, l) => {
-    if (!linkPresu || !l.cotizacion || !l.cotizacion.r) return aCotizador(c.telefono, '🧮 Armar presupuesto (ya cargado con la charla)');
+    if (!linkPresu || !l.cotizacion || !l.cotizacion.r) return '';
     const q = linkPresu(c.telefono);
     const p = l.presupuesto && store.presupuesto ? store.presupuesto(l.presupuesto) : null;
     const cli = (p && p.cliente) || {};
@@ -264,7 +263,7 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder
     return `<form class="presu" method="post"><b>📄 Presupuesto formal (PDF)</b><small>${estado} Total a PuertoBox USD ${esc(l.cotizacion.r.total_puertobox_usd)}.</small>
 <input name="nombre" placeholder="Nombre y apellido" value="${esc(cli.nombre || l.nombre || '')}"><input name="doc" placeholder="CUIT / DNI (opcional)" value="${esc(cli.doc || '')}"><input name="dom" placeholder="Domicilio (opcional)" value="${esc(cli.dom || '')}">
 <select name="iva">${['', 'Consumidor final', 'Monotributista', 'Responsable inscripto'].map((o) => `<option${(cli.iva || '') === o ? ' selected' : ''}>${o}</option>`).join('')}</select>
-<div class="bt"><button formaction="/presupuesto-ver${q}" class="sec">Ver PDF</button><button formaction="/presupuesto-enviar${q}">Enviar presupuesto</button></div>${aCotizador(c.telefono, '🧮 Revisar en el cotizador')}</form>`;
+<div class="bt"><button formaction="/presupuesto-ver${q}" class="sec">Ver PDF</button><button formaction="/presupuesto-enviar${q}">Enviar presupuesto</button></div></form>`;
   };
   const tarjeta = (c) => {
     const l = (store.lead ? store.lead(c.telefono) : null) || {};

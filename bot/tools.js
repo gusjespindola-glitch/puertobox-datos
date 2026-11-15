@@ -70,27 +70,6 @@ const definiciones = [
     },
   },
   {
-    name: 'anotar_pedido',
-    description: 'Anota los datos del pedido que el cliente dio o corrigió en ESTE mensaje (solo esos campos). Con esto se le arma el presupuesto formal a Gustavo sin tener que releer la charla. Llamala siempre que aparezca o cambie un dato, junto con las otras herramientas.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        producto: { type: 'string', description: 'Descripción completa del producto como la dio el cliente (qué es, características, link).' },
-        unidades: { type: 'number' },
-        kg_total: { type: 'number', description: 'Peso total del pedido en kg. Si el cliente da el peso total (aunque sea "aprox"), va acá.' },
-        kg_por_unidad: { type: 'number', description: 'Peso de UNA unidad en kg, con su caja si lo da (900 gramos = 0.9).' },
-        valor_usd: { type: 'number', description: 'Valor TOTAL de la mercadería al proveedor en USD. Si da el precio por unidad, multiplicalo por las unidades.' },
-        cantidad_cajas: { type: 'number' },
-        largo_cm: { type: 'number', description: 'Medidas de la CAJA de envío, no del producto suelto.' },
-        ancho_cm: { type: 'number' }, alto_cm: { type: 'number' },
-        con_bateria_litio: { type: 'boolean' },
-        con_cuit_puertobox: { type: 'boolean', description: 'true si no tiene CUIT y va con el de PuertoBox.' },
-        link: { type: 'string' },
-        nombre: { type: 'string', description: 'Nombre del cliente si lo dijo.' },
-      },
-    },
-  },
-  {
     name: 'derivar_a_gustavo',
     description: 'Avisa a Gustavo para que tome el chat (cierre de venta, mayoristas, reclamos, dudas). Después de llamarla, el bot deja de responder en ese chat.',
     input_schema: {
@@ -195,17 +174,6 @@ function ejecutar(nombre, input, ctx) {
       };
       if (ctx.store.guardarLead && ctx.store.lead) { const l = ctx.store.lead(ctx.telefono) || {}; if (l.cotizacion) ctx.store.guardarLead(ctx.telefono, { cotizacion: { ...l.cotizacion, r: { ...resultado, reglas: undefined, aviso: undefined } } }); }
       return resultado;
-    }
-    case 'anotar_pedido': {
-      const l = ctx.store.lead(ctx.telefono) || {};
-      const p = { ...(l.pedido || {}) };
-      for (const [k, v] of Object.entries(input)) if (v !== undefined && v !== null && v !== '' && !(typeof v === 'number' && !(v > 0))) p[k] = v;
-      // Si da peso por unidad (y no un total nuevo en este mensaje), el total sale de unidades × peso.
-      if (input.kg_por_unidad && !input.kg_total && p.unidades) p.kg_total = Math.round(p.kg_por_unidad * p.unidades * 100) / 100;
-      if (input.unidades && !input.kg_total && p.kg_por_unidad) p.kg_total = Math.round(p.kg_por_unidad * p.unidades * 100) / 100;
-      p.actualizado = new Date().toISOString();
-      ctx.store.guardarLead(ctx.telefono, { pedido: p, ...(input.producto ? { producto: input.producto } : {}), ...(input.nombre ? { nombre: input.nombre } : {}) });
-      return { ok: true };
     }
     case 'registrar_lead':
       ctx.store.guardarLead(ctx.telefono, input);
