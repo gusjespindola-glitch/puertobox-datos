@@ -1,6 +1,6 @@
 # PuertoBox — contexto de marketing
 
-Lo leen las skills `ad-creative`, `competitor-profiling` y `offers` (`.claude/skills/`, de coreyhaines31/marketingskills, licencia MIT, versión 1f83744) antes de proponer anuncios, estudiar competidores u ofertas. Competidores conocidos y sus precios: `data/referencias_mercado.json`. Los detalles y el historial están en `ESTADO.md` y `docs/APRENDIZAJES.md`: esto es el resumen.
+Lo leen las skills de marketing de `.claude/skills/` (ad-creative, competitor-profiling, offers, ads, sms, social, customer-research, referrals; de coreyhaines31/marketingskills, licencia MIT, versión 1f83744) antes de trabajar. Competidores conocidos y sus precios: `data/referencias_mercado.json`. Los detalles y el historial están en `ESTADO.md` y `docs/APRENDIZAJES.md`: esto es el resumen.
 
 ## Producto
 - Courier aéreo China → Argentina, puerta a puerta. PuertoBox es de La Plata, online, sin local ni retiro.
@@ -25,3 +25,9 @@ Lo leen las skills `ad-creative`, `competitor-profiling` y `offers` (`.claude/sk
 - Mensaje precargado del anuncio desde el 15/11: "Hola, quiero traer de China: ".
 - 1 de cada 3 que llegan por el anuncio pide cosas que no traemos: conviene que la pieza diga qué traemos.
 - No aplicar las "mejoras Advantage+" de Meta que reescriben textos (riesgo de que el anuncio diga otro precio que el bot).
+
+## WhatsApp (para `sms`)
+- El bot usa la API de WhatsApp vía YCloud en el 6773. Fuera de las 24 h desde el último mensaje del cliente solo se puede escribir con plantilla aprobada (paga, ~USD 0,07 la de marketing).
+- Nunca escribirles a los contactos que Gustavo tiene guardados con nombre; "BAJA" saca a la persona para siempre.
+- Empujón automático: uno solo, entre 4 y 22 h de silencio, de 9 a 21 h; nunca al que dijo que no.
+
