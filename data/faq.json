@@ -19,11 +19,11 @@
     },
     {
       "pregunta": "¿Necesito CUIT?",
-      "respuesta": "Hasta {{unidades_iguales}} unidades iguales alcanza con tus datos. Para más, hace falta un CUIT: puede ser el tuyo (monotributo sirve), el de un conocido, o si no tenés, lo traemos con el CUIT de PuertoBox con un costo un poco mayor. La importación la hace la empresa de transporte: no tenés que ser importador."
+      "respuesta": "Hasta {{unidades_iguales}} unidades iguales alcanza con tus datos. Para más, hace falta un CUIT: puede ser el tuyo (monotributo sirve) o el de un conocido. Si no tenés, lo traemos con el CUIT de PuertoBox: la gestión es USD {{gestion_cuit_puertobox_usd}} y el envío dentro de Argentina va aparte. La importación la hace la empresa de transporte: no tenés que ser importador."
     },
     {
       "pregunta": "¿Puedo traer a nombre de otra persona o usar el CUIT de otro?",
-      "respuesta": "Sí. Podés usar el CUIT de un conocido, o si no tenés, lo traemos con el CUIT de PuertoBox, con un costo un poco mayor que te confirma nuestro despachante."
+      "respuesta": "Sí. Podés usar el CUIT de un conocido, o si no tenés, lo traemos con el CUIT de PuertoBox: la gestión es USD {{gestion_cuit_puertobox_usd}}, el envío dentro de Argentina va aparte y los impuestos nos los pagás a nosotros antes del despacho."
     },
     {
       "pregunta": "¿Cuántos envíos puedo hacer por año?",
