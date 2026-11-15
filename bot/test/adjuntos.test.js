@@ -89,3 +89,11 @@ test('vista previa de la tarjeta: sin el código del archivo', () => {
   assert.match(h, /“📷 Foto: Es la foto de una minera ASIC”/);
   assert.ok(!/“[^”]*\[archivo:/.test(h));
 });
+
+test('tope de lecturas: pasado el límite, el archivo se guarda pero no se lee con IA', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'media-'));
+  const f = mockFetch('no');
+  const t = await procesar({ type: 'image', image: { link: 'https://api.ycloud.com/v2/media/z', mime_type: 'image/jpeg' } }, { fetchImpl: f, dir, apiKey: 'K', puedeLeer: false });
+  assert.ok(!f.llamadas.some((l) => /anthropic/.test(l.url)));
+  assert.match(t, /\[archivo:\/media\/[0-9a-f]{32}\.jpg\]/);
+});

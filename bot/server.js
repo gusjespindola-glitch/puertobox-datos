@@ -62,6 +62,17 @@ async function enviarDocumento(to, link, filename, caption, fetchImpl = fetch) {
   if (!r.ok) { const t = await r.text(); throw new Error(`YCloud ${r.status}: ${t.slice(0, 100)}`); }
 }
 
+// Auditoría 15/11: si WhatsApp no entrega (sin saldo en YCloud, número bloqueado, ventana vencida), antes solo quedaba en el log.
+// Ahora Gustavo recibe un aviso (como mucho uno cada 3 horas) con el motivo.
+const avisoEnvio = { ultimo: 0 };
+async function falloEnvio(to, status, detalle, fetchImpl) {
+  console.error('Envío fallido', status, detalle);
+  if (!process.env.NTFY_TOPIC || Date.now() - avisoEnvio.ultimo < 3 * 3600e3) return;
+  avisoEnvio.ultimo = Date.now();
+  const motivo = /balance|billing|payment|insufficient|saldo/i.test(detalle) ? 'Parece falta de saldo o de medio de pago en YCloud (Billing).' : /24|window|re-engagement|131047/i.test(detalle) ? 'Pasaron más de 24 h desde el último mensaje del cliente.' : `Error ${status}.`;
+  try { await avisarNtfy(`⚠️ WhatsApp no está entregando los mensajes del bot: el último a +${to} no se entregó. ${motivo}`, 'PuertoBox: mensajes no se entregaron', 'high', fetchImpl); } catch { /* sin aviso */ }
+}
+
 async function enviar(to, body, fetchImpl = fetch, opciones = {}) {
   if (String(to).startsWith('ig:')) return enviarInstagram(String(to).slice(3), body, fetchImpl);
   if (process.env.YCLOUD_API_KEY || YCLOUD_API_KEY) {
@@ -70,7 +81,7 @@ async function enviar(to, body, fetchImpl = fetch, opciones = {}) {
       headers: { 'content-type': 'application/json', 'x-api-key': process.env.YCLOUD_API_KEY || YCLOUD_API_KEY },
       body: JSON.stringify({ from: `+${soloDigitos(process.env.BUSINESS_NUMBER || BUSINESS_NUMBER)}`, to: `+${soloDigitos(to)}`, type: 'text', text: { body } }),
     });
-    if (!r.ok) { const t = await r.text(); console.error('YCloud error', r.status, t); if (opciones.lanzar) throw new Error(`YCloud ${r.status}: ${t.slice(0, 100)}`); }
+    if (!r.ok) { const t = await r.text(); await falloEnvio(to, r.status, t, fetchImpl); if (opciones.lanzar) throw new Error(`YCloud ${r.status}: ${t.slice(0, 100)}`); }
     return;
   }
   const r = await fetchImpl(`${GRAPH}/${PHONE_NUMBER_ID}/messages`, {
@@ -78,7 +89,7 @@ async function enviar(to, body, fetchImpl = fetch, opciones = {}) {
     headers: { 'content-type': 'application/json', authorization: `Bearer ${WHATSAPP_TOKEN}` },
     body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body } }),
   });
-  if (!r.ok) { const t = await r.text(); console.error('WhatsApp error', r.status, t); if (opciones.lanzar) throw new Error(`WhatsApp ${r.status}: ${t.slice(0, 100)}`); }
+  if (!r.ok) { const t = await r.text(); await falloEnvio(to, r.status, t, fetchImpl); if (opciones.lanzar) throw new Error(`WhatsApp ${r.status}: ${t.slice(0, 100)}`); }
 }
 
 /** Convierte el webhook (Meta o YCloud) en una lista de eventos: { tipo: 'mensaje'|'eco', ... }. */
@@ -173,13 +184,26 @@ async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fe
 // Archivos que mandan los clientes (15/11): se guardan junto a los datos y se sirven en /media/<nombre largo al azar>.
 const DIR_MEDIA = () => path.join(path.dirname(process.env.DATA_FILE || DATA_FILE), 'media');
 const BASE_URL = () => process.env.PUBLIC_URL || `https://${require('../src/negocio').datos().dominio}`;
-function firma(que) {
+// Links firmados (avisos, charlas, responder). Auditoría 15/11: antes no vencían nunca y el tema de ntfy quedó publicado en el repo;
+// ahora cada link vence a los 7 días (los avisos nuevos traen links nuevos). Formato: <día de vencimiento>-<firma>.
+const DIAS_LINK = 7;
+const hoyDia = () => Math.floor(Date.now() / 864e5);
+function firmaCon(que, vence) {
   const clave = process.env.ADMIN_KEY || ADMIN_KEY;
-  return clave ? require('crypto').createHmac('sha256', clave).update(String(que)).digest('hex').slice(0, 24) : null;
+  return clave ? require('crypto').createHmac('sha256', clave).update(`${que}|${vence}`).digest('hex').slice(0, 24) : null;
+}
+function firma(que) {
+  const vence = hoyDia() + DIAS_LINK;
+  const f = firmaCon(que, vence);
+  return f ? `${vence.toString(36)}-${f}` : null;
 }
 function firmaOk(que, dada) {
-  const f = firma(que);
-  return !!(f && dada && f.length === String(dada).length && require('crypto').timingSafeEqual(Buffer.from(f), Buffer.from(String(dada))));
+  const m = /^([0-9a-z]+)-([0-9a-f]{24})$/.exec(String(dada || ''));
+  if (!m) return false;
+  const vence = parseInt(m[1], 36);
+  if (!(vence >= hoyDia()) || vence > hoyDia() + DIAS_LINK) return false;
+  const f = firmaCon(que, vence);
+  return !!(f && require('crypto').timingSafeEqual(Buffer.from(f), Buffer.from(m[2])));
 }
 function accionesNtfy(tel) {
   const fp = firma('pendientes');
@@ -285,12 +309,13 @@ async function procesar(payload, deps = {}) {
       // Vino del link del mensaje automático del 698 (para medir si la gente pasa del 698 al bot).
       st.marcar(tel, { origen: '698', origenEn: Date.now() });
     }
+    { const p0 = pendientes.get(tel); if (p0) clearTimeout(p0.timer); } // si manda varias fotos seguidas, no contestar a mitad (15/11)
     const transcripto = e.transcripto !== undefined ? e.transcripto : (e.audio ? await transcribirAudio(e.audio, fetchImpl) : null); // no transcribir dos veces
     const texto = e.type === 'text' ? e.text.body
       : transcripto ? `[Audio del cliente, pasado a texto automáticamente]${await require('./adjuntos').guardarAudio(e.audio, { fetchImpl, dir: DIR_MEDIA(), apiKey: process.env.YCLOUD_API_KEY || YCLOUD_API_KEY })} ${transcripto}`
       : e.audio ? `[El cliente mandó un audio que no se pudo pasar a texto.${await require('./adjuntos').guardarAudio(e.audio, { fetchImpl, dir: DIR_MEDIA(), apiKey: process.env.YCLOUD_API_KEY || YCLOUD_API_KEY })} Pedile que lo escriba, sin decir que no se escucha.]`
       : ['image', 'document', 'video', 'sticker'].includes(e.type)
-        ? await require('./adjuntos').procesar(e, { fetchImpl, dir: DIR_MEDIA(), apiKey: process.env.YCLOUD_API_KEY || YCLOUD_API_KEY })
+        ? await require('./adjuntos').procesar(e, { fetchImpl, dir: DIR_MEDIA(), apiKey: process.env.YCLOUD_API_KEY || YCLOUD_API_KEY, puedeLeer: lecturasHoy(st, tel) <= TOPE_LECTURAS })
         : `[El cliente mandó un ${e.type}. Pedile los datos por texto sin decir que no se abre.]`;
     // Códigos de verificación de Meta/Facebook (llegan desde números oficiales, como +44 7974 905090): no son clientes.
     // WhatsApp no deja leerlos por la API (llegan como "unsupported"): no se contestan ni se derivan.
@@ -315,14 +340,18 @@ async function procesar(payload, deps = {}) {
     const espera = deps.debounceMs ?? DEBOUNCE_MS;
     if (espera > 0) {
       const p = pendientes.get(tel) || { textos: [] };
+      // Auditoría 15/11: el mensaje se guarda apenas llega (antes quedaba solo en memoria y un reinicio lo perdía).
+      st.agregar(tel, 'user', texto);
+      if (st.marcar) st.marcar(tel, { sinResponder: Date.now() });
       p.textos.push(texto); clearTimeout(p.timer);
       p.timer = setTimeout(() => {
         pendientes.delete(tel);
         const junto = p.textos.join('\n');
         const previa = colas.get(tel) || Promise.resolve();
-        const tarea = previa.then(() => atender(tel, junto, st, fetchImpl, owner)).catch((e) => console.error(e));
+        const tarea = previa.then(() => atender(tel, junto, st, fetchImpl, owner, true)).catch((e) => console.error(e));
         colas.set(tel, tarea);
       }, espera);
+      if (p.timer.unref) p.timer.unref();
       pendientes.set(tel, p);
       continue;
     }
@@ -332,7 +361,16 @@ async function procesar(payload, deps = {}) {
 }
 
 const TOPE_DIARIO = Number(process.env.TOPE_MENSAJES_DIA || 60);
-async function atender(tel, texto, st, fetchImpl, owner) {
+// Lecturas de imágenes/PDF con IA por chat por día (auditoría 15/11: sin tope, 100 fotos eran 100 lecturas pagas). Pasado el tope, se guardan igual.
+const TOPE_LECTURAS = Number(process.env.TOPE_LECTURAS_DIA || 20);
+function lecturasHoy(st, tel) {
+  const c = st.chats().find((x) => x.telefono === tel) || {};
+  const hoy = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+  const n = c.lecturasDia === hoy ? (c.lecturas || 0) + 1 : 1;
+  if (st.marcar) st.marcar(tel, { lecturasDia: hoy, lecturas: n });
+  return n;
+}
+async function atender(tel, texto, st, fetchImpl, owner, guardado = false) {
   const salidas = [];
   // Tope de respuestas del bot por chat por día: si alguien manda mensajes sin parar, se pausa ese chat y se avisa una vez.
   if (tel !== owner && st.contarRespuesta && st.contarRespuesta(tel) > TOPE_DIARIO) { // Gustavo probando desde su número no tiene tope
@@ -346,13 +384,13 @@ async function atender(tel, texto, st, fetchImpl, owner) {
     const derivaciones = [];
     let resp;
     try {
-      resp = await responder({ telefono: tel, texto, store: st, fetchImpl, derivaciones });
+      resp = await responder({ telefono: tel, texto, store: st, fetchImpl, derivaciones, guardado });
     } catch (err) {
       console.error(err);
       const msg = String(err && err.message);
       if (/credit balance|billing|\b401\b|invalid x-api-key|authentication/i.test(msg)) {
         // Sin saldo o clave inválida: el cliente no queda colgado y Gustavo se entera (una vez cada 3 horas).
-        resp = 'Gracias por escribir a PuertoBox. En este momento te va a responder nuestro despachante de aduana a la brevedad.';
+        resp = 'Hola, te escribo de PuertoBox. En un rato te responde nuestro despachante de aduana por este mismo chat.';
         if (!avisoSaldo.ultimo || Date.now() - avisoSaldo.ultimo > 3 * 3600e3) {
           avisoSaldo.ultimo = Date.now();
           const que = /credit balance|billing/i.test(msg) ? 'se quedó SIN SALDO en Anthropic. Cargá crédito en platform.claude.com (Facturación).' : 'la clave de Anthropic no funciona. Revisá ANTHROPIC_API_KEY en Railway.';
@@ -362,6 +400,9 @@ async function atender(tel, texto, st, fetchImpl, owner) {
         resp = 'Disculpá, tuvimos un inconveniente momentáneo. ¿Me podés repetir tu último mensaje?';
       }
     }
+    // Contestado (con la IA o con el mensaje de espera): ya no queda pendiente, así un reinicio no lo repite.
+    if (st.marcar) st.marcar(tel, { sinResponder: null });
+    if (resp && !(st.historial(tel).slice(-1)[0] || {}).content?.startsWith?.(resp.slice(0, 30))) st.agregar(tel, 'assistant', resp);
     if (resp) { await enviar(tel, resp, fetchImpl); salidas.push({ to: tel, body: resp }); }
     for (const d of derivaciones) {
       const esIG = String(d.telefono).startsWith('ig:');
@@ -656,6 +697,10 @@ function servidor() {
 
 if (require.main === module) {
   servidor().listen(PORT, () => console.log(`Bot escuchando en :${PORT}`));
+  // Auditoría 15/11: lo que quedó sin contestar por un reinicio (deploy) se contesta al arrancar.
+  setTimeout(() => {
+    for (const c of pendientesSinResponder(store)) atender(c.telefono, '', store, fetch, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), true).catch((e) => console.error('Sin responder:', e.message));
+  }, 15e3).unref();
   if (process.env.IG_TOKEN) { renovarTokenIG(); setInterval(renovarTokenIG, 24 * 3600e3).unref(); }
   // Asistente de pendientes: cada 15 minutos revisa clientes sin respuesta y manda avisos por ntfy (y el resumen de las 9).
   const { revisar } = require('./recordatorios');
@@ -663,4 +708,10 @@ if (require.main === module) {
   const ticDifusion = () => require('./difusion').tick({ store, esGustavo: (tel) => require('./recordatorios').esGustavo(tel, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER)) }).catch((e) => console.error('Difusión:', e.message));
   setTimeout(() => { tic(); ticDifusion(); }, 60e3).unref(); setInterval(() => { tic(); ticDifusion(); }, 15 * 60e3).unref();
 }
-module.exports = { procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo };
+/** Chats con un mensaje del cliente guardado y sin respuesta (por un reinicio), dentro de la ventana de 24 h y sin pausa. */
+function pendientesSinResponder(st, ahora = Date.now()) {
+  return st.chats().filter((c) => c.sinResponder && ahora - (c.ultimoClienteEn || c.sinResponder) < 24 * 3600e3 && !st.estaPausado(c.telefono)
+    && (c.mensajes || []).length && c.mensajes[c.mensajes.length - 1].role === 'user');
+}
+
+module.exports = { firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo };

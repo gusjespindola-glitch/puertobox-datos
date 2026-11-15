@@ -112,7 +112,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - **Sin comandos (14/11):** cada notificación trae dos botones: «Ya lo atendí» (marca al cliente y deja de recordarlo) y «Ver pendientes» (página `/pendientes` con la lista y un botón por cliente). Los links van firmados con ADMIN_KEY (no la muestran). Los comandos `#pendientes` y `#listo 549...` siguen andando de respaldo. Si Gustavo contesta desde la app y llega el eco, se marca solo.
 
 ## Avisos y saldo (13/11/2026)
-- ✅ ntfy andando: tema `puertobox-8b275069` (app ntfy en el celular de Gustavo + NTFY_TOPIC en Railway). Probado: el aviso de derivación llega.
+- ✅ ntfy andando (app ntfy en el celular de Gustavo + NTFY_TOPIC en Railway). **El nombre del tema NO se escribe en el repo (es público):** quien lo sabe recibe los avisos con datos de clientes. 15/11: el tema viejo estaba publicado acá; hay que cambiarlo en Railway y en la app.
 - Saldo Anthropic: USD 4,42 al 13/11 22:36. Un día entero de pruebas (~70 conversaciones simuladas) gastó ~USD 0,60 → menos de 1 centavo por conversación. No hace falta cargar más por ahora (decisión de Gustavo).
 - Si se queda sin saldo o la clave falla: el cliente recibe mensaje de espera y Gustavo un aviso por ntfy (máx. 1 cada 3 h).
 

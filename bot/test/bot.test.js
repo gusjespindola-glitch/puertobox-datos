@@ -261,7 +261,7 @@ test('sin saldo en Anthropic: el cliente recibe espera y Gustavo un aviso', asyn
     return { ok: true, json: async () => ({}), text: async () => '' };
   };
   await proc(msg('5499', 'hola'), { fetchImpl, store: st, debounceMs: 0 });
-  assert.ok(enviados.some((b) => b.includes('te va a responder nuestro despachante')), 'mensaje de espera al cliente');
+  assert.ok(enviados.some((b) => b.includes('te responde nuestro despachante')), 'mensaje de espera al cliente');
   assert.ok(enviados.some((b) => b.includes('SIN SALDO')), 'aviso a Gustavo');
 });
 
