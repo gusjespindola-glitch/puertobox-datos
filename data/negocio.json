@@ -21,7 +21,7 @@
   "ciudad": "La Plata",
   "despachante": "Gustavo Espíndola",
   "precio_cerrado_hasta_pct": 15,
-  "caja_max_kg": 23,
+  "caja_max_kg": 50,
   "pequenos_envios": {
     "franquicia_usd": 400,
     "envios_por_anio": 5,
@@ -40,5 +40,6 @@
     "USD 55 el kilo todo incluido (anuncio de febrero 2026)",
     "USD 450 el metro cúbico marítimo (consolidado, ya no se ofrece)"
   ],
-  "_precios_anteriores": "Precios de publicaciones viejas que siguen visibles en Facebook/Instagram/TikTok. El bot los reconoce y explica que eran tarifas anteriores. Sacar de acá cuando se archiven los posteos."
+  "_precios_anteriores": "Precios de publicaciones viejas que siguen visibles en Facebook/Instagram/TikTok. El bot los reconoce y explica que eran tarifas anteriores. Sacar de acá cuando se archiven los posteos.",
+  "_caja_max_kg": "Máximo por bulto del régimen courier (Gustavo 15/11: la regulación permite hasta 50 kg; antes estaba en 23 por un recargo del forwarder)."
 }

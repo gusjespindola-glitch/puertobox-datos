@@ -7,11 +7,11 @@
     },
     {
       "pregunta": "¿Tengo que ser Responsable Inscripto para importar?",
-      "respuesta": "No. Por courier la nacionalización la hace el courier, así que pueden importar personas y empresas (monotributistas incluidos), para uso propio o para vender, hasta USD 3.000 por envío."
+      "respuesta": "No. Por courier la importación la hace la empresa de transporte, así que pueden traer personas y empresas (monotributistas incluidos), hasta USD 3.000 por envío."
     },
     {
       "pregunta": "¿Un monotributista puede importar para vender?",
-      "respuesta": "Sí, tranquilamente. La nacionalización la hace el courier, así que la mercadería te llega ya nacionalizada y no necesitás ser Responsable Inscripto ni inscribirte como importador. Va hasta USD 3.000 por envío y sin límite de envíos al año."
+      "respuesta": "Sí, tranquilamente. La importación la hace la empresa de transporte, así que la mercadería te llega ya nacionalizada y no necesitás ser Responsable Inscripto ni inscribirte como importador. Va hasta USD 3.000 por envío y sin límite de envíos al año."
     },
     {
       "pregunta": "¿Puedo vender por mayor siendo monotributista?",
@@ -19,15 +19,15 @@
     },
     {
       "pregunta": "¿Necesito CUIT?",
-      "respuesta": "Para uso propio alcanza con tus datos personales. Para vender, el envío va a tu nombre con tu CUIT."
+      "respuesta": "Hasta {{unidades_iguales}} unidades iguales alcanza con tus datos. Para más, hace falta un CUIT: puede ser el tuyo (monotributo sirve), el de un conocido, o si no tenés, lo traemos con el CUIT de PuertoBox con un costo un poco mayor. La importación la hace la empresa de transporte: no tenés que ser importador."
     },
     {
       "pregunta": "¿Puedo traer a nombre de otra persona o usar el CUIT de otro?",
-      "respuesta": "El envío va a nombre de quien importa y paga los impuestos. Si necesitás que vaya a nombre de otra persona o empresa, nuestro despachante te explica cómo hacerlo en regla."
+      "respuesta": "Sí. Podés usar el CUIT de un conocido, o si no tenés, lo traemos con el CUIT de PuertoBox, con un costo un poco mayor que te confirma nuestro despachante."
     },
     {
       "pregunta": "¿Cuántos envíos puedo hacer por año?",
-      "respuesta": "Para uso propio con el beneficio de USD {{franquicia_usd}} sin derechos de importación: hasta {{envios_por_anio}} envíos por año y hasta {{unidades_iguales}} unidades iguales por envío. Para vender no hay límite de envíos, solo el tope de USD 3.000 por envío."
+      "respuesta": "Como pequeño envío, con el beneficio de USD {{franquicia_usd}} sin derechos de importación: hasta {{envios_por_anio}} envíos por año y hasta {{unidades_iguales}} unidades iguales por envío. Con más unidades va como envío comercial: sin límite de envíos, solo el tope de USD 3.000 por envío."
     },
     {
       "pregunta": "¿Tengo que hacer algún trámite en ARCA?",

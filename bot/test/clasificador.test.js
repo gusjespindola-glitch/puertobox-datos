@@ -122,3 +122,14 @@ test('cotizar: avisa cuando las cajas son grandes para lo que pesan (15/11, prue
   const sin = ejecutar('cotizar', { kg: 10, valor_factura_usd: 300, die: 20, regimen: 'comercial' }, { telefono: 'y', store: crearStore(null), derivaciones: [] });
   assert.match(sin.aviso, /solo si te dice que no las tiene/);
 });
+
+test('recargos que cobra la aerolínea: cajas de más de 23 kg y batería de litio (15/11)', () => {
+  const ctx = () => ({ telefono: 'r', store: crearStore(null), derivaciones: [] });
+  const caja = ejecutar('cotizar', { kg: 30, valor_factura_usd: 300, die: 20, regimen: 'comercial', largo_cm: 50, ancho_cm: 40, alto_cm: 50 }, ctx());
+  assert.strictEqual(caja.recargo_cajas_usd, 45);
+  assert.strictEqual(caja.total_puertobox_usd, caja.flete_puertobox_usd + 20 + 45);
+  const dos = ejecutar('cotizar', { kg: 40, cantidad_cajas: 2, valor_factura_usd: 300, die: 20, regimen: 'comercial' }, ctx());
+  assert.ok(!dos.recargo_cajas_usd); // 2 cajas de 20 kg: sin recargo
+  const lit = ejecutar('cotizar', { kg: 23, valor_factura_usd: 500, die: 18, regimen: 'comercial', con_bateria_litio: true }, ctx());
+  assert.strictEqual(lit.recargo_litio_usd, Math.ceil(lit.flete_puertobox_usd * 0.3));
+});

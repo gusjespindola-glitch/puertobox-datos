@@ -35,16 +35,18 @@ test('cotizar: frena datos imposibles y pedidos sobre el tope', () => {
   assert.ok(grande.aviso && !grande.flete_puertobox_usd);
 });
 
-test('cotizar: el flete es firme solo con medidas y cajas de hasta 23 kg', () => {
+test('cotizar: el flete es firme solo con medidas y cajas de hasta 50 kg (máximo por bulto, Gustavo 15/11)', () => {
   const ctx = { store: crearStore(null), telefono: '1', derivaciones: [] };
   const base = { valor_factura_usd: 300, die: 20, regimen: 'comercial' };
   assert.strictEqual(ejecutar('cotizar', { ...base, kg: 5, largo_cm: 40, ancho_cm: 30, alto_cm: 30 }, ctx).flete_firme, true);
   const sinMedidas = ejecutar('cotizar', { ...base, kg: 5 }, ctx);
   assert.strictEqual(sinMedidas.flete_firme, false);
   assert.match(sinMedidas.aviso, /medidas/);
-  const pesada = ejecutar('cotizar', { ...base, kg: 30, largo_cm: 50, ancho_cm: 40, alto_cm: 50 }, ctx);
+  // 30 kg en una caja ahora se cotiza normal (antes el tope era 23 kg).
+  assert.strictEqual(ejecutar('cotizar', { ...base, kg: 30, largo_cm: 50, ancho_cm: 40, alto_cm: 50 }, ctx).flete_firme, true);
+  const pesada = ejecutar('cotizar', { ...base, kg: 60, largo_cm: 60, ancho_cm: 50, alto_cm: 50 }, ctx);
   assert.strictEqual(pesada.flete_firme, false);
-  assert.match(pesada.aviso, /recargo/);
+  assert.match(pesada.aviso, /máximo por bulto/);
 });
 
 test('cotizar: uso propio sin envíos con beneficio paga derechos', () => {
