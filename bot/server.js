@@ -554,8 +554,10 @@ function servidor() {
       if (!firmaOk('pendientes', t)) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       const html = require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`, Date.now(), (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&volver=${t}`, (tel) => `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}`);
+      const di = require('../src/dolar').info();
+      const lineaDolar = `<p style="color:#666;font-size:14px">Dólar que usa el bot para la ganancia en pesos: $${di.ars} ${di.automatico ? `(oficial, se actualiza solo; último: ${new Date(di.fecha).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })})` : '(fijo de negocio.json: todavía no se actualizó solo)'}</p>`;
       const botonPrueba = `<h2>Prueba completa del bot</h2><p>Prueba posiciones arancelarias y charlas reales con la IA. Tarda unos 10 minutos y gasta unos USD 2 a 3 del saldo de Anthropic. Cuando termina te llega un aviso con el informe.</p><form method="post" action="/prueba-completa?t=${firma('prueba')}"><button class="bot">${pruebaEnCurso ? 'Prueba en curso…' : 'Correr prueba completa'}</button></form>`;
-      return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`).replace('</body>', `${botonPrueba}</body>`));
+      return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`).replace('</body>', `${botonPrueba}${lineaDolar}</body>`));
     }
     if (url.pathname === '/difusion') {
       // Mensaje a clientes anteriores del 698 (plantilla de WhatsApp). Con ?key=ADMIN_KEY o link firmado.
@@ -719,6 +721,8 @@ if (require.main === module) {
   const { revisar } = require('./recordatorios');
   const tic = () => revisar({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), avisar: (t, titulo, prioridad, tel) => avisarNtfy(t, titulo, prioridad, fetch, tel), empujar: async (p) => { const txt = await require('./agent').empujon({ telefono: p.telefono, store, horas: p.horas, cotizado: p.cotizado }); if (txt) await enviar(p.telefono, txt); return !!txt; } }).catch((e) => console.error('Recordatorios:', e.message));
   const ticDifusion = () => require('./difusion').tick({ store, esGustavo: (tel) => require('./recordatorios').esGustavo(tel, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER)) }).catch((e) => console.error('Difusión:', e.message));
+  // Dólar de referencia automático (antes se cambiaba a mano cada semana).
+  const dol = require('../src/dolar'); dol.actualizar(); setInterval(() => dol.actualizar(), 12 * 3600e3).unref();
   setTimeout(() => { tic(); ticDifusion(); }, 60e3).unref(); setInterval(() => { tic(); ticDifusion(); }, 15 * 60e3).unref();
 }
 /** Chats con un mensaje del cliente guardado y sin respuesta (por un reinicio), dentro de la ventana de 24 h y sin pausa. */
