@@ -31,6 +31,12 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`. Los números de Gustavo (698, 3034 y 9132 del trabajo, `negocio.json` → `numeros_gustavo`) no cuentan como clientes en el resumen ni en pendientes.
 
 
+### Presupuesto formal automático (15/11/2026)
+- Cada cotización del bot queda guardada en el cliente. Cuando el cliente confirma (derivación "listo para cerrar") se arma solo el presupuesto en PDF (comprobante "X", N° 0001-0000000N correlativo).
+- El aviso al celu dice "📄 Presupuesto formal N° … listo". En "Ver y contestar" está el recuadro: nombre, CUIT/DNI, domicilio y condición IVA (opcionales), "Ver PDF" y "Enviar presupuesto".
+- "Enviar presupuesto" lo manda por WhatsApp desde el 6773 como PDF (solo dentro de las 24 h del último mensaje del cliente) y pausa el bot. El bot nunca lo manda solo.
+- El PDF se sirve en /presupuesto/<código largo>.pdf (lo necesita WhatsApp para bajarlo).
+
 ## Base única (desde 13/11/2026)
 Cambiás un dato en un solo lugar y cambia en el bot, la web, el buscador y las páginas:
 - **Precios** (tramos del flete, gestión): `data/precios_venta.json` → `flete_directo`.

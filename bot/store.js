@@ -61,6 +61,21 @@ function crearStore(archivo) {
       c.respuestasHoy += 1; guardar(); return c.respuestasHoy;
     },
     chats: () => Object.entries(db.chats).map(([telefono, c]) => ({ telefono, ...c })),
+    // Presupuestos formales en PDF (15/11): uno por cliente, con número correlativo. Lo manda Gustavo.
+    crearPresupuesto(tel) {
+      const l = db.leads[tel];
+      if (!l || !l.cotizacion || !l.cotizacion.r) return null;
+      db.presupuestos ||= {};
+      const existente = Object.values(db.presupuestos).find((p) => p.tel === tel && p.cotizacionEn === l.cotizacion.en);
+      if (existente) return existente;
+      db.meta ||= {}; db.meta.presuNro = (db.meta.presuNro || 0) + 1;
+      const p = { token: require('crypto').randomBytes(16).toString('hex'), tel, nro: '0001-' + String(db.meta.presuNro).padStart(8, '0'), cotizacionEn: l.cotizacion.en, creado: new Date().toISOString(), cliente: {} };
+      db.presupuestos[p.token] = p; l.presupuesto = p.token; guardar();
+      return p;
+    },
+    presupuesto(token) { return (db.presupuestos || {})[token] || null; },
+    presupuestoDe(tel) { const l = db.leads[tel]; return l && l.presupuesto ? (db.presupuestos || {})[l.presupuesto] || null : null; },
+    actualizarPresupuesto(token, datos) { const p = (db.presupuestos || {})[token]; if (p) { Object.assign(p, datos); guardar(); } return p; },
     // Clasificación arancelaria (15/11): caché por producto y contador diario de búsquedas web.
     cacheClasificacion() { return (db.clasificaciones ||= {}); },
     guardarClasificacion(k, r) { (db.clasificaciones ||= {})[k] = { ...r, en: new Date().toISOString() }; guardar(); },

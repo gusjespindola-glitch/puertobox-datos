@@ -52,6 +52,16 @@ async function enviarInstagram(id, body, fetchImpl) {
   if (enviadosIG.size > 500) enviadosIG.clear();
 }
 
+/** Manda un PDF por WhatsApp desde el 6773 (YCloud). Lo usa solo Gustavo con el botón "Enviar presupuesto". */
+async function enviarDocumento(to, link, filename, caption, fetchImpl = fetch) {
+  const r = await fetchImpl('https://api.ycloud.com/v2/whatsapp/messages/sendDirectly', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': process.env.YCLOUD_API_KEY || YCLOUD_API_KEY },
+    body: JSON.stringify({ from: `+${soloDigitos(process.env.BUSINESS_NUMBER || BUSINESS_NUMBER)}`, to: `+${soloDigitos(to)}`, type: 'document', document: { link, filename, caption } }),
+  });
+  if (!r.ok) { const t = await r.text(); throw new Error(`YCloud ${r.status}: ${t.slice(0, 100)}`); }
+}
+
 async function enviar(to, body, fetchImpl = fetch, opciones = {}) {
   if (String(to).startsWith('ig:')) return enviarInstagram(String(to).slice(3), body, fetchImpl);
   if (process.env.YCLOUD_API_KEY || YCLOUD_API_KEY) {
@@ -204,6 +214,7 @@ function avisoCorto(d, st) {
   if (d.para_vos) lineas.push(`Vos: ${d.para_vos}`);
   if (!d.quiere && !d.para_vos) lineas.push(String(d.resumen || '').slice(0, 200));
   else if (d.resumen) lineas.push('', String(d.resumen).slice(0, 220));
+  if (d.presupuesto) lineas.push('', `📄 Presupuesto formal N° ${d.presupuesto} listo: en «Ver y contestar» tocá «Enviar presupuesto».`);
   if (d.motivo !== 'duda') lineas.push('', 'El bot ya no le contesta: le escribís vos desde «Ver y contestar».');
   return lineas.join('\n');
 }
@@ -524,7 +535,7 @@ function servidor() {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
       const aviso = url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
-      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso));
+      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`));
     }
     // Prueba completa del bot (15/11): corre en segundo plano y avisa por ntfy con el link al informe.
     if (req.method === 'POST' && url.pathname === '/prueba-completa') {
@@ -549,6 +560,38 @@ function servidor() {
       if (!txt) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Informe no encontrado.'); }
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
       return res.end(txt);
+    }
+    // Presupuesto formal en PDF (15/11). El PDF se sirve por un código largo (lo necesita WhatsApp para descargarlo).
+    if (req.method === 'GET' && /^\/presupuesto\/[0-9a-f]{32}\.pdf$/.test(url.pathname)) {
+      const p = store.presupuesto(url.pathname.slice(13, 45));
+      const lead = p && store.lead(p.tel);
+      const datos = p && lead && require('../src/presupuesto_pdf').armarDatos({ nro: p.nro, lead, cliente: p.cliente, ahora: new Date(p.creado) });
+      if (!datos) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Presupuesto no encontrado.'); }
+      return require('../src/presupuesto_pdf').pdf(datos).then((buf) => { res.writeHead(200, { 'content-type': 'application/pdf', 'content-disposition': `inline; filename="Presupuesto PuertoBox ${p.nro}.pdf"`, 'cache-control': 'no-store', 'x-robots-tag': 'noindex' }); res.end(buf); });
+    }
+    if (req.method === 'POST' && (url.pathname === '/presupuesto-ver' || url.pathname === '/presupuesto-enviar')) {
+      const tel = soloDigitos(url.searchParams.get('tel') || '');
+      if (!tel || !firmaOk('presu:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 20000) req.destroy(); });
+      return req.on('end', async () => {
+        const f = new URLSearchParams(raw);
+        const volver = (extra) => { res.writeHead(303, { location: `/charlas?t=${firma('charlas')}&abierto=${tel}${extra}#c-${tel}` }); res.end(); };
+        const p = store.presupuestoDe(tel) && store.lead(tel).presupuesto && store.presupuestoDe(tel).cotizacionEn === (store.lead(tel).cotizacion || {}).en ? store.presupuestoDe(tel) : store.crearPresupuesto(tel);
+        if (!p) return volver('&error=' + encodeURIComponent('ese cliente todavía no tiene una cotización completa'));
+        store.actualizarPresupuesto(p.token, { cliente: { nombre: (f.get('nombre') || '').trim(), doc: (f.get('doc') || '').trim(), dom: (f.get('dom') || '').trim(), iva: (f.get('iva') || '').trim() } });
+        const link = `${BASE_URL()}/presupuesto/${p.token}.pdf`;
+        if (url.pathname === '/presupuesto-ver') { res.writeHead(303, { location: `/presupuesto/${p.token}.pdf` }); return res.end(); }
+        const c = store.chats().find((x) => x.telefono === tel);
+        if (!c || Date.now() - (c.ultimoClienteEn || 0) > 24 * 3600e3) return volver('&error=' + encodeURIComponent('pasaron más de 24 h desde su último mensaje'));
+        const texto = `Te paso el presupuesto formal N° ${p.nro}. Cualquier duda, te la respondo por acá.`;
+        try { await enviarDocumento(tel, link, `Presupuesto PuertoBox ${p.nro}.pdf`, texto); } catch (e) { return volver('&error=' + encodeURIComponent(String(e.message).slice(0, 120))); }
+        store.agregar(tel, 'assistant', `[Gustavo] ${texto} (PDF)`);
+        store.pausar(tel, 'gustavo_respondio');
+        const ahora = Date.now();
+        if (store.marcar) store.marcar(tel, { gustavoRespondioEn: ahora, recordatorios: 0, presupuestoEnviadoEn: ahora, ...(c.derivadoEn ? {} : { derivadoEn: ahora - 1, derivadoMotivo: 'listo_para_cerrar', derivadoResumen: 'Le mandaste el presupuesto formal.' }) });
+        store.actualizarPresupuesto(p.token, { enviado: new Date(ahora).toISOString() });
+        return volver('&ok=1');
+      });
     }
     // Gustavo le contesta a un cliente desde la página de charlas: sale por el 6773 (API) y el bot se calla en ese chat (15/11).
     if (req.method === 'POST' && url.pathname === '/responder') {
