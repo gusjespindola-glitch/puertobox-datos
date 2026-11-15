@@ -381,6 +381,31 @@ const fs = require('fs');
 const paginas = require('../src/paginas');
 const WEB = path.join(__dirname, '..', 'web', 'nomenclador');
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
+function cotizarAMano(q) {
+  const n = (k) => { const v = parseFloat(String(q.get(k) || '').replace(',', '.')); return Number.isFinite(v) && v > 0 ? v : undefined; };
+  const input = {
+    kg: n('kg'), valor_factura_usd: n('valor'), die: parseFloat(q.get('die')) || 0, internos: parseFloat(q.get('internos')) || 0,
+    regimen: q.get('regimen') === 'personal' ? 'personal' : 'comercial', sin_franquicia: q.get('sin_franquicia') === '1',
+    cantidad_cajas: n('cajas') || 1, largo_cm: n('largo'), ancho_cm: n('ancho'), alto_cm: n('alto'), unidades: n('unidades'),
+    con_bateria_litio: q.get('litio') === '1', con_cuit_puertobox: q.get('cuit_pb') === '1',
+  };
+  const { crearStore } = require('./store');
+  const r = require('./tools').ejecutar('cotizar', input, { telefono: 'cotizador', store: crearStore(null), derivaciones: [] });
+  const div = require('../data/precios_venta.json').flete_directo.divisor_volumetrico;
+  const vol = input.largo_cm && input.ancho_cm && input.alto_cm ? Math.round((input.largo_cm * input.ancho_cm * input.alto_cm / div) * input.cantidad_cajas * 100) / 100 : null;
+  if (r.error) return r;
+  const NEG = require('../src/negocio').datos();
+  const avisos = [];
+  if (!vol) avisos.push('Sin medidas: el flete se confirma con las medidas de la caja (no es precio cerrado).');
+  if (vol && vol > input.kg * 1.3) avisos.push(`Cajas grandes para lo que pesan: se cobra por volumen (${r.kg_presupuestado} kg en vez de ${input.kg} kg). Con cajas más chicas o más llenas baja el flete.`);
+  if (r.recargo_cajas_usd) avisos.push(`Cajas de más de 23 kg: recargo de la aerolínea de USD ${r.recargo_cajas_usd} (ya sumado). Con cajas de hasta 23 kg se evita.`);
+  if (input.kg / input.cantidad_cajas > NEG.caja_max_kg) avisos.push(`Hay cajas de más de ${NEG.caja_max_kg} kg: es el máximo por bulto del courier, hay que dividirlas.`);
+  if (r.recargo_litio_usd) avisos.push(`Batería de litio: recargo de carga peligrosa de USD ${r.recargo_litio_usd} (ya sumado). Pedir al proveedor la MSDS y el informe UN38.3.`);
+  if (input.con_cuit_puertobox) avisos.push('Con CUIT de PuertoBox: gestión USD ' + r.handling_puertobox_usd + '. El envío dentro de Argentina va aparte y los impuestos los paga PuertoBox (cobrárselos al cliente antes de despachar).');
+  if ((input.valor_factura_usd || 0) > NEG.tope_por_envio_usd) avisos.push(`Supera USD ${NEG.tope_por_envio_usd} por envío: no entra como courier.`);
+  return { ...r, aviso: undefined, avisos, peso_real_kg: input.kg || 0, peso_volumetrico_kg: vol, divisor_volumetrico: div, kg_por_caja: input.kg ? Math.round((input.kg / input.cantidad_cajas) * 100) / 100 : null, reglas: undefined };
+}
+
 function servirNomenclador(req, res, url) {
   const clave = process.env.ADMIN_KEY || ADMIN_KEY;
   const cookie = /(?:^|;\s*)pbk=([^;]+)/.exec(req.headers.cookie || '');
@@ -391,6 +416,11 @@ function servirNomenclador(req, res, url) {
   }
   if (url.pathname === '/nomenclador') { res.writeHead(302, { location: '/nomenclador/' + (dada ? '?key=' + encodeURIComponent(dada) : '') }); return res.end(); }
   const rel = decodeURIComponent(url.pathname.slice('/nomenclador/'.length)) || 'index.html';
+  // Cotizador a mano (15/11, Gustavo): el mismo motor que usa el bot (`cotizar`), así los números siempre coinciden.
+  if (rel === 'api/cotizar') {
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+    return res.end(JSON.stringify(cotizarAMano(url.searchParams)));
+  }
   const archivo = path.normalize(path.join(WEB, rel));
   if (!archivo.startsWith(WEB + path.sep) || !fs.existsSync(archivo) || fs.statSync(archivo).isDirectory()) { res.writeHead(404); return res.end('No encontrado'); }
   const headers = { 'content-type': TIPOS[path.extname(archivo)] || 'application/octet-stream', 'cache-control': rel.startsWith('data/') ? 'public, max-age=3600' : 'no-cache' };
