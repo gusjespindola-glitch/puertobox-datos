@@ -199,6 +199,20 @@ function firma(que) {
   const f = firmaCon(que, vence);
   return f ? `${vence.toString(36)}-${f}` : null;
 }
+// Acceso guardado en el celular (15/11 18:07, Gustavo borró el aviso y se quedó sin forma de entrar a las charlas):
+// la primera vez que entra a /charlas o /pendientes (con link del aviso o con ?key=) queda una cookie por un año;
+// después puertobox.com.ar/charlas abre directo. Si se cambia ADMIN_KEY, la cookie deja de valer.
+function panelValor() {
+  const clave = process.env.ADMIN_KEY || ADMIN_KEY;
+  return clave ? require('crypto').createHmac('sha256', clave).update('panel-celular').digest('hex').slice(0, 32) : null;
+}
+function panelOk(req) {
+  const m = /(?:^|;\s*)pbp=([0-9a-f]{32})/.exec((req && req.headers && req.headers.cookie) || '');
+  const v = panelValor();
+  return !!(m && v && require('crypto').timingSafeEqual(Buffer.from(m[1]), Buffer.from(v)));
+}
+const cookiePanel = () => `pbp=${panelValor()}; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax`;
+const SIN_ACCESO = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>PuertoBox</title></head><body style="font-family:system-ui,sans-serif;padding:20px"><h1>Entrá una vez desde un aviso</h1><p>Abrí cualquier aviso de PuertoBox en el celular y tocá un botón (por ejemplo "Ver pendientes"). Desde ese momento, esta página abre directo en este celular.</p></body></html>';
 function firmaOk(que, dada) {
   const m = /^([0-9a-z]+)-([0-9a-f]{24})$/.exec(String(dada || ''));
   if (!m) return false;
@@ -585,9 +599,11 @@ function servidor() {
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }); return res.end(`Listo: +${tel} marcado como atendido.`);
     }
     if (req.method === 'GET' && url.pathname === '/pendientes') {
-      const t = url.searchParams.get('t');
-      if (!firmaOk('pendientes', t)) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+      let t = url.searchParams.get('t');
+      const claveP = process.env.ADMIN_KEY || ADMIN_KEY;
+      if (!(firmaOk('pendientes', t) || panelOk(req) || (claveP && url.searchParams.get('key') === claveP))) { res.writeHead(401, { 'content-type': 'text/html; charset=utf-8' }); return res.end(SIN_ACCESO); }
+      if (!firmaOk('pendientes', t)) t = firma('pendientes');
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'set-cookie': cookiePanel() });
       const html = require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`, Date.now(), (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&volver=${t}`, (tel) => `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}`);
       const di = require('../src/dolar').info();
       const lineaDolar = `<p style="color:#666;font-size:14px">Dólar que usa el bot para la ganancia en pesos: $${di.ars} ${di.automatico ? `(oficial, se actualiza solo; último: ${new Date(di.fecha).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })})` : '(fijo de negocio.json: todavía no se actualizó solo)'}</p>`;
@@ -618,8 +634,8 @@ function servidor() {
     }
     if (req.method === 'GET' && url.pathname === '/charlas') {
       const clave = process.env.ADMIN_KEY || ADMIN_KEY;
-      if (!(firmaOk('charlas', url.searchParams.get('t')) || (clave && url.searchParams.get('key') === clave))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+      if (!(firmaOk('charlas', url.searchParams.get('t')) || panelOk(req) || (clave && url.searchParams.get('key') === clave))) { res.writeHead(401, { 'content-type': 'text/html; charset=utf-8' }); return res.end(SIN_ACCESO); }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'set-cookie': cookiePanel() });
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
       const aviso = url.searchParams.get('corregido') === '1' ? 'Corrección guardada. El bot la aplica desde su próximo mensaje.' : url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
       return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`));

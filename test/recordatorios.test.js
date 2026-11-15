@@ -131,6 +131,12 @@ test('botones: "Ya lo atendí" y la página de pendientes funcionan solo con fir
   assert.strictEqual(g.status, 200);
   assert.match(await g.text(), /✅ Listo[\s\S]*quedó como atendido/);
   assert.strictEqual((await fetch(`${base}/atendido?tel=5491100000009&t=mal`)).status, 401);
+  // Acceso guardado (15/11 18:07): después de entrar una vez, /charlas y /pendientes abren sin link.
+  assert.strictEqual((await fetch(`${base}/charlas`)).status, 401);
+  const cookie = /pbp=[0-9a-f]{32}/.exec(pag.headers.get('set-cookie'))[0];
+  assert.strictEqual((await fetch(`${base}/charlas`, { headers: { cookie } })).status, 200);
+  assert.strictEqual((await fetch(`${base}/pendientes`, { headers: { cookie } })).status, 200);
+  assert.strictEqual((await fetch(`${base}/charlas`, { headers: { cookie: 'pbp=' + '0'.repeat(32) } })).status, 401);
   s.close();
 });
 
