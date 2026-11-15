@@ -70,35 +70,42 @@ async function datosDeCharla(tel, { store, fetchImpl = fetch, nuevo = false }) {
   const desdePedido = pe ? { _en: pe.actualizado, unidades: pe.unidades, kg_total: pe.kg_total, valor_usd: pe.valor_usd, cajas: pe.cantidad_cajas, largo_cm: pe.largo_cm, ancho_cm: pe.ancho_cm, alto_cm: pe.alto_cm, litio: pe.con_bateria_litio, cuit_puertobox: pe.con_cuit_puertobox, link: pe.link } : null;
   const delBot = [desdeCotizacion, desdePedido].filter(Boolean).sort((a, b) => String(b._en || '').localeCompare(String(a._en || '')));
   const CAMPOS = ['unidades', 'kg_total', 'valor_usd', 'cajas', 'largo_cm', 'ancho_cm', 'alto_cm', 'regimen', 'link'];
-  const completo = (d) => ['unidades', 'kg_total', 'valor_usd', 'largo_cm'].every((k) => d[k]);
   let d = {};
   const llenar = (src) => { if (!src) return; for (const k of CAMPOS) if (!d[k] && src[k]) d[k] = src[k]; d.litio = !!(d.litio || src.litio); d.cuit_puertobox = !!(d.cuit_puertobox || src.cuit_puertobox); if (!d.notas && src.notas) d.notas = src.notas; };
   delBot.forEach(llenar);
   let fuente = delBot.length ? (desdeCotizacion && delBot[0] === desdeCotizacion ? 'cotizacion' : 'bot') : 'charla';
-  // Lo que el bot no anotó lo busca en la charla (con caché para no gastar dos veces).
-  if (!completo(d)) {
-    let ia = null;
-    if (!nuevo && lead.extraida && lead.extraida.hasta === c.ultimo && lead.extraida.v === VERSION) ia = lead.extraida.datos;
-    else {
-      let error = '';
-      try { ia = await extraerConIA(c.mensajes, fetchImpl); } catch (e) { ia = {}; error = e.message; }
-      if (error) ia.notas = `No pude leer bien la charla (${error}): revisá los datos.${ia.notas ? ' ' + ia.notas : ''}`;
-      if (!vacio(ia)) store.guardarLead(tel, { extraida: { v: VERSION, hasta: c.ultimo, datos: ia } });
-    }
-    const antes = JSON.stringify(d);
-    llenar(ia);
-    llenar(extraerSimple(c.mensajes));
-    if (JSON.stringify(d) !== antes && fuente !== 'charla') fuente += '+charla';
-    d.nombre = ia.nombre; d.producto = ia.producto;
+  // Control cruzado (15/11, Gustavo: "que revise el chat y se fije"): SIEMPRE se lee la charla (con caché mientras no cambie)
+  // y se compara dato por dato con lo que anotó el bot. Lo que falta se completa; lo que no coincide se marca 🚩.
+  let ia = null;
+  if (!nuevo && lead.extraida && lead.extraida.hasta === c.ultimo && lead.extraida.v === VERSION) ia = lead.extraida.datos;
+  else {
+    let error = '';
+    try { ia = await extraerConIA(c.mensajes, fetchImpl); } catch (e) { ia = {}; error = e.message; }
+    if (error) ia.notas = `No pude releer la charla para controlar (${error}).${ia.notas ? ' ' + ia.notas : ''}`;
+    if (!vacio(ia)) store.guardarLead(tel, { extraida: { v: VERSION, hasta: c.ultimo, datos: ia } });
   }
+  const cruce = [];
+  const NOMBRES = { unidades: 'unidades', kg_total: 'kg', valor_usd: 'USD de valor', cajas: 'cajas', largo_cm: 'cm de largo' };
+  if (delBot.length) for (const [k, n] of Object.entries(NOMBRES)) {
+    const a = Number(d[k]); const b = Number(ia[k]);
+    if (a > 0 && b > 0 && Math.abs(a - b) > Math.max(a, b) * 0.05) cruce.push(`La charla dice ${b} ${n} y el bot anotó ${a}: revisá cuál es el último.`);
+  }
+  if (ia.litio && !d.litio && delBot.length) cruce.push('La charla dice que tiene batería de litio y el bot no lo anotó: lo tildé, revisalo.');
+  const firma = () => JSON.stringify([...CAMPOS.map((k) => d[k]), !!d.litio]);
+  const antes = firma();
+  llenar(ia);
+  llenar(extraerSimple(c.mensajes));
+  if (firma() !== antes && fuente !== 'charla') fuente += '+charla';
+  if (!d.notas && ia.notas) d.notas = ia.notas;
+  d.nombre = ia.nombre; d.producto = ia.producto;
   d.nombre = lead.nombre || d.nombre || null;
   d.producto = lead.producto || d.producto || null;
   // Control: lo que cargó contra lo que dice la charla. Si no cierra, se avisa (no se corrige solo).
-  const alertas = [];
+  const alertas = [...cruce];
   const simple = extraerSimple(c.mensajes);
-  if (simple.unidades && d.unidades && simple.unidades !== d.unidades) alertas.push(`En la charla aparecen ${simple.unidades} unidades y se cargaron ${d.unidades}: revisá cuál es la última.`);
+  if (!cruce.some((x) => /unidades/.test(x)) && simple.unidades && d.unidades && simple.unidades !== d.unidades) alertas.push(`En la charla aparecen ${simple.unidades} unidades y se cargaron ${d.unidades}: revisá cuál es la última.`);
   if (d.unidades && d.kg_total && pe && pe.kg_por_unidad && Math.abs(pe.kg_por_unidad * d.unidades - d.kg_total) > d.kg_total * 0.25) alertas.push(`${d.unidades} unidades de ${pe.kg_por_unidad} kg son unos ${Math.round(pe.kg_por_unidad * d.unidades * 10) / 10} kg y se cargaron ${d.kg_total} kg.`);
-  if (simple.litio && !d.litio) alertas.push('En la charla se habla de batería de litio y no está tildado.');
+  if (!cruce.some((x) => /litio/.test(x)) && simple.litio && !d.litio) alertas.push('En la charla se habla de batería de litio y no está tildado.');
   // Posición: la de la charla; si no hay, el clasificador con el producto completo.
   let pos = lead.posicion_fija || null;
   if (!pos && d.producto) {

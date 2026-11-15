@@ -28,7 +28,7 @@ Cómo queda:
 
 1. **El bot anota mientras charla** (`anotar_pedido`): cada vez que el cliente da o corrige un dato (producto, unidades, peso, valor, cajas, medidas, litio, link, nombre) queda guardado en ese momento. Peso por unidad × unidades = peso total, solo.
 2. **El cotizador junta campo por campo**: lo que anotó o cotizó el bot (lo más nuevo primero) → la IA leyendo la charla (solo si falta algo) → un respaldo por texto (unidades, peso con caja, litio).
-3. **Se controla solo contra la charla**: si las unidades no coinciden con lo último que dijo el cliente, si el peso no cierra con unidades × peso por unidad o si se habla de litio y no está tildado, aparece una 🚩 en rojo.
+3. **Control cruzado** (pedido de Gustavo: "que revise el chat y se fije"): cada vez que se abre, la charla se relee entera (sin gastar de nuevo si no cambió) y se compara dato por dato con lo que anotó el bot; si no coincide, 🚩 con los dos números. Además se controla solo contra la charla: si las unidades no coinciden con lo último que dijo el cliente, si el peso no cierra con unidades × peso por unidad o si se habla de litio y no está tildado, aparece una 🚩 en rojo.
 4. **Pantalla clara**: dice exactamente qué falta y marca el campo en rojo; el botón de enviar queda bloqueado ("Falta el valor…") hasta completarlo; muestra la posición con su DIE y el link del producto.
 5. **El aviso al celu** ya dice "📄 Para el presupuesto falta: valor" o "datos completos, solo revisar y mandar".
 6. **La prueba completa** (botón en /pendientes, ~USD 2-3) ahora también abre el presupuestador de cada charla de prueba y controla que cargue los números correctos (unidades, valor, peso, cajas, medidas, litio).
