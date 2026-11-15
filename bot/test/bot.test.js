@@ -318,3 +318,18 @@ test('prompt: tono humano, sin frases cortadas ni pregunta repetida', () => {
   assert.match(p, /Contestá primero exactamente lo que te preguntaron/);
   assert.match(p, /asesor comercial de una empresa argentina/);
 });
+
+test('decisiones de Gustavo 15/11: régimen por unidades, CUIT, litio y 50 kg por bulto', () => {
+  const { render } = require('../../src/negocio');
+  const p = render(require('fs').readFileSync(require('path').join(__dirname, '..', 'prompt.md'), 'utf8'));
+  assert.doesNotMatch(p, /¿Es para vos o para vender\?"/);
+  assert.match(p, /nunca preguntes si es para vos o para vender/);
+  assert.match(p, /la importación la hace la empresa de transporte/);
+  assert.match(p, /con el CUIT de PuertoBox/);
+  assert.match(p, /MSDS\)\*\* y el \*\*informe de ensayo UN38\.3/);
+  assert.match(p, /El máximo por bulto es 50 kg/);
+  assert.match(p, /Marca reconocida \*\*hasta 3 unidades iguales\*\*: sí podés cotizar/);
+  const faq = require('../../src/negocio').datos().faq_texto;
+  assert.match(faq, /lo traemos con el CUIT de PuertoBox/);
+  assert.doesNotMatch(faq, /figur/);
+});

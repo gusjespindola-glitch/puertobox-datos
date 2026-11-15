@@ -44,9 +44,10 @@ const definiciones = [
         valor_factura_usd: { type: 'number', description: 'Valor de la factura del proveedor en USD' },
         die: { type: 'number', description: 'Derecho de importación (%) de la posición elegida' },
         internos: { type: 'number', description: 'Impuestos internos (%) si la posición los tiene, si no 0' },
-        regimen: { type: 'string', enum: ['personal', 'comercial'], description: 'personal = uso propio, hasta 3 unidades iguales; comercial = para revender' },
+        regimen: { type: 'string', enum: ['personal', 'comercial'], description: 'Por cantidad, nunca por el uso: personal = pequeño envío, hasta 3 unidades iguales; comercial = más de 3 unidades iguales (o si no se sabe).' },
         sin_franquicia: { type: 'boolean', description: 'true si el cliente de uso propio ya usó sus envíos con beneficio del año' },
         unidades: { type: 'number', description: 'Cantidad TOTAL de unidades que trae (por ejemplo 100 remeras). Para revender, siempre que se sepa: con esto se calcula cuánto le queda cada unidad puesta en su casa. Si el cliente cambió el peso o el pedido, tiene que ser la cantidad NUEVA (preguntala), nunca la vieja.' },
+        con_bateria_litio: { type: 'boolean', description: 'true si el producto trae batería de litio incorporada (carga peligrosa: la aerolínea cobra un recargo sobre el flete).' },
         kg_por_unidad: { type: 'number', description: 'Peso de UNA unidad (con su caja) si el cliente lo dijo. Sirve para controlar que unidades y peso total cierren.' },
         largo_cm: { type: 'number' }, ancho_cm: { type: 'number' }, alto_cm: { type: 'number' },
       },
@@ -127,8 +128,18 @@ function ejecutar(nombre, input, ctx) {
       if (!conMedidas) avisos.push('No hay medidas de la caja: el flete se confirma con las medidas (una caja grande y liviana se cobra por tamaño). No lo presentes como firme. Cerrá preguntando si tiene las medidas; el mensaje en inglés para el proveedor pasáselo solo si te dice que no las tiene.');
       // 15/11 (prueba completa): 18 kg en 2 cajas de 60x40x40 se cobran como 39 kg y el cliente no se enteraba por qué le salía el doble.
       if (conMedidas && r.kg_presupuestado > input.kg * 1.3) avisos.push(`Las cajas son grandes para lo que pesan: se cobran como ${String(r.kg_presupuestado).replace('.', ',')} kg en vez de ${String(input.kg).replace('.', ',')} kg. Decíselo al cliente en una línea, simple ("las cajas son grandes para lo que pesan, por eso el flete se cobra por tamaño") y sugerile pedirle al proveedor cajas más chicas o más llenas: así baja el flete.`);
-      if (cajaPesada) avisos.push(`Hay cajas de más de ${NEG.caja_max_kg} kg: tienen recargo del courier que NO está en este flete. Recomendá dividirlas y no digas que el flete es firme.`);
-      const totalPB = r.flete_puertobox_usd + r.handling_puertobox_usd;
+      if (cajaPesada) avisos.push(`Hay cajas de más de ${NEG.caja_max_kg} kg: el máximo por bulto del courier es ${NEG.caja_max_kg} kg. Decile que el proveedor tiene que dividirlas y no digas que el flete es firme.`);
+      // Cajas de más de 23 kg: la aerolínea cobra un recargo por caja (data/forwarder.json → sobrepeso_bulto). Se le cobra al cliente (Gustavo 15/11: "cobramos lo que corresponda").
+      const sob = require('../data/forwarder.json').recargos?.sobrepeso_bulto || require('../data/forwarder.json').sobrepeso_bulto;
+      const tc = require('../data/forwarder.json').tipo_cambio.rmb_a_usd;
+      const kgPorCaja = input.kg / cajas;
+      const recargoCajas = sob && kgPorCaja > sob.umbral_kg && kgPorCaja <= NEG.caja_max_kg ? Math.ceil(sob.monto_rmb * sob.factor * tc) * cajas : 0;
+      if (recargoCajas) avisos.push(`Cajas de más de ${sob.umbral_kg} kg: la aerolínea cobra un recargo por caja, ya sumado (recargo_cajas_usd). Mostralo en una línea aparte en el presupuesto ("Recargo por cajas de más de ${sob.umbral_kg} kg: USD X") y decile que si el proveedor arma cajas de hasta ${sob.umbral_kg} kg, se ahorra ese recargo.`);
+      // Batería de litio: carga peligrosa, recargo sobre el flete (data/forwarder.json → recargos.bateria_litio).
+      const lit = require('../data/forwarder.json').recargos?.bateria_litio;
+      const recargoLitio = input.con_bateria_litio && lit ? Math.ceil(r.flete_puertobox_usd * (lit.valor - 1)) : 0;
+      if (recargoLitio) avisos.push(`Trae batería de litio: carga peligrosa, la aerolínea cobra un recargo de ${Math.round((lit.valor - 1) * 100)}% sobre el flete, ya sumado (recargo_litio_usd). Mostralo en una línea aparte y pedí la hoja de seguridad (MSDS) y el informe UN38.3 de la batería.`);
+      const totalPB = r.flete_puertobox_usd + r.handling_puertobox_usd + recargoCajas + recargoLitio;
       // Costo por unidad puesta en la casa del cliente: producto + flete + gestión + impuestos estimados, dividido las unidades.
       const unidades = Math.round(input.unidades || 0);
       const porUnidad = unidades > 0 ? {
@@ -146,6 +157,8 @@ function ejecutar(nombre, input, ctx) {
         kg_presupuestado: r.kg_presupuestado,
         impuestos_y_gastos_estimados_usd: r.impuestos_estimados_usd.total,
         detalle_impuestos: r.impuestos_estimados_usd,
+        ...(recargoCajas ? { recargo_cajas_usd: recargoCajas } : {}),
+        ...(recargoLitio ? { recargo_litio_usd: recargoLitio } : {}),
         total_puertobox_usd: totalPB,
         // Para cuando el cliente pregunta "¿cuánto me sale el kilo?" o compara con la publicidad (que dice el kilo con la gestión incluida).
         usd_por_kilo_con_gestion: Math.round((totalPB / r.kg_presupuestado) * 100) / 100,
