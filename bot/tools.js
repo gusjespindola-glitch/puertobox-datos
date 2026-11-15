@@ -127,6 +127,8 @@ function ejecutar(nombre, input, ctx) {
       if (!previo || !previo.estado || previo.estado === 'nuevo' || previo.estado === 'cotizado') {
         ctx.store.guardarLead(ctx.telefono, { estado: 'cotizado', kg: input.kg, valor_usd: input.valor_factura_usd, precio_usd: r.flete_puertobox_usd + r.handling_puertobox_usd });
       }
+      // Última cotización completa en el lead: con esto se arma solo el presupuesto formal en PDF (15/11).
+      if (ctx.store.guardarLead) ctx.store.guardarLead(ctx.telefono, { cotizacion: { en: new Date().toISOString(), input: { kg: input.kg, cantidad_cajas: cajas, largo_cm: input.largo_cm, ancho_cm: input.ancho_cm, alto_cm: input.alto_cm, valor_factura_usd: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen, unidades: input.unidades, con_cuit_puertobox: !!input.con_cuit_puertobox, con_bateria_litio: !!input.con_bateria_litio }, r: null } });
       const avisos = [];
       if (!conMedidas) avisos.push('No hay medidas de la caja: el flete se confirma con las medidas (una caja grande y liviana se cobra por tamaño). No lo presentes como firme. Cerrá preguntando si tiene las medidas; el mensaje en inglés para el proveedor pasáselo solo si te dice que no las tiene.');
       // 15/11 (prueba completa): 18 kg en 2 cajas de 60x40x40 se cobran como 39 kg y el cliente no se enteraba por qué le salía el doble.
@@ -153,7 +155,7 @@ function ejecutar(nombre, input, ctx) {
         producto_por_unidad_usd: Math.round((input.valor_factura_usd / unidades) * 100) / 100,
         unidades,
       } : {};
-      return {
+      const resultado = {
         ...(fija ? { posicion: fija.posicion, posicion_a_confirmar: fija.confianza !== 'alta' && !fija.confirmada } : { posicion: 'a confirmar' }),
         flete_firme: conMedidas && !cajaPesada,
         ...porUnidad,
@@ -170,6 +172,8 @@ function ejecutar(nombre, input, ctx) {
         usd_por_kilo_con_gestion: Math.round((totalPB / r.kg_presupuestado) * 100) / 100,
         reglas: `El flete es PRECIO CERRADO: se respeta aunque la caja llegue hasta ${NEG.precio_cerrado_hasta_pct}% más pesada o grande; si supera eso, se ajusta con foto de la balanza. Se suma una gestión fija de USD ${NEG.gestion_usd} por envío. El cliente le paga a PuertoBox SOLO total_puertobox_usd (flete + gestión); los impuestos son un estimado aparte que cobra el courier: nunca los sumes al total de PuertoBox. Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. El envío de la fábrica al depósito en ${NEG.deposito_china} NO está incluido: lo paga el cliente (ideal: que lo incluya el proveedor; si lo paga PuertoBox, se suma aparte a lo que cueste). Impuestos y gasto administrativo son ESTIMADOS y se pagan directo a la empresa de transporte cuando entrega el paquete (decí "la empresa de transporte"; puede ser DHL, UPS o FedEx, no nombres una salvo que pregunten).`,
       };
+      if (ctx.store.guardarLead && ctx.store.lead) { const l = ctx.store.lead(ctx.telefono) || {}; if (l.cotizacion) ctx.store.guardarLead(ctx.telefono, { cotizacion: { ...l.cotizacion, r: { ...resultado, reglas: undefined, aviso: undefined } } }); }
+      return resultado;
     }
     case 'registrar_lead':
       ctx.store.guardarLead(ctx.telefono, input);
@@ -179,7 +183,9 @@ function ejecutar(nombre, input, ctx) {
       // Solo se pausa el bot cuando Gustavo tiene que tomar el chat. En "duda" el bot sigue atendiendo.
       if (input.motivo !== 'duda') ctx.store.pausar(ctx.telefono, 'derivado');
       if (ctx.store.marcar) ctx.store.marcar(ctx.telefono, { derivadoEn: Date.now(), derivadoMotivo: input.motivo, derivadoResumen: input.resumen, derivadoQuiere: input.quiere || '', derivadoParaVos: input.para_vos || '', recordatorios: 0 });
-      ctx.derivaciones.push({ telefono: ctx.telefono, ...input });
+      // Cliente que confirmó y ya tiene presupuesto por chat: se arma solo el presupuesto formal (lo manda Gustavo con un botón).
+      const presuFormal = input.motivo === 'listo_para_cerrar' && ctx.store.crearPresupuesto ? ctx.store.crearPresupuesto(ctx.telefono) : null;
+      ctx.derivaciones.push({ telefono: ctx.telefono, ...input, ...(presuFormal ? { presupuesto: presuFormal.nro } : {}) });
       return input.motivo === 'duda'
         ? { ok: true, instruccion: 'Decile que ese punto lo confirma nuestro despachante (no digas el nombre de Gustavo) y seguí atendiendo vos el resto.' }
         : { ok: true, instruccion: 'Decile al cliente que nuestro despachante le escribe enseguida (no digas el nombre de Gustavo).' };

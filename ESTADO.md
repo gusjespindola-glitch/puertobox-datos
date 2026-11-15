@@ -31,6 +31,12 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`. Los números de Gustavo (698, 3034 y 9132 del trabajo, `negocio.json` → `numeros_gustavo`) no cuentan como clientes en el resumen ni en pendientes.
 
 
+### Presupuesto formal automático (15/11/2026)
+- Cada cotización del bot queda guardada en el cliente. Cuando el cliente confirma (derivación "listo para cerrar") se arma solo el presupuesto en PDF (comprobante "X", N° 0001-0000000N correlativo).
+- El aviso al celu dice "📄 Presupuesto formal N° … listo". En "Ver y contestar" está el recuadro: nombre, CUIT/DNI, domicilio y condición IVA (opcionales), "Ver PDF" y "Enviar presupuesto".
+- "Enviar presupuesto" lo manda por WhatsApp desde el 6773 como PDF (solo dentro de las 24 h del último mensaje del cliente) y pausa el bot. El bot nunca lo manda solo.
+- El PDF se sirve en /presupuesto/<código largo>.pdf (lo necesita WhatsApp para bajarlo).
+
 ## Base única (desde 13/11/2026)
 Cambiás un dato en un solo lugar y cambia en el bot, la web, el buscador y las páginas:
 - **Precios** (tramos del flete, gestión): `data/precios_venta.json` → `flete_directo`.
@@ -51,7 +57,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 - Copia en claude.ai: https://claude.ai/artifact/AG4uktPhuZmr7FVxfzLnoo (hay que republicarla a mano, puede quedar vieja). Código en `web/nomenclador/`.
 - Buscador por producto o posición; ficha con DIE, DII, TE, IVA, internos, DE, reintegros, DIE mínimo específico, unidad, sufijos de valor, notas de sección y capítulo, intervenciones orientativas; liquidación régimen general / courier / pequeños envíos.
 - Motor compartido `src/nomenclador.js`: lo usa la página y el bot (`buscar_posicion`). Intervenciones curadas en `ncm/intervenciones.json` (Gustavo valida).
-- **Cotizador a mano (15/11, Gustavo):** dentro del nomenclador (mismo link con clave), arriba de la liquidación. Valor, peso real, cajas, medidas → peso volumétrico, kg cobrable (entero), flete, recargos (cajas >23 kg, litio), gestión (USD 50 con CUIT de PuertoBox), impuestos estimados y costo por unidad. Usa el mismo motor que el bot (`/nomenclador/api/cotizar`), con test que lo compara. Toma el DIE de la posición elegida. Botón "Copiar para WhatsApp" y "Generar presupuesto (PDF)": comprobante tipo argentino (letra X, "documento no válido como factura", N° 0001-0000000X correlativo en el navegador, cliente/CUIT/domicilio/condición IVA, mercadería, servicios, total a PuertoBox, impuestos estimados aparte, condiciones, firma). Se imprime o guarda como PDF en una hoja A4.
+- **Cotizador a mano (15/11, Gustavo):** dentro del nomenclador (mismo link con clave), arriba de la liquidación. Valor, peso real, cajas, medidas → peso volumétrico, kg cobrable (entero), flete, recargos (cajas >23 kg, litio), gestión (USD 50 con CUIT de PuertoBox), impuestos estimados y costo por unidad. Usa el mismo motor que el bot (`/nomenclador/api/cotizar`), con test que lo compara. Toma el DIE de la posición elegida. Botón "Copiar para WhatsApp" y "Generar presupuesto (PDF)": comprobante tipo argentino (letra X, "documento no válido como factura", N° 0001-0000000X correlativo en el navegador, cliente/CUIT/domicilio/condición IVA, mercadería, servicios, total a PuertoBox, impuestos estimados aparte, condiciones, firma). Se imprime o guarda como PDF en una hoja A4. **Lo manda y autoriza solo Gustavo** (el bot no genera ni promete ese PDF).
 - **Productos frecuentes (14/11):** `ncm/productos_frecuentes.json` (copia en `web/nomenclador/data/`): ~45 productos comunes (zapatillas, ropa, auriculares, memorias, gimnasio, cocina, etc.) → subpartida orientativa y cómo elegir. El buscador los muestra primero y nunca ofrece las aperturas "presentados desmontados" (DIE 0%) salvo que se pidan. **Gustavo: revisar la tabla**; si una está mal, se corrige ahí y cambia en bot, nomenclador y web.
 - Actualizar con archivos nuevos de ARCA: ponerlos en `ncm/fuentes_arca/`, `bash ncm/actualizar.sh`, `python3 ncm/build_nomenclador.py` y republicar la página.
 
