@@ -231,12 +231,12 @@ async function cargar() {
 }
 
 let CHARLA = null;
-async function desdeCharla(tel) {
+async function desdeCharla(tel, nuevo) {
   const box = $('c_charla');
   box.hidden = false; box.className = 'charla'; box.innerHTML = 'Leyendo la charla y buscando la posición… (puede tardar unos segundos)';
   setTimeout(() => $('cot').scrollIntoView({ behavior: 'smooth' }), 200);
   let d;
-  try { d = await fetch('api/charla?tel=' + tel).then((r) => r.json()); } catch (e) { d = { error: 'No pude conectarme.' }; }
+  try { d = await fetch('api/charla?tel=' + tel + (nuevo ? '&nuevo=1' : '')).then((r) => r.json()); } catch (e) { d = { error: 'No pude conectarme.' }; }
   if (d.error) { box.className = 'charla mal'; box.textContent = d.error; return; }
   CHARLA = d;
   // El DIE sale siempre de la ficha de ARCA. Sin posición, no queda abierta ninguna ficha vieja.
@@ -253,8 +253,10 @@ async function desdeCharla(tel) {
   box.innerHTML = `<b>Cargado de la charla${d.nombre ? ' con ' + esc(d.nombre) : ''}</b> (${d.fuente === 'cotizacion' ? 'lo que cotizó el bot' : 'datos que dio el cliente'}).<br>${falta}`
     + (d.posicion_a_confirmar ? '<br>⚠️ La posición no es segura: confirmala en la ficha de arriba (si cambiás de posición, se usa la que tengas abierta).' : '')
     + (d.notas ? `<br>📝 ${esc(d.notas)}` : '')
+    + `<br><button type="button" class="ghost" id="c_releer" style="margin:8px 0">🔄 Leer la charla de nuevo</button>`
     + `<br><small>${d.ventana_horas > 0 ? `Te quedan ${d.ventana_horas} h para mandárselo por WhatsApp.` : 'Pasaron más de 24 h: WhatsApp no deja mandarle el PDF.'}</small>`;
   $('c_enviar').hidden = !(d.ventana_horas > 0);
+  $('c_releer').onclick = () => desdeCharla(tel, true);
 }
 
 async function enviarPresupuesto() {
