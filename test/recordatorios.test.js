@@ -89,7 +89,11 @@ test('avisos: van como JSON a ntfy (con tildes), con botones firmados, y si ntfy
   const a = accionesNtfy('5491100000001');
   assert.deepStrictEqual(a.map((x) => x.label), ['Ver y contestar', 'Ya lo atendí', 'Ver pendientes']);
   assert.match(a[1].url, /^https:\/\/puertobox\.com\.ar\/atendido\?tel=5491100000001&t=[0-9a-z]+-[0-9a-f]{24}$/);
-  assert.strictEqual(a[1].method, 'POST');
+  // 15/11 18:03: todos los botones abren una página (los "http" por detrás no daban ninguna señal en el celular).
+  assert.ok(a.every((x) => x.action === 'view'));
+  const pos = accionesNtfy('5491100000001', 'confirmar_posicion');
+  assert.deepStrictEqual(pos.map((x) => x.label), ['Confirmar posición', 'Ver y contestar']);
+  assert.match(pos[0].url, /\/posicion\?tel=5491100000001&t=/);
   assert.ok(!JSON.stringify(a).includes('clave-secreta'));
   process.env.NTFY_TOPIC = 'prueba';
   const cuerpos = [];
@@ -122,6 +126,38 @@ test('botones: "Ya lo atendí" y la página de pendientes funcionan solo con fir
   const ok = await fetch(`${base}/atendido?tel=5491100000009&t=${firma('atendido:5491100000009')}`, { method: 'POST' });
   assert.strictEqual(ok.status, 200);
   assert.match(await ok.text(), /marcado como atendido/);
+  // El botón del aviso (GET) marca y muestra "Listo".
+  const g = await fetch(`${base}/atendido?tel=5491100000009&t=${firma('atendido:5491100000009')}`);
+  assert.strictEqual(g.status, 200);
+  assert.match(await g.text(), /✅ Listo[\s\S]*quedó como atendido/);
+  assert.strictEqual((await fetch(`${base}/atendido?tel=5491100000009&t=mal`)).status, 401);
+  s.close();
+});
+
+test('botón "Confirmar posición": muestra las opciones, confirma o cambia, y el bot deja de decir "a confirmar"', async () => {
+  const os = require('os'); const path = require('path'); const fs = require('fs');
+  const archivo = path.join(os.tmpdir(), `pb-pos-${process.pid}.json`);
+  const TEL = '5491166000001';
+  fs.writeFileSync(archivo, JSON.stringify({ chats: {}, leads: { [TEL]: { telefono: TEL, posicion_fija: { posicion: '8509.80.90.900U', die: 20, confianza: 'media', producto: '10 difusores ultrasónicos de aromas sin agua', alternativas: [{ posicion: '8479.89.99.900H', die: 12.6, por_que: 'sin motor' }] } } }, vistos: [] }));
+  process.env.ADMIN_KEY = 'clave-secreta'; process.env.OWNER_NUMBER = OWNER; process.env.DATA_FILE = archivo;
+  delete require.cache[require.resolve('../bot/server')];
+  const srv = require('../bot/server');
+  const s = srv.servidor().listen(0); await new Promise((r) => s.once('listening', r));
+  const base = `http://127.0.0.1:${s.address().port}`;
+  const link = `${base}/posicion?tel=${TEL}&t=${srv.firma('posicion:' + TEL)}`;
+  assert.strictEqual((await fetch(`${base}/posicion?tel=${TEL}&t=mal`)).status, 401);
+  const pag = await (await fetch(link)).text();
+  assert.match(pag, /Confirmar 8509\.80\.90\.900U/);
+  assert.match(pag, /Usar 8479\.89\.99\.900H/);
+  const ok = await (await fetch(link, { method: 'POST', body: 'pos=8509.80.90.900U', headers: { 'content-type': 'application/x-www-form-urlencoded' } })).text();
+  assert.match(ok, /✅ Listo[\s\S]*Confirmada/);
+  const guardado = JSON.parse(fs.readFileSync(archivo, 'utf8')).leads[TEL].posicion_fija;
+  assert.strictEqual(guardado.confirmada, true);
+  assert.strictEqual(guardado.confianza, 'alta');
+  const cambio = await (await fetch(link, { method: 'POST', body: 'pos=8479.89.99.900H', headers: { 'content-type': 'application/x-www-form-urlencoded' } })).text();
+  assert.match(cambio, /Cambiada a <b>8479\.89\.99\.900H/);
+  const mal = await (await fetch(link, { method: 'POST', body: 'pos=1234', headers: { 'content-type': 'application/x-www-form-urlencoded' } })).text();
+  assert.match(mal, /⚠️/);
   s.close();
 });
 

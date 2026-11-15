@@ -61,6 +61,26 @@ function aplicar(store, tel, texto, ejecutar) {
   return { cambio: true, de: actual, a: f.posicion };
 }
 
+/**
+ * Gustavo confirma la posición desde el aviso del celular (15/11, "los botones no funcionan"): si es la misma
+ * que eligió el bot, queda confirmada y aprendida; si es otra, se aplica como corrección.
+ */
+function confirmar(store, tel, texto, ejecutar) {
+  const lead = store.lead(tel) || {};
+  const fija = lead.posicion_fija;
+  if (!fija) return { error: 'Ese cliente todavía no tiene posición elegida.' };
+  const v = validar(texto);
+  if (v.error) return { error: v.error };
+  if (v.fila.posicion !== fija.posicion) return aplicar(store, tel, v.fila.posicion, ejecutar);
+  const nueva = { ...fija, confianza: 'alta', confirmada: true, por_que: 'Confirmada por nuestro despachante.' };
+  store.guardarLead(tel, { posicion_fija: nueva, posicion: nueva.posicion });
+  if (fija.producto && store.guardarClasificacion) {
+    const { producto, bot_propuso, ...resto } = nueva; // eslint-disable-line no-unused-vars
+    store.guardarClasificacion(clave(producto), resto);
+  }
+  return { cambio: false, confirmada: true, a: nueva.posicion };
+}
+
 /** Anota en el marcador si el bot acertó la posición (una vez por presupuesto enviado). */
 function registrar(store, tel, token) {
   const lead = store.lead(tel) || {};
@@ -86,4 +106,4 @@ function marcador(store) {
   return { total: lista.length, bien, seguidas, falta: Math.max(0, SEGUIDAS_PARA_AUTOMATICO - seguidas), listo: seguidas >= SEGUIDAS_PARA_AUTOMATICO, errores: lista.filter((x) => !x.ok).slice(-5) };
 }
 
-module.exports = { validar, aplicar, registrar, marcador, SEGUIDAS_PARA_AUTOMATICO };
+module.exports = { validar, aplicar, confirmar, registrar, marcador, SEGUIDAS_PARA_AUTOMATICO };

@@ -158,7 +158,7 @@ async function transcribirAudio(audio, fetchImpl = fetch) {
 }
 
 /** Aviso solo por ntfy (recordatorios y resumen): no gasta mensajes de WhatsApp. */
-async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fetchImpl = fetch, tel = null) {
+async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fetchImpl = fetch, tel = null, tipo = null) {
   const topic = process.env.NTFY_TOPIC;
   if (!topic) return false;
   // 15/11: se manda como JSON (UTF-8). Antes iba en encabezados y el botón "Ya lo atendí" (con tilde) hacía que ntfy
@@ -166,7 +166,7 @@ async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fe
   // si falla, se reintenta sin botones para que el aviso llegue igual.
   const PRIORIDAD = { min: 1, low: 2, default: 3, high: 4, urgent: 5, max: 5 };
   const base = { topic, title: titulo, message: texto, priority: PRIORIDAD[prioridad] || 3 };
-  const acciones = accionesNtfy(tel);
+  const acciones = accionesNtfy(tel, tipo);
   const intentar = async (cuerpo) => {
     const r = await fetchImpl('https://ntfy.sh/', { method: 'POST', headers: { 'content-type': 'application/json; charset=utf-8' }, body: JSON.stringify(cuerpo) });
     if (r && r.ok === false) throw new Error(`ntfy ${r.status}: ${r.text ? (await r.text()).slice(0, 200) : ''}`);
@@ -207,14 +207,18 @@ function firmaOk(que, dada) {
   const f = firmaCon(que, vence);
   return !!(f && require('crypto').timingSafeEqual(Buffer.from(f), Buffer.from(m[2])));
 }
-function accionesNtfy(tel) {
+// 15/11 18:03 (Gustavo: "no funcionan los botones, puse Ya lo atendí y no cambia nada"): los botones que corrían
+// por detrás (http) no daban ninguna señal. Ahora todos abren una página que hace la acción y muestra "✅ Listo".
+// El aviso de "confirmá la posición" trae su propio botón para confirmarla o elegir otra.
+function accionesNtfy(tel, tipo = null) {
   const fp = firma('pendientes');
   if (!fp) return null;
   const ver = { action: 'view', label: 'Ver pendientes', url: `${BASE_URL()}/pendientes?t=${fp}` };
   const charlas = { action: 'view', label: 'Ver charlas', url: `${BASE_URL()}/charlas?t=${firma('charlas')}` };
   if (!tel) return [ver, charlas];
   const contestar = { action: 'view', label: 'Ver y contestar', url: `${BASE_URL()}/charlas?t=${firma('charlas')}&abierto=${encodeURIComponent(tel)}#c-${encodeURIComponent(tel)}` };
-  return [contestar, { action: 'http', label: 'Ya lo atendí', url: `${BASE_URL()}/atendido?tel=${encodeURIComponent(tel)}&t=${firma('atendido:' + tel)}`, method: 'POST', clear: true }, ver];
+  if (tipo === 'confirmar_posicion') return [{ action: 'view', label: 'Confirmar posición', url: `${BASE_URL()}/posicion?tel=${encodeURIComponent(tel)}&t=${firma('posicion:' + tel)}` }, contestar];
+  return [contestar, { action: 'view', label: 'Ya lo atendí', url: `${BASE_URL()}/atendido?tel=${encodeURIComponent(tel)}&t=${firma('atendido:' + tel)}`, clear: true }, ver];
 }
 
 /**
@@ -247,8 +251,8 @@ function avisoCorto(d, st) {
   return lineas.join('\n');
 }
 
-async function avisarGustavo(owner, texto, fetchImpl = fetch, titulo = 'PuertoBox: cliente para atender', tel = null) {
-  if (process.env.NTFY_TOPIC) return avisarNtfy(texto, titulo, 'high', fetchImpl, tel);
+async function avisarGustavo(owner, texto, fetchImpl = fetch, titulo = 'PuertoBox: cliente para atender', tel = null, tipo = null) {
+  if (process.env.NTFY_TOPIC) return avisarNtfy(texto, titulo, 'high', fetchImpl, tel, tipo);
   if (owner) await enviar(owner, texto, fetchImpl);
 }
 
@@ -414,7 +418,7 @@ async function atender(tel, texto, st, fetchImpl, owner, guardado = false) {
         ? `🔔 PuertoBox (Instagram): ${d.motivo.replace(/_/g, ' ')}\n${d.resumen}\n(Respondele desde los mensajes de Instagram de PuertoBox. El bot quedó pausado en ese chat; para reactivarlo escribí #bot en ese mismo chat.)`
         : avisoCorto(d, st);
       const TITULO = { listo_para_cerrar: 'Quiere pagar', mayorista: 'Pedido grande', reclamo: 'Reclamo', pide_humano: 'Pide hablar con vos', duda: 'Duda para vos' };
-      await avisarGustavo(owner, aviso, fetchImpl, `PuertoBox: ${TITULO[d.motivo] || 'cliente para atender'}`, d.telefono);
+      await avisarGustavo(owner, aviso, fetchImpl, d.motivo === 'confirmar_posicion' ? 'PuertoBox: confirmá la posición' : `PuertoBox: ${TITULO[d.motivo] || 'cliente para atender'}`, d.telefono, d.motivo);
       salidas.push({ to: owner, body: aviso });
     }
   }
@@ -540,6 +544,37 @@ function servidor() {
       const volver = url.searchParams.get('volver');
       if (volver && firmaOk('pendientes', volver)) { res.writeHead(303, { location: `/pendientes?t=${volver}` }); return res.end(); }
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }); return res.end(`Listo: el bot sigue con +${tel}.`);
+    }
+    // Páginas que abren los botones del aviso (15/11): hacen la acción y lo dicen claro.
+    const paginaSimple = (titulo, cuerpo) => `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>PuertoBox</title><style>body{font-family:system-ui,sans-serif;margin:0;padding:20px;background:#f5f5f5;color:#111}h1{font-size:22px}p{font-size:16px;color:#333}form{margin:10px 0}button{width:100%;padding:14px;font-size:17px;border:0;border-radius:12px;background:#1a7f37;color:#fff;text-align:left}button.otra{background:#e8eef5;color:#0b4f8a}input{width:100%;box-sizing:border-box;font-size:17px;padding:12px;border:1px solid #ccc;border-radius:12px;margin-bottom:8px}a{color:#1a5fb4;font-size:16px}.err{color:#a40000}</style></head><body><h1>${titulo}</h1>${cuerpo}</body></html>`;
+    const escH = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    if (url.pathname === '/atendido' && req.method === 'GET') {
+      const tel = soloDigitos(url.searchParams.get('tel'));
+      if (!tel || !firmaOk('atendido:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/html; charset=utf-8' }); return res.end(paginaSimple('Link vencido', '<p>Abrí la lista de pendientes desde un aviso nuevo.</p>')); }
+      store.marcar(tel, { gustavoRespondioEn: Date.now(), recordatorios: 0 });
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+      return res.end(paginaSimple('✅ Listo', `<p>+${escH(tel)} quedó como atendido. No te lo vuelvo a recordar, salvo que el cliente escriba de nuevo.</p><p><a href="/pendientes?t=${firma('pendientes')}">Ver pendientes →</a></p>`));
+    }
+    if (url.pathname === '/posicion') {
+      const tel = soloDigitos(url.searchParams.get('tel'));
+      const t = url.searchParams.get('t');
+      if (!tel || !firmaOk('posicion:' + tel, t)) { res.writeHead(401, { 'content-type': 'text/html; charset=utf-8' }); return res.end(paginaSimple('Link vencido', '<p>Abrí la charla desde /charlas.</p>')); }
+      const accion = `/posicion?tel=${tel}&t=${t}`;
+      const ver = (msg = '') => {
+        const fija = (store.lead(tel) || {}).posicion_fija;
+        if (!fija) return paginaSimple('Sin posición', '<p>Ese cliente todavía no tiene posición elegida.</p>');
+        const op = [{ posicion: fija.posicion, die: fija.die, por_que: fija.confirmada ? 'Ya confirmada por vos' : `La eligió el bot (confianza ${fija.confianza || '-'})` }, ...(fija.alternativas || []).filter((a) => a.posicion !== fija.posicion)];
+        return paginaSimple('🔎 Posición', `${msg}<p><b>Producto:</b> ${escH(String(fija.producto || '').slice(0, 300))}</p>${op.map((o, i) => `<form method="post" action="${accion}"><input type="hidden" name="pos" value="${escH(o.posicion)}"><button class="${i ? 'otra' : ''}">${i ? 'Usar' : 'Confirmar'} ${escH(o.posicion)} · DIE ${escH(o.die)}%<br><small>${escH(String(o.por_que || '').slice(0, 140))}</small></button></form>`).join('')}<form method="post" action="${accion}"><input name="pos" placeholder="Otra posición, ej. 8543.70.99"><button class="otra">Usar la que escribí</button></form><p><a href="/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}">Ver la charla →</a></p>`);
+      };
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+      if (req.method !== 'POST') return res.end(ver());
+      let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 5000) req.destroy(); });
+      return req.on('end', () => {
+        const pos = (new URLSearchParams(raw).get('pos') || '').trim();
+        const r = require('./certeza').confirmar(store, tel, pos, require('./tools').ejecutar);
+        if (r.error) return res.end(ver(`<p class="err">⚠️ ${escH(r.error)}</p>`));
+        res.end(paginaSimple('✅ Listo', `<p>${r.cambio ? `Cambiada a <b>${escH(r.a)}</b> (antes ${escH(r.de)}). El presupuesto se recalculó con el derecho nuevo.` : `Confirmada <b>${escH(r.a)}</b>.`} El bot la usa desde ahora sin "(a confirmar)" y la aprende para este producto.</p><p><a href="/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}">Ver la charla →</a></p>`));
+      });
     }
     if (url.pathname === '/atendido' && req.method === 'POST') {
       const tel = soloDigitos(url.searchParams.get('tel'));
