@@ -76,9 +76,11 @@ const definiciones = [
       type: 'object',
       properties: {
         motivo: { type: 'string', enum: ['listo_para_cerrar', 'mayorista', 'reclamo', 'duda', 'pide_humano'] },
-        resumen: { type: 'string', description: 'Resumen completo para Gustavo: producto, posición, kg, valor, precio, tipo de cliente, nombre' },
+        quiere: { type: 'string', description: 'UNA línea corta (máx. 12 palabras) con lo que pide el cliente, en simple. Ej: "Cotización de 100 y 300 trípodes Bluetooth" o "Pagar el envío de remeras".' },
+        para_vos: { type: 'string', description: 'UNA línea corta (máx. 12 palabras) con lo que tiene que hacer Gustavo. Ej: "Decirle si se puede homologar en ENACOM" o "Pasarle los datos para pagar".' },
+        resumen: { type: 'string', description: 'Datos para Gustavo, cortos y en una línea cada uno: producto, unidades, kg, valor, posición, presupuesto dado, nombre.' },
       },
-      required: ['motivo', 'resumen'],
+      required: ['motivo', 'quiere', 'para_vos', 'resumen'],
     },
   },
 ];
@@ -176,7 +178,7 @@ function ejecutar(nombre, input, ctx) {
       ctx.store.guardarLead(ctx.telefono, { estado: input.motivo === 'listo_para_cerrar' ? 'listo_para_cerrar' : 'derivado', notas: input.resumen });
       // Solo se pausa el bot cuando Gustavo tiene que tomar el chat. En "duda" el bot sigue atendiendo.
       if (input.motivo !== 'duda') ctx.store.pausar(ctx.telefono, 'derivado');
-      if (ctx.store.marcar) ctx.store.marcar(ctx.telefono, { derivadoEn: Date.now(), derivadoMotivo: input.motivo, derivadoResumen: input.resumen, recordatorios: 0 });
+      if (ctx.store.marcar) ctx.store.marcar(ctx.telefono, { derivadoEn: Date.now(), derivadoMotivo: input.motivo, derivadoResumen: input.resumen, derivadoQuiere: input.quiere || '', derivadoParaVos: input.para_vos || '', recordatorios: 0 });
       ctx.derivaciones.push({ telefono: ctx.telefono, ...input });
       return input.motivo === 'duda'
         ? { ok: true, instruccion: 'Decile que ese punto lo confirma nuestro despachante (no digas el nombre de Gustavo) y seguí atendiendo vos el resto.' }
