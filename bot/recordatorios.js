@@ -225,15 +225,27 @@ function textoMensaje(content) {
  * Página "Charlas": lo que hablaron los clientes con el bot en los últimos días (pedido del 14/11:
  * Gustavo no tiene la app de WhatsApp del 6773, que está conectado a la API). Sin sus propios números.
  */
-function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder = null, abierto = null, aviso = '', linkPresu = null) {
+function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder = null, abierto = null, aviso = '', linkPresu = null, linkCotizador = null) {
   const desde = ahora - dias * 24 * 3600e3;
   const chats = (store.chats ? store.chats() : [])
     .filter((c) => !esGustavo(c.telefono, owner) && (c.ultimo || 0) >= desde && (c.mensajes || []).length)
     .sort((a, b) => (b.ultimo || 0) - (a.ultimo || 0));
   const ESTADO = { nuevo: 'Consultó', cotizado: 'Tiene presupuesto', derivado: 'Derivado a vos', listo_para_cerrar: 'Quiere pagar' };
   // Presupuesto formal en PDF (15/11): se arma solo con la última cotización; lo manda Gustavo con un botón.
+  // Botón al cotizador del nomenclador con los datos del cliente ya cargados (15/11: chats sin cotización guardada o para retocarla).
+  const aCotizador = (l, texto) => {
+    if (!linkCotizador) return '';
+    const i = (l.cotizacion && l.cotizacion.input) || {};
+    const f = l.posicion_fija || {};
+    const q = new URLSearchParams();
+    const pon = (k, v) => { if (v !== undefined && v !== null && v !== '' && v !== false) q.set(k, v === true ? '1' : v); };
+    pon('pos', f.posicion || l.posicion); pon('die', i.die ?? f.die); pon('ii', i.internos || f.internos); pon('valor', i.valor_factura_usd); pon('kg', i.kg);
+    pon('cajas', i.cantidad_cajas); pon('largo', i.largo_cm); pon('ancho', i.ancho_cm); pon('alto', i.alto_cm); pon('unid', i.unidades); pon('reg', i.regimen);
+    pon('litio', i.con_bateria_litio); pon('cuit', i.con_cuit_puertobox); pon('cli', l.nombre); pon('prod', l.producto);
+    return `<a class="acot" href="${esc(linkCotizador)}#cot&${esc(q.toString())}">${texto}</a>`;
+  };
   const presu = (c, l) => {
-    if (!linkPresu || !l.cotizacion || !l.cotizacion.r) return '';
+    if (!linkPresu || !l.cotizacion || !l.cotizacion.r) return aCotizador(l, '🧮 Armar presupuesto en el cotizador');
     const q = linkPresu(c.telefono);
     const p = l.presupuesto && store.presupuesto ? store.presupuesto(l.presupuesto) : null;
     const cli = (p && p.cliente) || {};
@@ -241,7 +253,7 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder
     return `<form class="presu" method="post"><b>📄 Presupuesto formal (PDF)</b><small>${estado} Total a PuertoBox USD ${esc(l.cotizacion.r.total_puertobox_usd)}.</small>
 <input name="nombre" placeholder="Nombre y apellido" value="${esc(cli.nombre || l.nombre || '')}"><input name="doc" placeholder="CUIT / DNI (opcional)" value="${esc(cli.doc || '')}"><input name="dom" placeholder="Domicilio (opcional)" value="${esc(cli.dom || '')}">
 <select name="iva">${['', 'Consumidor final', 'Monotributista', 'Responsable inscripto'].map((o) => `<option${(cli.iva || '') === o ? ' selected' : ''}>${o}</option>`).join('')}</select>
-<div class="bt"><button formaction="/presupuesto-ver${q}" class="sec">Ver PDF</button><button formaction="/presupuesto-enviar${q}">Enviar presupuesto</button></div></form>`;
+<div class="bt"><button formaction="/presupuesto-ver${q}" class="sec">Ver PDF</button><button formaction="/presupuesto-enviar${q}">Enviar presupuesto</button></div>${aCotizador(l, '🧮 Retocar en el cotizador')}</form>`;
   };
   const tarjeta = (c) => {
     const l = (store.lead ? store.lead(c.telefono) : null) || {};
@@ -262,7 +274,7 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder
   };
   const delAnuncio = chats.filter((c) => c.origen === 'anuncio').length;
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Charlas PuertoBox</title>
-<style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f5f5f5;color:#111}h1{font-size:20px;margin:0 0 4px}.sub{color:#555;font-size:14px;margin:0 0 16px}ul{list-style:none;padding:0;margin:0}li{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px}summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}p{margin:6px 0 0;font-size:14px;color:#444}small{color:#666}.ver{display:block;margin-top:8px;color:#1a5fb4;font-size:14px}.chat{margin-top:12px;display:flex;flex-direction:column;gap:6px}.m{max-width:85%;padding:8px 10px;border-radius:10px;font-size:14px;line-height:1.35}.cliente{background:#eee;align-self:flex-start}.bot{background:#dcf8c6;align-self:flex-end}.vos{background:#cfe3ff;align-self:flex-end}.resp{margin-top:12px;display:flex;flex-direction:column;gap:8px}.resp textarea{width:100%;box-sizing:border-box;font:16px system-ui,sans-serif;padding:10px;border:1px solid #ccc;border-radius:10px}.resp button{padding:12px;font-size:16px;border:0;border-radius:10px;background:#1a7f37;color:#fff}.vencida{color:#a40000}.aviso{background:#fff;border-left:4px solid #1a7f37;padding:10px;border-radius:8px;margin-bottom:12px}.presu{margin-top:14px;padding-top:12px;border-top:1px solid #ddd;display:flex;flex-direction:column;gap:8px}.presu input,.presu select{font:16px system-ui,sans-serif;padding:9px;border:1px solid #ccc;border-radius:10px}.presu .bt{display:flex;gap:8px}.presu button{flex:1;padding:12px;font-size:16px;border:0;border-radius:10px;background:#0b4f8a;color:#fff}.presu button.sec{background:#e8eef5;color:#0b4f8a}</style></head>
+<style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f5f5f5;color:#111}h1{font-size:20px;margin:0 0 4px}.sub{color:#555;font-size:14px;margin:0 0 16px}ul{list-style:none;padding:0;margin:0}li{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px}summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}p{margin:6px 0 0;font-size:14px;color:#444}small{color:#666}.ver{display:block;margin-top:8px;color:#1a5fb4;font-size:14px}.chat{margin-top:12px;display:flex;flex-direction:column;gap:6px}.m{max-width:85%;padding:8px 10px;border-radius:10px;font-size:14px;line-height:1.35}.cliente{background:#eee;align-self:flex-start}.bot{background:#dcf8c6;align-self:flex-end}.vos{background:#cfe3ff;align-self:flex-end}.resp{margin-top:12px;display:flex;flex-direction:column;gap:8px}.resp textarea{width:100%;box-sizing:border-box;font:16px system-ui,sans-serif;padding:10px;border:1px solid #ccc;border-radius:10px}.resp button{padding:12px;font-size:16px;border:0;border-radius:10px;background:#1a7f37;color:#fff}.vencida{color:#a40000}.aviso{background:#fff;border-left:4px solid #1a7f37;padding:10px;border-radius:8px;margin-bottom:12px}.presu{margin-top:14px;padding-top:12px;border-top:1px solid #ddd;display:flex;flex-direction:column;gap:8px}.presu input,.presu select{font:16px system-ui,sans-serif;padding:9px;border:1px solid #ccc;border-radius:10px}.presu .bt{display:flex;gap:8px}.presu button{flex:1;padding:12px;font-size:16px;border:0;border-radius:10px;background:#0b4f8a;color:#fff}.presu button.sec{background:#e8eef5;color:#0b4f8a}.acot{display:block;margin-top:12px;padding:12px;text-align:center;border-radius:10px;background:#e8eef5;color:#0b4f8a;font-size:16px;text-decoration:none;font-weight:600}</style></head>
 <body><h1>Charlas con el bot</h1>${aviso ? `<p class="aviso">${esc(aviso)}</p>` : ''}<p class="sub">Últimos ${dias} días · ${chats.length} clientes${delAnuncio ? ` · ${delAnuncio} del anuncio` : ''}. Tus números no aparecen. Tocá un cliente para ver la charla.</p>
 ${chats.length ? `<ul>${chats.map(tarjeta).join('')}</ul>` : '<p>Ningún cliente le escribió al bot en estos días.</p>'}</body></html>`;
 }

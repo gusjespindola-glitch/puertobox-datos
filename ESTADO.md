@@ -36,6 +36,7 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - El aviso al celu dice "📄 Presupuesto formal N° … listo". En "Ver y contestar" está el recuadro: nombre, CUIT/DNI, domicilio y condición IVA (opcionales), "Ver PDF" y "Enviar presupuesto".
 - "Enviar presupuesto" lo manda por WhatsApp desde el 6773 como PDF (solo dentro de las 24 h del último mensaje del cliente) y pausa el bot. El bot nunca lo manda solo.
 - El PDF se sirve en /presupuesto/<código largo>.pdf (lo necesita WhatsApp para bajarlo).
+- En cada charla hay un botón "🧮 Armar presupuesto en el cotizador" (o "Retocar") que abre el cotizador del nomenclador con posición, DIE, pesos, medidas, cliente y producto ya cargados. Sirve para charlas viejas sin cotización guardada.
 
 ## Base única (desde 13/11/2026)
 Cambiás un dato en un solo lugar y cambia en el bot, la web, el buscador y las páginas:

@@ -420,7 +420,9 @@ function cotizarAMano(q) {
 function servirNomenclador(req, res, url) {
   const clave = process.env.ADMIN_KEY || ADMIN_KEY;
   const cookie = /(?:^|;\s*)pbk=([^;]+)/.exec(req.headers.cookie || '');
-  const dada = url.searchParams.get('key');
+  // Desde la página de charlas se entra con un link firmado (sin la clave a la vista) y queda la cookie.
+  const conFirma = !!url.searchParams.get('t') && firmaOk('nomenclador', url.searchParams.get('t'));
+  const dada = conFirma ? clave : url.searchParams.get('key');
   if (!clave || (dada !== clave && !(cookie && decodeURIComponent(cookie[1]) === clave))) {
     res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' });
     return res.end('Acceso restringido. Entrá con el link que tiene la clave.');
@@ -535,7 +537,7 @@ function servidor() {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
       const aviso = url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
-      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`));
+      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, `/nomenclador/?t=${firma('nomenclador')}`));
     }
     // Prueba completa del bot (15/11): corre en segundo plano y avisa por ntfy con el link al informe.
     if (req.method === 'POST' && url.pathname === '/prueba-completa') {

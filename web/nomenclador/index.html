@@ -220,6 +220,21 @@ async function cargar() {
   N = Nomenclador.crear({ sim, sufijos, intervenciones, sinonimos, notas, frecuentes });
   $('src').textContent = `Arancel Integrado ARCA · archivos del ${N.meta.fecha_archivos.split('-').reverse().join('/')} · ${N.meta.posiciones_sim.toLocaleString('es-AR')} posiciones SIM`;
   $('frec').innerHTML = FREC.map((f) => `<button type="button" class="chip" data-q="${esc(f)}">${esc(f)}</button>`).join('');
+  // Viene desde una charla (15/11): #cot&pos=...&valor=...&kg=... → carga el cotizador con los datos del cliente.
+  if (location.hash.startsWith('#cot&')) {
+    const q = new URLSearchParams(location.hash.slice(5));
+    const pos = (q.get('pos') || '').replace(/\D/g, '');
+    if (pos) { const r = N.buscar(pos, 1); if (r[0]) { $('q').value = r[0].c; buscar(); abrir(r[0].c); } }
+    const m = { valor: 'c_valor', kg: 'c_kg', cajas: 'c_cajas', largo: 'c_largo', ancho: 'c_ancho', alto: 'c_alto', unid: 'c_unid', reg: 'c_reg', die: 'c_die', ii: 'c_ii', cli: 'p_cli', prod: 'p_prod' };
+    Object.entries(m).forEach(([k, id]) => { if (q.has(k) && $(id)) $(id).value = q.get(k); });
+    if (!q.has('valor')) $('c_valor').value = '';
+    if (!q.has('kg')) $('c_kg').value = '';
+    ['litio', 'cuit'].forEach((k) => { const el = $('c_' + k); if (el) el.checked = q.get(k) === '1'; });
+    const det = document.querySelector('#cot details'); if (det && (q.has('cli') || q.has('prod'))) det.open = true;
+    cotizar();
+    setTimeout(() => $('cot').scrollIntoView({ behavior: 'smooth' }), 300);
+    verHist(); return;
+  }
   const h = location.hash.match(/^#p-(\d+)/);
   if (h) { const r = N.buscar(h[1], 1); if (r[0]) { $('q').value = r[0].c; buscar(); abrir(r[0].c); } }
   else { $('q').value = 'zapatillas'; buscar(); const r = N.buscar('zapatillas', 30).find((f) => f.die > 0); if (r) abrir(r.c); }
