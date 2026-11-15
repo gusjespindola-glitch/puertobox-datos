@@ -375,6 +375,8 @@ function servirNomenclador(req, res, url) {
   fs.createReadStream(archivo).pipe(res);
 }
 
+let pruebaEnCurso = false;
+const informes = new Map();
 function servidor() {
   return http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
@@ -437,7 +439,8 @@ function servidor() {
       if (!firmaOk('pendientes', t)) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       const html = require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`, Date.now(), (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&volver=${t}`, (tel) => `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}`);
-      return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`));
+      const botonPrueba = `<h2>Prueba completa del bot</h2><p>Prueba posiciones arancelarias y charlas reales con la IA. Tarda unos 10 minutos y gasta unos USD 2 a 3 del saldo de Anthropic. Cuando termina te llega un aviso con el informe.</p><form method="post" action="/prueba-completa?t=${firma('prueba')}"><button class="bot">${pruebaEnCurso ? 'Prueba en curso…' : 'Correr prueba completa'}</button></form>`;
+      return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`).replace('</body>', `${botonPrueba}</body>`));
     }
     if (url.pathname === '/difusion') {
       // Mensaje a clientes anteriores del 698 (plantilla de WhatsApp). Con ?key=ADMIN_KEY o link firmado.
@@ -468,6 +471,30 @@ function servidor() {
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
       const aviso = url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
       return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso));
+    }
+    // Prueba completa del bot (15/11): corre en segundo plano y avisa por ntfy con el link al informe.
+    if (req.method === 'POST' && url.pathname === '/prueba-completa') {
+      if (!firmaOk('prueba', url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      const pag = (t) => `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="font-family:system-ui;padding:20px"><h2>${t}</h2><p><a href="/pendientes?t=${firma('pendientes')}">Volver a pendientes</a></p></body></html>`;
+      if (pruebaEnCurso) return res.end(pag('Ya hay una prueba corriendo. Te aviso cuando termine.'));
+      pruebaEnCurso = true;
+      require('./prueba_completa').correr().then(async ({ texto, resumen }) => {
+        const token = require('crypto').randomBytes(16).toString('hex');
+        informes.set(token, texto);
+        try { const dir = path.join(path.dirname(DATA_FILE || '/tmp/x'), 'pruebas'); fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(path.join(dir, `${token}.md`), texto); } catch (e) { console.error('Informe:', e.message); }
+        await avisarNtfy(`${resumen}\nInforme: ${BASE_URL()}/informe/${token}`, 'PuertoBox: prueba completa terminada', 'default', fetch);
+      }).catch(async (e) => { console.error('Prueba completa:', e); await avisarNtfy(`La prueba completa falló: ${String(e.message).slice(0, 200)}`, 'PuertoBox: prueba completa con error', 'default', fetch); })
+        .finally(() => { pruebaEnCurso = false; });
+      return res.end(pag('Arrancó la prueba. Tarda unos 10 minutos: te llega un aviso con el informe.'));
+    }
+    if (req.method === 'GET' && url.pathname.startsWith('/informe/')) {
+      const token = url.pathname.slice(9).replace(/[^0-9a-f]/g, '');
+      let txt = informes.get(token);
+      if (!txt && token.length === 32) { try { txt = fs.readFileSync(path.join(path.dirname(DATA_FILE || '/tmp/x'), 'pruebas', `${token}.md`), 'utf8'); } catch { /* no está */ } }
+      if (!txt) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Informe no encontrado.'); }
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
+      return res.end(txt);
     }
     // Gustavo le contesta a un cliente desde la página de charlas: sale por el 6773 (API) y el bot se calla en ese chat (15/11).
     if (req.method === 'POST' && url.pathname === '/responder') {

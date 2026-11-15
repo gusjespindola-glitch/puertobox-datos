@@ -314,3 +314,17 @@ test('charlas: Gustavo le contesta al cliente desde la página (sale por el 6773
     assert.strictEqual(enviados.length, 1);
   } finally { globalThis.fetch = fetchReal; s.close(); delete process.env.YCLOUD_API_KEY; }
 });
+
+test('prueba completa: solo con firma, e informe inexistente da 404', async () => {
+  process.env.ADMIN_KEY = 'clave-secreta'; process.env.OWNER_NUMBER = OWNER; process.env.DATA_FILE = require('path').join(require('os').tmpdir(), `pb-pc-${process.pid}.json`);
+  delete require.cache[require.resolve('../bot/server')];
+  const srv = require('../bot/server');
+  const s = srv.servidor().listen(0); await new Promise((r) => s.once('listening', r));
+  const base = `http://127.0.0.1:${s.address().port}`;
+  try {
+    assert.strictEqual((await fetch(`${base}/prueba-completa?t=mal`, { method: 'POST' })).status, 401);
+    assert.strictEqual((await fetch(`${base}/informe/${'0'.repeat(32)}`)).status, 404);
+    const pag = await (await fetch(`${base}/pendientes?t=${srv.firma('pendientes')}`)).text();
+    assert.match(pag, /Correr prueba completa/);
+  } finally { s.close(); }
+});
