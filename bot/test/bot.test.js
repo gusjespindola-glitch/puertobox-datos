@@ -31,7 +31,7 @@ test('cotiza con el modelo flete directo y responde al cliente', async () => {
   let r;
   const { fetchImpl, llamadas } = mock([
     tool('buscar_posicion', { producto: 'remeras' }),
-    tool('cotizar', { kg: 10, largo_cm: 50, ancho_cm: 40, alto_cm: 30, valor_factura_usd: 500, die: 16, regimen: 'comercial' }),
+    tool('cotizar', { kg: 10, largo_cm: 50, ancho_cm: 40, alto_cm: 30, valor_factura_usd: 500, die: 16, regimen: 'comercial' , cantidad_cajas: 1 }),
     (body) => { r = JSON.parse(body.messages.at(-1).content[0].content); return txt(`Flete USD ${r.flete_puertobox_usd}`); },
   ]);
   const out = await procesar(msg('5491111111111', 'Quiero traer remeras, 10 kg, factura USD 500'), { fetchImpl, store, debounceMs: 0 });
@@ -46,7 +46,7 @@ test('cotiza con el modelo flete directo y responde al cliente', async () => {
 test('régimen personal con franquicia: sin derechos hasta USD 400', async () => {
   const store = crearStore(null);
   let r;
-  const { fetchImpl } = mock([tool('cotizar', { kg: 1, valor_factura_usd: 100, die: 20, regimen: 'personal' }), (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('ok'); }]);
+  const { fetchImpl } = mock([tool('cotizar', { kg: 1, valor_factura_usd: 100, die: 20, regimen: 'personal' , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }), (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('ok'); }]);
   await procesar(msg('5492', 'auriculares'), { fetchImpl, store, debounceMs: 0 });
   assert.strictEqual(r.flete_puertobox_usd, 45); // 1 kg -> USD 45 total
   assert.strictEqual(r.detalle_impuestos.derechos_y_tasa, 0);
@@ -270,7 +270,7 @@ test('cotizar: si unidades y peso no cierran, no cotiza y pide las unidades nuev
   const store = crearStore(null);
   let r;
   const { fetchImpl } = mock([
-    tool('cotizar', { kg: 23, valor_factura_usd: 200, die: 20, regimen: 'comercial', unidades: 10, kg_por_unidad: 0.9 }),
+    tool('cotizar', { kg: 23, valor_factura_usd: 200, die: 20, regimen: 'comercial', unidades: 10, kg_por_unidad: 0.9 , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }),
     (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('¿Cuántas unidades serían con esos 23 kg?'); },
   ]);
   await procesar(msg('5493', 'serian 23 kg'), { fetchImpl, store, debounceMs: 0 });
@@ -282,7 +282,7 @@ test('cotizar: devuelve el kilo con la gestión incluida (para comparar con la p
   const store = crearStore(null);
   let r;
   const { fetchImpl } = mock([
-    tool('cotizar', { kg: 23, valor_factura_usd: 500, die: 20, regimen: 'comercial', unidades: 25, kg_por_unidad: 0.9 }),
+    tool('cotizar', { kg: 23, valor_factura_usd: 500, die: 20, regimen: 'comercial', unidades: 25, kg_por_unidad: 0.9 , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }),
     (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('ok'); },
   ]);
   await procesar(msg('5494', 'cotizame'), { fetchImpl, store, debounceMs: 0 });
@@ -337,24 +337,23 @@ test('decisiones de Gustavo 15/11: régimen por unidades, CUIT, litio y 50 kg po
   assert.doesNotMatch(faq, /figur/);
 });
 
-test('cotizar sin cantidad de cajas: no cobra recargo por caja pesada ni pide dividir (auditoría de charlas 15/11)', async () => {
+test('cotizar sin cantidad de cajas: no da ningún número, pide las cajas (Gustavo 15/11 17:59)', async () => {
   const { ejecutar } = require('../tools');
   for (const kg of [30, 90]) {
-    const r = await ejecutar('cotizar', { kg, valor_factura_usd: 220, die: 16, regimen: 'comercial' }, { store: crearStore(null), telefono: 'x', derivaciones: [] });
-    assert.ok(!r.recargo_cajas_usd, `${kg} kg: no debería cobrar recargo`);
-    assert.ok(!/más de 50 kg|dividir/.test(r.aviso || ''), `${kg} kg: no debería pedir dividir`);
-    assert.strictEqual(r.flete_firme, false);
+    const r = await ejecutar('cotizar', { kg, valor_factura_usd: 220, die: 16, regimen: 'comercial', largo_cm: 50, ancho_cm: 40, alto_cm: 40 }, { store: crearStore(null), telefono: 'x', derivaciones: [] });
+    assert.match(r.error, /cajas/);
+    assert.strictEqual(r.total_puertobox_usd, undefined);
   }
-  const conCajas = await ejecutar('cotizar', { kg: 30, cantidad_cajas: 1, valor_factura_usd: 220, die: 16, regimen: 'comercial' }, { store: crearStore(null), telefono: 'x', derivaciones: [] });
+  const conCajas = await ejecutar('cotizar', { kg: 30, cantidad_cajas: 1, valor_factura_usd: 220, die: 16, regimen: 'comercial' , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, { store: crearStore(null), telefono: 'x', derivaciones: [] });
   assert.ok(conCajas.recargo_cajas_usd > 0);
 });
 
 test('pedido de más de USD 3.000: se divide en envíos de hasta USD 3.000 y cada uno se cotiza (Gustavo 15/11)', async () => {
   const { ejecutar } = require('../tools');
   const ctx = () => ({ store: crearStore(null), telefono: 'x', derivaciones: [] });
-  const todo = await ejecutar('cotizar', { kg: 307, cantidad_cajas: 27, valor_factura_usd: 4160, die: 12.6, regimen: 'comercial' }, ctx());
+  const todo = await ejecutar('cotizar', { kg: 307, cantidad_cajas: 27, valor_factura_usd: 4160, die: 12.6, regimen: 'comercial' , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx());
   assert.match(todo.aviso, /dividilo en 2 envíos de hasta USD 3000/);
-  const uno = await ejecutar('cotizar', { kg: 153.5, cantidad_cajas: 13, valor_factura_usd: 2080, die: 12.6, regimen: 'comercial' }, ctx());
+  const uno = await ejecutar('cotizar', { kg: 153.5, cantidad_cajas: 13, valor_factura_usd: 2080, die: 12.6, regimen: 'comercial' , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx());
   assert.ok(uno.total_puertobox_usd > 0 && !uno.aviso?.includes('tope'));
   const p = require('fs').readFileSync(require('path').join(__dirname, '..', 'prompt.md'), 'utf8');
   assert.match(p, /Se dividen en varios envíos comerciales/);

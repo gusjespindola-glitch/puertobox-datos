@@ -10,7 +10,7 @@ test('presupuesto formal: se arma solo al confirmar, con número correlativo, y 
   const store = crearStore(null);
   const ctx = { store, telefono: '5491100000000', derivaciones: [] };
   store.guardarLead(ctx.telefono, { nombre: 'Juan', producto: 'remeras de algodón' });
-  await ejecutar('cotizar', { kg: 10, largo_cm: 50, ancho_cm: 40, alto_cm: 30, valor_factura_usd: 500, die: 16, regimen: 'comercial', unidades: 50 }, ctx);
+  await ejecutar('cotizar', { kg: 10, largo_cm: 50, ancho_cm: 40, alto_cm: 30, valor_factura_usd: 500, die: 16, regimen: 'comercial', unidades: 50 , cantidad_cajas: 1 }, ctx);
   assert.ok(store.lead(ctx.telefono).cotizacion.r.total_puertobox_usd > 0);
   // Una duda no genera presupuesto
   await ejecutar('derivar_a_gustavo', { motivo: 'duda', resumen: 'x' }, ctx);

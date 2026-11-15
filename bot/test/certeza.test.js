@@ -13,7 +13,7 @@ function preparar() {
   const ctx = { store, telefono: tel, derivaciones: [] };
   const fija = { posicion: '8504.40.90.900R', die: 0, confianza: 'media', producto: 'arrancador de batería para auto 12V con litio', nombre_tecnico: 'convertidor' };
   store.guardarLead(tel, { producto: fija.producto, posicion_fija: fija });
-  ejecutar('cotizar', { kg: 10, valor_factura_usd: 500, cantidad_cajas: 1, regimen: 'comercial', unidades: 10 }, ctx);
+  ejecutar('cotizar', { kg: 10, valor_factura_usd: 500, cantidad_cajas: 1, regimen: 'comercial', unidades: 10 , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
   return { store, tel, ctx };
 }
 
@@ -68,12 +68,12 @@ test('posición mal escrita: avisa y no toca el presupuesto', () => {
 test('cotizar: con el precio de venta muestra la ganancia por unidad en pesos', () => {
   const store = crearStore(null);
   const ctx = { store, telefono: '5491100000003', derivaciones: [] };
-  const r = ejecutar('cotizar', { kg: 12, valor_factura_usd: 500, die: 20, regimen: 'comercial', unidades: 100, cantidad_cajas: 1, precio_venta_unidad: 25000, moneda_venta: 'ARS' }, ctx);
+  const r = ejecutar('cotizar', { kg: 12, valor_factura_usd: 500, die: 20, regimen: 'comercial', unidades: 100, cantidad_cajas: 1, precio_venta_unidad: 25000, moneda_venta: 'ARS' , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
   const dolar = require('../../src/negocio').datos().dolar_referencia_ars;
   assert.ok(dolar > 0);
   assert.strictEqual(r.ganancia_por_unidad_usd, Math.round((25000 / dolar - r.costo_por_unidad_usd) * 100) / 100);
   assert.ok(r.ganancia_por_unidad_ars > 0);
   assert.match(r.aviso, /Ganancia/);
-  const sin = ejecutar('cotizar', { kg: 12, valor_factura_usd: 500, die: 20, regimen: 'comercial', unidades: 100, precio_venta_unidad: 1, moneda_venta: 'ARS' }, ctx);
+  const sin = ejecutar('cotizar', { kg: 12, valor_factura_usd: 500, die: 20, regimen: 'comercial', unidades: 100, precio_venta_unidad: 1, moneda_venta: 'ARS' , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
   assert.match(sin.aviso, /no le queda ganancia/);
 });
