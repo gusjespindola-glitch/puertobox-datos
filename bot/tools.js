@@ -102,7 +102,7 @@ function ejecutar(nombre, input, ctx) {
     case 'cotizar': {
       // Controles antes de dar un precio: datos imposibles o pedidos que no se cotizan por acá.
       if (!(input.kg > 0) || !(input.valor_factura_usd > 0)) return { error: 'Faltan el peso o el valor (tienen que ser mayores a 0). Preguntáselos al cliente; no cotices.' };
-      if (input.valor_factura_usd > NEG.tope_por_envio_usd) return { aviso: `Supera el tope de USD ${NEG.tope_por_envio_usd} por envío: no cotices. Seguí las reglas de pedidos grandes (juntá datos y derivá a Gustavo).` };
+      if (input.valor_factura_usd > NEG.tope_por_envio_usd) return { aviso: `Supera el tope de USD ${NEG.tope_por_envio_usd} por envío: dividilo en ${Math.ceil(input.valor_factura_usd / NEG.tope_por_envio_usd)} envíos de hasta USD ${NEG.tope_por_envio_usd} (repartí el valor, los kilos y las cajas enteras lo más parejo posible) y llamá cotizar una vez por cada envío. Mostrá cada envío y el total.` };
       // Unidades y peso tienen que cerrar (15/11: 10 arrancadores de 0,9 kg cotizados como 23 kg → el costo por unidad salió inflado).
       if (input.unidades > 0 && input.kg_por_unidad > 0) {
         const esperado = input.unidades * input.kg_por_unidad;

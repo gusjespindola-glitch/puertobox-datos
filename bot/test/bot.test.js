@@ -348,3 +348,15 @@ test('cotizar sin cantidad de cajas: no cobra recargo por caja pesada ni pide di
   const conCajas = await ejecutar('cotizar', { kg: 30, cantidad_cajas: 1, valor_factura_usd: 220, die: 16, regimen: 'comercial' }, { store: crearStore(null), telefono: 'x', derivaciones: [] });
   assert.ok(conCajas.recargo_cajas_usd > 0);
 });
+
+test('pedido de más de USD 3.000: se divide en envíos de hasta USD 3.000 y cada uno se cotiza (Gustavo 15/11)', async () => {
+  const { ejecutar } = require('../tools');
+  const ctx = () => ({ store: crearStore(null), telefono: 'x', derivaciones: [] });
+  const todo = await ejecutar('cotizar', { kg: 307, cantidad_cajas: 27, valor_factura_usd: 4160, die: 12.6, regimen: 'comercial' }, ctx());
+  assert.match(todo.aviso, /dividilo en 2 envíos de hasta USD 3000/);
+  const uno = await ejecutar('cotizar', { kg: 153.5, cantidad_cajas: 13, valor_factura_usd: 2080, die: 12.6, regimen: 'comercial' }, ctx());
+  assert.ok(uno.total_puertobox_usd > 0 && !uno.aviso?.includes('tope'));
+  const p = require('fs').readFileSync(require('path').join(__dirname, '..', 'prompt.md'), 'utf8');
+  assert.match(p, /Se dividen en varios envíos comerciales/);
+  assert.match(p, /cotizá igual, normal, sin advertencias/);
+});
