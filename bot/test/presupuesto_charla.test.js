@@ -84,7 +84,7 @@ test('si la IA falla o no encuentra nada, el respaldo saca unidades, peso con ca
   assert.strictEqual(d.input.unid, 10);
   assert.strictEqual(d.input.kg, 9);
   assert.strictEqual(d.input.litio, true);
-  assert.match(d.notas, /No pude leer bien la charla/);
+  assert.match(d.notas, /No pude/);
   // Con IA que no encuentra nada tampoco queda vacío, y no se guarda vacío
   const store2 = crearStore(null);
   store2.agregar(tel, 'user', 'quiero traer 5 unidades de 2 kg');
@@ -136,5 +136,24 @@ test('control: si lo cargado no cierra con la charla, avisa en rojo', async () =
   await ejecutar('anotar_pedido', { unidades: 100, kg_total: 30, valor_usd: 220, largo_cm: 40, ancho_cm: 30, alto_cm: 30 }, ctx);
   const d = await datosDeCharla(tel, { store, fetchImpl: async () => { throw new Error('no'); } });
   assert.ok(d.alertas.some((a) => /300 unidades/.test(a)));
+  assert.strictEqual(d.input.litio, true); // lo dijo en la charla: se tilda solo
+});
+
+test('control cruzado: siempre relee la charla y marca 🚩 si no coincide con lo que anotó el bot (15/11)', async () => {
+  const { ejecutar } = require('../tools');
+  const store = crearStore(null);
+  const tel = '5492983385144';
+  const ctx = { store, telefono: tel, derivaciones: [] };
+  store.agregar(tel, 'user', 'son 300 unidades, 90 kilos, pago 660 dolares, tiene bateria');
+  await ejecutar('anotar_pedido', { unidades: 100, kg_total: 90, valor_usd: 660 }, ctx); // el bot se equivocó en las unidades
+  let lecturas = 0;
+  const ia = async (u, o) => { lecturas++; return iaResponde({ unidades: 300, kg_total: 90, valor_usd: 660, litio: true })(u, o); };
+  const d = await datosDeCharla(tel, { store, fetchImpl: ia });
+  assert.strictEqual(d.input.unid, 100); // no corrige solo: avisa
+  assert.ok(d.alertas.some((a) => /300 unidades y el bot anotó 100/.test(a)), d.alertas.join(' | '));
   assert.ok(d.alertas.some((a) => /litio/.test(a)));
+  assert.ok(!d.alertas.some((a) => /kg|USD/.test(a)));
+  // Mientras la charla no cambie, no vuelve a gastar en releerla
+  await datosDeCharla(tel, { store, fetchImpl: ia });
+  assert.strictEqual(lecturas, 1);
 });
