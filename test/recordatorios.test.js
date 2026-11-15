@@ -359,5 +359,10 @@ test('cotizador a mano del nomenclador: con clave, mismo resultado que el bot, p
     assert.ok(!r.avisos.some((a) => /Decíselo/.test(a)));
     const html = await (await fetch(`${base}/nomenclador/?key=clave-secreta`)).text();
     assert.match(html, /Cotizador PuertoBox/);
+    // Presupuesto tipo comprobante: no válido como factura, total a PuertoBox separado de los impuestos, sin "si pesa menos paga menos".
+    assert.match(html, /Documento no válido como factura/);
+    assert.match(html, /TOTAL A ABONAR A PUERTOBOX/);
+    assert.match(html, /no los cobra PuertoBox/);
+    assert.doesNotMatch(html, /más liviana|pesa menos/);
   } finally { s.close(); }
 });
