@@ -64,3 +64,18 @@ test('/charlas muestra la foto y el link al archivo', () => {
   assert.match(h, /<img src="\/media\/0123456789abcdef0123456789abcdef\.jpg"/);
   assert.match(h, /📎 Abrir el archivo \(PDF\)/);
 });
+
+test('audio: se guarda el original para que Gustavo lo escuche, y en /charlas aparece el reproductor', async () => {
+  const { guardarAudio } = require('../adjuntos');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'media-'));
+  const marca = await guardarAudio({ link: 'https://api.ycloud.com/v2/media/a', mime_type: 'audio/ogg; codecs=opus' }, { fetchImpl: mockFetch(''), dir, apiKey: 'K' });
+  assert.match(marca, /\[archivo:\/media\/[0-9a-f]{32}\.ogg\]/);
+  const { crearStore } = require('../store');
+  const { paginaCharlas } = require('../recordatorios');
+  const store = crearStore(null);
+  store.agregar('5492', 'user', `[Audio del cliente, pasado a texto automáticamente]${marca} quiero traer zapatillas`);
+  store.agregar('5492', 'user', '[El cliente mandó un archivo (x.pdf) que no se pudo leer automáticamente. [no se pudo bajar el archivo: pedíselo de nuevo]]');
+  const h = paginaCharlas(store, 'x', Date.now(), 3, () => '/r', '5492');
+  assert.match(h, /<audio controls/);
+  assert.match(h, /No se pudo bajar el archivo: pedíselo de nuevo/);
+});

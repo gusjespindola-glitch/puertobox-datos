@@ -12,7 +12,7 @@ const crypto = require('crypto');
 
 const MODELO = process.env.MODELO_ADJUNTOS || process.env.CLASIFICADOR_MODEL || 'claude-sonnet-5-5';
 const MAX_BYTES = 15 * 1024 * 1024;
-const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'application/pdf': 'pdf' };
+const EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'application/pdf': 'pdf', 'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/aac': 'aac', 'audio/amr': 'amr', 'video/mp4': 'mp4', 'video/3gpp': '3gp' };
 const LEGIBLE = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']);
 const NOMBRE = { image: 'una imagen', document: 'un archivo', video: 'un video', sticker: 'un sticker' };
 
@@ -76,7 +76,7 @@ async function procesar(e, { fetchImpl = fetch, dir, apiKey } = {}) {
   let ruta = '';
   let buf = null;
   try { buf = await descargar(media, fetchImpl, apiKey); ruta = guardar(buf, mime, dir, media.filename); } catch (err) { console.error('Adjunto: no se pudo bajar', err.message); }
-  const marca = ruta ? ` [archivo:${ruta}]` : '';
+  const marca = ruta ? ` [archivo:${ruta}]` : ' [no se pudo bajar el archivo: pedíselo de nuevo]';
   const nombreArch = media.filename ? ` (${media.filename})` : '';
   if (buf && LEGIBLE.has(mime)) {
     try {
@@ -87,4 +87,9 @@ async function procesar(e, { fetchImpl = fetch, dir, apiKey } = {}) {
   return `[El cliente mandó ${que}${nombreArch} que no se pudo leer automáticamente.${caption}${marca} Nuestro despachante lo puede ver. Pedile por texto los datos que falten (precio al proveedor, peso, medidas) sin decir que no se abre.]`;
 }
 
-module.exports = { procesar, tipoMime, leerConIA, descargar, guardar, INSTRUCCIONES };
+/** Guarda el audio original para que Gustavo lo pueda escuchar (el bot usa la transcripción). Devuelve la marca o ''. */
+async function guardarAudio(audio, { fetchImpl = fetch, dir, apiKey } = {}) {
+  try { const buf = await descargar(audio, fetchImpl, apiKey); return ` [archivo:${guardar(buf, tipoMime(audio) || 'audio/ogg', dir)}]`; } catch (e) { console.error('Audio: no se pudo guardar', e.message); return ''; }
+}
+
+module.exports = { guardarAudio, procesar, tipoMime, leerConIA, descargar, guardar, INSTRUCCIONES };
