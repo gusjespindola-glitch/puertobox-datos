@@ -47,6 +47,7 @@ const definiciones = [
         regimen: { type: 'string', enum: ['personal', 'comercial'], description: 'Por cantidad, nunca por el uso: personal = pequeño envío, hasta 3 unidades iguales; comercial = más de 3 unidades iguales (o si no se sabe).' },
         sin_franquicia: { type: 'boolean', description: 'true si el cliente de uso propio ya usó sus envíos con beneficio del año' },
         unidades: { type: 'number', description: 'Cantidad TOTAL de unidades que trae (por ejemplo 100 remeras). Para revender, siempre que se sepa: con esto se calcula cuánto le queda cada unidad puesta en su casa. Si el cliente cambió el peso o el pedido, tiene que ser la cantidad NUEVA (preguntala), nunca la vieja.' },
+        con_cuit_puertobox: { type: 'boolean', description: 'true si el cliente no tiene CUIT y lo traemos con el CUIT de PuertoBox: gestión más alta, envío en Argentina aparte e impuestos que se le pagan a PuertoBox.' },
         con_bateria_litio: { type: 'boolean', description: 'true si el producto trae batería de litio incorporada (carga peligrosa: la aerolínea cobra un recargo sobre el flete).' },
         kg_por_unidad: { type: 'number', description: 'Peso de UNA unidad (con su caja) si el cliente lo dijo. Sirve para controlar que unidades y peso total cierren.' },
         largo_cm: { type: 'number' }, ancho_cm: { type: 'number' }, alto_cm: { type: 'number' },
@@ -139,7 +140,10 @@ function ejecutar(nombre, input, ctx) {
       const lit = require('../data/forwarder.json').recargos?.bateria_litio;
       const recargoLitio = input.con_bateria_litio && lit ? Math.ceil(r.flete_puertobox_usd * (lit.valor - 1)) : 0;
       if (recargoLitio) avisos.push(`Trae batería de litio: carga peligrosa, la aerolínea cobra un recargo de ${Math.round((lit.valor - 1) * 100)}% sobre el flete, ya sumado (recargo_litio_usd). Mostralo en una línea aparte y pedí la hoja de seguridad (MSDS) y el informe UN38.3 de la batería.`);
-      const totalPB = r.flete_puertobox_usd + r.handling_puertobox_usd + recargoCajas + recargoLitio;
+      // Con el CUIT de PuertoBox (Gustavo 15/11): gestión más alta; llega a PuertoBox y se reenvía (envío en Argentina aparte).
+      const handling = input.con_cuit_puertobox ? NEG.gestion_cuit_puertobox_usd : r.handling_puertobox_usd;
+      if (input.con_cuit_puertobox) avisos.push(`Va con el CUIT de PuertoBox: la gestión es USD ${handling} (no ${r.handling_puertobox_usd}), porque llega a nuestro domicilio y se lo reenviamos. Aclarale en una línea que el envío dentro de Argentina se cobra aparte, a lo que cueste, y que los impuestos estimados nos los paga a nosotros antes de que le despachemos la caja (no a la empresa de transporte).`);
+      const totalPB = r.flete_puertobox_usd + handling + recargoCajas + recargoLitio;
       // Costo por unidad puesta en la casa del cliente: producto + flete + gestión + impuestos estimados, dividido las unidades.
       const unidades = Math.round(input.unidades || 0);
       const porUnidad = unidades > 0 ? {
@@ -153,7 +157,7 @@ function ejecutar(nombre, input, ctx) {
         ...porUnidad,
         ...(avisos.length ? { aviso: avisos.join(' ') } : {}),
         flete_puertobox_usd: r.flete_puertobox_usd,
-        handling_puertobox_usd: r.handling_puertobox_usd,
+        handling_puertobox_usd: handling,
         kg_presupuestado: r.kg_presupuestado,
         impuestos_y_gastos_estimados_usd: r.impuestos_estimados_usd.total,
         detalle_impuestos: r.impuestos_estimados_usd,

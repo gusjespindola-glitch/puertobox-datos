@@ -133,3 +133,13 @@ test('recargos que cobra la aerolínea: cajas de más de 23 kg y batería de lit
   const lit = ejecutar('cotizar', { kg: 23, valor_factura_usd: 500, die: 18, regimen: 'comercial', con_bateria_litio: true }, ctx());
   assert.strictEqual(lit.recargo_litio_usd, Math.ceil(lit.flete_puertobox_usd * 0.3));
 });
+
+test('con el CUIT de PuertoBox: gestión USD 50 y aviso de envío en Argentina e impuestos (Gustavo 15/11)', () => {
+  const r = ejecutar('cotizar', { kg: 10, valor_factura_usd: 300, die: 20, regimen: 'comercial', con_cuit_puertobox: true }, { telefono: 'c', store: crearStore(null), derivaciones: [] });
+  assert.strictEqual(r.handling_puertobox_usd, 50);
+  assert.strictEqual(r.total_puertobox_usd, r.flete_puertobox_usd + 50);
+  assert.match(r.aviso, /envío dentro de Argentina se cobra aparte/);
+  const normal = ejecutar('cotizar', { kg: 10, valor_factura_usd: 300, die: 20, regimen: 'comercial' }, { telefono: 'd', store: crearStore(null), derivaciones: [] });
+  assert.strictEqual(normal.handling_puertobox_usd, 20);
+  assert.match(require('../../src/negocio').datos().faq_texto, /CUIT de PuertoBox: la gestión es USD 50/);
+});

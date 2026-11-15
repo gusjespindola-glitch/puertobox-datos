@@ -213,6 +213,8 @@
   "cobro": "Flete por kilo cobrable del proveedor (sin margen) + gestión USD 20. Precio cerrado: se respeta aunque la caja llegue hasta 15% más pesada o grande; si supera eso, se ajusta con foto de la balanza. 100% al ingresar la caja al depósito de China.",
   "decision": "13/11/2026: opción C (sin 15%, handling USD 20), elegida por Gustavo.",
   "flete_declarado_usd_kg": 2.5,
-  "flete_declarado_fuente": "Flete que figura en la factura del courier y usa Aduana para el CIF (no es nuestro flete de venta). Facturas reales: FedEx 2025 USD 146,75 / 58,7 kg = 2,50; UPS 05/01/2026 USD 21 / 8,5 kg = 2,47 (data/facturas_reales.json)."
+  "flete_declarado_fuente": "Flete que figura en la factura del courier y usa Aduana para el CIF (no es nuestro flete de venta). Facturas reales: FedEx 2025 USD 146,75 / 58,7 kg = 2,50; UPS 05/01/2026 USD 21 / 8,5 kg = 2,47 (data/facturas_reales.json).",
+  "handling_cuit_puertobox_usd": 50,
+  "_handling_cuit_puertobox_usd": "Gustavo 15/11: si el cliente no tiene CUIT y se trae con el de PuertoBox, la gestión es USD 50 (llega a domicilio de PuertoBox y hay que reenviarla). Envío dentro de Argentina aparte, a costo. Los impuestos los paga PuertoBox a la empresa de transporte: el cliente se los paga a PuertoBox antes del despacho."
  }
 }

@@ -29,6 +29,7 @@ function datos() {
   const d = {
     ...n,
     gestion_usd: gestion,
+    gestion_cuit_puertobox_usd: fd.handling_cuit_puertobox_usd || gestion,
     envio_minimo_usd: precioKg(1) + gestion,
     usd_kg_desde: ultimo.usd_kg,
     kg_desde: ultimo.desde_kg,
