@@ -37,6 +37,8 @@ function crearStore(archivo) {
       return false;
     },
     historial: (tel) => chat(tel).mensajes,
+    /** Marca el último mensaje nuestro de la charla como no entregado por WhatsApp (15/11). */
+    marcarNoEntregado(tel) { const m = [...chat(tel).mensajes].reverse().find((x) => x.role === 'assistant'); if (m) { m.noEntregado = true; guardar(); } },
     agregar(tel, role, content) {
       const c = chat(tel);
       if (role === 'user' && c.ultimo && Date.now() - c.ultimo > RESET_HORAS * 3600e3) {

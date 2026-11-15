@@ -269,8 +269,8 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder
     const l = (store.lead ? store.lead(c.telefono) : null) || {};
     const msgs = c.mensajes.map((m) => {
       const txt = textoMensaje(m.content).trim();
-      if (m.role !== 'user' && txt.startsWith('[Gustavo] ')) return { quien: 'vos', txt: txt.slice(10) };
-      return { quien: m.role === 'user' ? 'cliente' : 'bot', txt };
+      if (m.role !== 'user' && txt.startsWith('[Gustavo] ')) return { quien: 'vos', txt: txt.slice(10), noEntregado: !!m.noEntregado };
+      return { quien: m.role === 'user' ? 'cliente' : 'bot', txt, noEntregado: !!m.noEntregado };
     }).filter((m) => m.txt);
     // Responder desde el 6773 (15/11: Gustavo no tiene WhatsApp en ese número y el Inbox de YCloud no muestra los chats del bot).
     const quedanH = 24 - (ahora - (c.ultimoClienteEn || 0)) / 3600e3;
@@ -280,7 +280,7 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder
     const ultimoCliente = [...msgs].reverse().find((m) => m.quien === 'cliente');
     const cabecera = [c.origen === 'anuncio' ? '📣 Del anuncio' : c.origen === '698' ? '📲 Del 698' : '', l.estado ? ESTADO[l.estado] || l.estado : 'Sin datos todavía', hace(ahora - c.ultimo)].filter(Boolean).join(' · ');
     return `<li id="c-${esc(c.telefono)}"><details${abierto === c.telefono ? ' open' : ''}><summary><b>+${esc(c.telefono)}${l.nombre ? ' · ' + esc(l.nombre) : ''}</b>${l.producto ? '<br>' + esc(l.producto) : ''}<br><small>${esc(cabecera)}</small>${ultimoCliente ? `<p>“${esc(resumenVista(ultimoCliente.txt))}”</p>` : ''}<span class="ver">Ver charla ▾</span></summary>
-<div class="chat">${msgs.map((m) => `<div class="m ${m.quien}">${m.quien === 'vos' ? '<b>Vos:</b> ' : ''}${conArchivos(esc(m.txt)).replace(/\n/g, '<br>')}</div>`).join('')}</div>${caja}${presu(c, l)}</details></li>`;
+<div class="chat">${msgs.map((m) => `<div class="m ${m.quien}">${m.quien === 'vos' ? '<b>Vos:</b> ' : ''}${conArchivos(esc(m.txt)).replace(/\n/g, '<br>')}${m.noEntregado ? '<br><b style="color:#c8102e">⚠️ No se entregó: reenvialo.</b>' : ''}</div>`).join('')}</div>${caja}${presu(c, l)}</details></li>`;
   };
   const delAnuncio = chats.filter((c) => c.origen === 'anuncio').length;
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Charlas PuertoBox</title>

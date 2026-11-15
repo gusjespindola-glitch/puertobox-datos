@@ -65,8 +65,10 @@ async function enviarDocumento(to, link, filename, caption, fetchImpl = fetch) {
 // Auditoría 15/11: si WhatsApp no entrega (sin saldo en YCloud, número bloqueado, ventana vencida), antes solo quedaba en el log.
 // Ahora Gustavo recibe un aviso (como mucho uno cada 3 horas) con el motivo.
 const avisoEnvio = { ultimo: 0 };
-async function falloEnvio(to, status, detalle, fetchImpl) {
+async function falloEnvio(to, status, detalle, fetchImpl, st = store) {
   console.error('Envío fallido', status, detalle);
+  // 15/11: queda marcado en la charla para que Gustavo vea qué no le llegó al cliente (no se reenvía solo).
+  try { if (st && st.marcarNoEntregado) st.marcarNoEntregado(soloDigitos(to)); } catch { /* sin marca */ }
   if (!process.env.NTFY_TOPIC || Date.now() - avisoEnvio.ultimo < 3 * 3600e3) return;
   avisoEnvio.ultimo = Date.now();
   const motivo = /balance|billing|payment|insufficient|saldo/i.test(detalle) ? 'Parece falta de saldo o de medio de pago en YCloud (Billing).' : /24|window|re-engagement|131047/i.test(detalle) ? 'Pasaron más de 24 h desde el último mensaje del cliente.' : `Error ${status}.`;
@@ -81,7 +83,7 @@ async function enviar(to, body, fetchImpl = fetch, opciones = {}) {
       headers: { 'content-type': 'application/json', 'x-api-key': process.env.YCLOUD_API_KEY || YCLOUD_API_KEY },
       body: JSON.stringify({ from: `+${soloDigitos(process.env.BUSINESS_NUMBER || BUSINESS_NUMBER)}`, to: `+${soloDigitos(to)}`, type: 'text', text: { body } }),
     });
-    if (!r.ok) { const t = await r.text(); await falloEnvio(to, r.status, t, fetchImpl); if (opciones.lanzar) throw new Error(`YCloud ${r.status}: ${t.slice(0, 100)}`); }
+    if (!r.ok) { const t = await r.text(); await falloEnvio(to, r.status, t, fetchImpl, opciones.st || store); if (opciones.lanzar) throw new Error(`YCloud ${r.status}: ${t.slice(0, 100)}`); }
     return;
   }
   const r = await fetchImpl(`${GRAPH}/${PHONE_NUMBER_ID}/messages`, {
@@ -89,7 +91,7 @@ async function enviar(to, body, fetchImpl = fetch, opciones = {}) {
     headers: { 'content-type': 'application/json', authorization: `Bearer ${WHATSAPP_TOKEN}` },
     body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body } }),
   });
-  if (!r.ok) { const t = await r.text(); await falloEnvio(to, r.status, t, fetchImpl); if (opciones.lanzar) throw new Error(`WhatsApp ${r.status}: ${t.slice(0, 100)}`); }
+  if (!r.ok) { const t = await r.text(); await falloEnvio(to, r.status, t, fetchImpl, opciones.st || store); if (opciones.lanzar) throw new Error(`WhatsApp ${r.status}: ${t.slice(0, 100)}`); }
 }
 
 /** Convierte el webhook (Meta o YCloud) en una lista de eventos: { tipo: 'mensaje'|'eco', ... }. */
@@ -403,7 +405,7 @@ async function atender(tel, texto, st, fetchImpl, owner, guardado = false) {
     // Contestado (con la IA o con el mensaje de espera): ya no queda pendiente, así un reinicio no lo repite.
     if (st.marcar) st.marcar(tel, { sinResponder: null });
     if (resp && !(st.historial(tel).slice(-1)[0] || {}).content?.startsWith?.(resp.slice(0, 30))) st.agregar(tel, 'assistant', resp);
-    if (resp) { await enviar(tel, resp, fetchImpl); salidas.push({ to: tel, body: resp }); }
+    if (resp) { await enviar(tel, resp, fetchImpl, { st }); salidas.push({ to: tel, body: resp }); }
     for (const d of derivaciones) {
       const esIG = String(d.telefono).startsWith('ig:');
       const aviso = d.motivo === 'confirmar_posicion'
