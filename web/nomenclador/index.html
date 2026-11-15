@@ -86,6 +86,12 @@ details pre{white-space:pre-wrap;font:.8rem/1.5 var(--f-mono);color:var(--ink);b
 button{font:600 .86rem var(--f-body);border:1px solid var(--acc);background:var(--acc);color:#fff;border-radius:8px;padding:8px 14px;cursor:pointer}
 button.ghost{background:transparent;color:var(--acc)}
 .empty{padding:30px 18px;color:var(--mut)}
+.cot{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.cot .chk{flex-direction:row;align-items:center;gap:8px}
+.cot .chk input{width:auto}
+.pesos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.big .v{font-size:1.4rem;color:var(--acc)}
+.warnbox{font-size:.84rem;color:var(--warn);display:flex;flex-direction:column;gap:4px}
 @media (prefers-reduced-motion:no-preference){.res{transition:border-color .12s}}
 </style>
 </head>
@@ -107,6 +113,29 @@ button.ghost{background:transparent;color:var(--acc)}
   </aside>
   <main class="main">
     <section class="panel ficha" id="ficha"><div class="empty">Elegí una posición de la lista.</div></section>
+    <section class="panel cot" id="cot">
+      <h2>Cotizador PuertoBox (presupuesto a mano)</h2>
+      <p class="note">Mismo cálculo que el bot: flete por kilo entero (real o volumétrico, el mayor), gestión, recargos e impuestos estimados. La posición y el DIE se toman de la ficha de arriba.</p>
+      <div class="form">
+        <div><label for="c_valor">Valor al proveedor (USD)</label><input id="c_valor" type="number" min="0" step="0.01" value="300"></div>
+        <div><label for="c_kg">Peso real total (kg)</label><input id="c_kg" type="number" min="0" step="0.1" value="10"></div>
+        <div><label for="c_cajas">Cantidad de cajas</label><input id="c_cajas" type="number" min="1" step="1" value="1"></div>
+        <div><label for="c_largo">Largo de una caja (cm)</label><input id="c_largo" type="number" min="0" step="1" placeholder="ej. 50"></div>
+        <div><label for="c_ancho">Ancho (cm)</label><input id="c_ancho" type="number" min="0" step="1" placeholder="ej. 40"></div>
+        <div><label for="c_alto">Alto (cm)</label><input id="c_alto" type="number" min="0" step="1" placeholder="ej. 30"></div>
+        <div><label for="c_unid">Unidades (opcional)</label><input id="c_unid" type="number" min="0" step="1" placeholder="para costo por unidad"></div>
+        <div><label for="c_reg">Envío</label><select id="c_reg"><option value="comercial">Comercial (más de 3 iguales)</option><option value="personal">Pequeño envío (hasta 3 iguales)</option></select></div>
+        <div><label for="c_die">DIE %</label><input id="c_die" type="number" min="0" step="0.1" value="20"></div>
+        <div><label for="c_ii">Internos %</label><input id="c_ii" type="number" min="0" step="0.1" value="0"></div>
+        <div class="chk"><input id="c_litio" type="checkbox"><label for="c_litio">Trae batería de litio</label></div>
+        <div class="chk"><input id="c_cuit" type="checkbox"><label for="c_cuit">Con CUIT de PuertoBox</label></div>
+        <div class="chk"><input id="c_sinfr" type="checkbox"><label for="c_sinfr">Sin franquicia (ya usó sus envíos)</label></div>
+      </div>
+      <div class="pesos" id="c_pesos"></div>
+      <div class="tbl"><table id="c_tabla"></table></div>
+      <div class="warnbox" id="c_avisos"></div>
+      <div class="row"><button id="c_copy" type="button">Copiar presupuesto para WhatsApp</button><span class="note" id="c_copied"></span></div>
+    </section>
     <section class="panel calc" id="calc">
       <h2>Liquidación estimada</h2>
       <div class="form">
@@ -194,7 +223,8 @@ function abrir(c) {
     </div>
     <details><summary>Notas de sección y capítulo ${f.posicion.slice(0, 2)}</summary><pre>${esc(f.notas || 'Sin notas en el archivo de ARCA.')}</pre></details>`;
   $('die').value = f.die; $('ii').value = +(f.impuestos_internos * 100).toFixed(2);
-  liquidar();
+  $('c_die').value = f.die; $('c_ii').value = +(f.impuestos_internos * 100).toFixed(2);
+  liquidar(); cotizar();
   const h = (store('pb-hist') || []).filter((x) => x !== sel); h.unshift(sel); store('pb-hist', h.slice(0, 8)); verHist();
 }
 
@@ -218,6 +248,48 @@ function liquidar() {
   liquidar.ultimo = { r, reg, filas };
 }
 
+// ---- Cotizador a mano (mismo motor que el bot, en el servidor) ----
+const kgs = (n) => Number(n).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' kg';
+async function cotizar() {
+  const p = new URLSearchParams({ valor: $('c_valor').value, kg: $('c_kg').value, cajas: $('c_cajas').value || 1, largo: $('c_largo').value, ancho: $('c_ancho').value, alto: $('c_alto').value,
+    unidades: $('c_unid').value, regimen: $('c_reg').value, die: $('c_die').value || 0, internos: $('c_ii').value || 0,
+    litio: $('c_litio').checked ? 1 : 0, cuit_pb: $('c_cuit').checked ? 1 : 0, sin_franquicia: $('c_sinfr').checked ? 1 : 0 });
+  const pedido = (cotizar.n = (cotizar.n || 0) + 1);
+  let r;
+  try { r = await fetch('api/cotizar?' + p).then((x) => x.json()); } catch (e) { $('c_avisos').innerHTML = '<div>No se pudo calcular (sin conexión).</div>'; return; }
+  if (pedido !== cotizar.n) return; // llegó una respuesta vieja
+  if (r.error) { $('c_pesos').innerHTML = ''; $('c_tabla').innerHTML = ''; $('c_avisos').innerHTML = `<div>${esc(r.error)}</div>`; cotizar.ultimo = null; return; }
+  const k = (l, v, hi) => `<div class="k${hi ? ' hi big' : ''}"><div class="l">${l}</div><div class="v">${v}</div></div>`;
+  $('c_pesos').innerHTML = k('Peso real', kgs(r.peso_real_kg)) + k('Peso volumétrico', r.peso_volumetrico_kg == null ? 'sin medidas' : kgs(r.peso_volumetrico_kg) + `<div class="l">L×A×H ÷ ${r.divisor_volumetrico} × cajas</div>`) + k('Kg cobrable', kgs(r.kg_presupuestado), true) + k('Kg por caja', r.kg_por_caja == null ? '—' : kgs(r.kg_por_caja)) + k('USD por kilo (con gestión)', usd(r.usd_por_kilo_con_gestion));
+  const filas = [['Flete China → domicilio', r.flete_puertobox_usd]];
+  if (r.recargo_cajas_usd) filas.push(['Recargo cajas de más de 23 kg', r.recargo_cajas_usd]);
+  if (r.recargo_litio_usd) filas.push(['Recargo batería de litio', r.recargo_litio_usd]);
+  filas.push(['Gestión', r.handling_puertobox_usd], ['Total a PuertoBox', r.total_puertobox_usd, 1]);
+  const d = r.detalle_impuestos || {};
+  const imp = [['CIF aduana (flete declarado)', d.cif], ['Derechos + tasa', d.derechos_y_tasa], ['IVA', d.iva]];
+  if (d.internos) imp.push(['Internos', d.internos]);
+  imp.push(['Gasto administrativo courier', d.gasto_administrativo], ['Impuestos estimados (los cobra el courier)', r.impuestos_y_gastos_estimados_usd, 1]);
+  if (r.costo_por_unidad_usd) imp.push([`Costo por unidad puesta en casa (${r.unidades} u.)`, r.costo_por_unidad_usd, 1]);
+  const fila = ([l, m, t]) => `<tr${t ? ' class="tot"' : ''}><td>${l}</td><td class="n">${usd(m)}</td></tr>`;
+  $('c_tabla').innerHTML = `<thead><tr><th>Lo que se le cobra</th><th class="n">USD</th></tr></thead><tbody>${filas.map(fila).join('')}</tbody><thead><tr><th>Aparte (estimado)</th><th class="n">USD</th></tr></thead><tbody>${imp.map(fila).join('')}</tbody>`;
+  $('c_avisos').innerHTML = (r.avisos || []).map((a) => `<div>${esc(a)}</div>`).join('') + (r.flete_firme ? '<div style="color:var(--ok)">Precio cerrado (con medidas y cajas dentro del máximo).</div>' : '');
+  cotizar.ultimo = r;
+  // la liquidación de abajo toma los mismos datos
+  $('fob').value = $('c_valor').value || 0; $('flete').value = d.cif ? Math.max(0, d.cif / 1.01 - (parseFloat($('c_valor').value) || 0)).toFixed(2) : $('flete').value; liquidar();
+}
+['c_valor', 'c_kg', 'c_cajas', 'c_largo', 'c_ancho', 'c_alto', 'c_unid', 'c_reg', 'c_die', 'c_ii', 'c_litio', 'c_cuit', 'c_sinfr'].forEach((id) => $(id).addEventListener('input', () => { clearTimeout(cotizar.t); cotizar.t = setTimeout(cotizar, 200); }));
+$('c_copy').addEventListener('click', async () => {
+  const r = cotizar.ultimo; if (!r) return;
+  const n2 = (x) => Number(x).toLocaleString('es-AR', { maximumFractionDigits: 2 });
+  const L = ['*Presupuesto PuertoBox*', `Posición ${sel || 'a confirmar'}`, '', '*Lo que le pagás a PuertoBox:*', `Flete China → tu casa: USD ${n2(r.flete_puertobox_usd)}`];
+  if (r.recargo_cajas_usd) L.push(`Recargo por cajas de más de 23 kg: USD ${n2(r.recargo_cajas_usd)}`);
+  if (r.recargo_litio_usd) L.push(`Recargo por batería de litio (carga peligrosa): USD ${n2(r.recargo_litio_usd)}`);
+  L.push(`Gestión: USD ${n2(r.handling_puertobox_usd)}`, `*Total a PuertoBox: USD ${n2(r.total_puertobox_usd)}*`, r.flete_firme ? 'Precio cerrado. Se paga cuando la caja llega al depósito en Shenzhen y se pesa, antes de que salga.' : 'El flete se confirma con las medidas de la caja. Se paga cuando la caja llega al depósito en Shenzhen y se pesa.', '',
+    'Aparte, para que sepas (no se paga a PuertoBox):', `Impuestos y gastos de importación, estimados: USD ${n2(r.impuestos_y_gastos_estimados_usd)}`, 'Se los pagás a la empresa de transporte cuando te entrega el paquete.');
+  if (r.costo_por_unidad_usd) L.push('', `*Cada unidad te queda en unos USD ${n2(r.costo_por_unidad_usd)} puesta en tu casa*`);
+  L.push('', 'El envío del proveedor hasta el depósito en Shenzhen no está incluido: pedile que lo incluya en su precio.');
+  try { await navigator.clipboard.writeText(L.join('\n')); $('c_copied').textContent = 'Copiado: pegalo en WhatsApp.'; } catch (e) { $('c_copied').textContent = 'No se pudo copiar desde este navegador.'; }
+});
 $('q').addEventListener('input', () => { clearTimeout(buscar.t); buscar.t = setTimeout(buscar, 140); });
 $('list').addEventListener('click', (e) => { const r = e.target.closest('.res'); if (r) abrir(r.dataset.c); });
 $('list').addEventListener('keydown', (e) => { const r = e.target.closest('.res'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); abrir(r.dataset.c); } });
@@ -230,7 +302,7 @@ $('copy').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(txt); $('copied').textContent = 'Copiado.'; } catch (e) { $('copied').textContent = 'No se pudo copiar desde este navegador.'; }
 });
 window.addEventListener('hashchange', () => { const h = location.hash.match(/^#p-(\d+)/); if (h && N) { const r = N.buscar(h[1], 1); if (r[0] && r[0].c !== sel) abrir(r[0].c); } });
-cargar().catch((e) => { $('src').textContent = 'No se pudieron cargar los datos (' + e.message + '). Recargá la página.'; });
+cargar().then(cotizar).catch((e) => { $('src').textContent = 'No se pudieron cargar los datos (' + e.message + '). Recargá la página.'; });
 </script>
 </body>
 </html>

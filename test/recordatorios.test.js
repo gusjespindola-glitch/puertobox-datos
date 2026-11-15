@@ -339,3 +339,25 @@ test('prueba completa: solo con firma, e informe inexistente da 404', async () =
     assert.match(pag, /Correr prueba completa/);
   } finally { s.close(); }
 });
+
+test('cotizador a mano del nomenclador: con clave, mismo resultado que el bot, peso volumétrico y avisos para Gustavo (15/11)', async () => {
+  process.env.ADMIN_KEY = 'clave-secreta'; process.env.DATA_FILE = require('path').join(require('os').tmpdir(), `pb-cot-${process.pid}.json`);
+  delete require.cache[require.resolve('../bot/server')];
+  const srv = require('../bot/server');
+  const s = srv.servidor().listen(0); await new Promise((r) => s.once('listening', r));
+  const base = `http://127.0.0.1:${s.address().port}`;
+  try {
+    assert.strictEqual((await fetch(`${base}/nomenclador/api/cotizar?valor=200&kg=25`)).status, 401);
+    const r = await (await fetch(`${base}/nomenclador/api/cotizar?key=clave-secreta&valor=800&kg=18&cajas=2&largo=60&ancho=40&alto=40&unidades=40&die=20`)).json();
+    const { ejecutar } = require('../bot/tools');
+    const bot = ejecutar('cotizar', { kg: 18, cantidad_cajas: 2, largo_cm: 60, ancho_cm: 40, alto_cm: 40, valor_factura_usd: 800, die: 20, regimen: 'comercial', unidades: 40 }, { telefono: 'x', store: crearStore(null), derivaciones: [] });
+    assert.strictEqual(r.total_puertobox_usd, bot.total_puertobox_usd);
+    assert.strictEqual(r.costo_por_unidad_usd, bot.costo_por_unidad_usd);
+    assert.strictEqual(r.peso_volumetrico_kg, 38.4);
+    assert.strictEqual(r.kg_presupuestado, 39);
+    assert.ok(r.avisos.some((a) => /se cobra por volumen/.test(a)));
+    assert.ok(!r.avisos.some((a) => /Decíselo/.test(a)));
+    const html = await (await fetch(`${base}/nomenclador/?key=clave-secreta`)).text();
+    assert.match(html, /Cotizador PuertoBox/);
+  } finally { s.close(); }
+});
