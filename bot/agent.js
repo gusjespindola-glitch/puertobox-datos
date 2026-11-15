@@ -8,21 +8,21 @@ const { definiciones, ejecutar } = require('./tools');
 const SYSTEM = require('../src/negocio').render(fs.readFileSync(path.join(__dirname, 'prompt.md'), 'utf8'));
 const MODELO = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 
-async function llamarClaude(messages, fetchImpl, intentos = 3, sinHerramientas = false) {
+async function llamarClaude(messages, fetchImpl, intentos = 3, sinHerramientas = false, extra = '') {
   for (let i = 1; ; i++) {
-    try { return await llamarUnaVez(messages, fetchImpl, sinHerramientas); } catch (e) {
+    try { return await llamarUnaVez(messages, fetchImpl, sinHerramientas, extra); } catch (e) {
       if (i >= intentos || /\b(400|401|403)\b/.test(e.message)) throw e;
       await new Promise((r) => setTimeout(r, (process.env.NODE_ENV === 'test' ? 1 : 1500) * i));
     }
   }
 }
 
-async function llamarUnaVez(messages, fetchImpl, sinHerramientas = false) {
+async function llamarUnaVez(messages, fetchImpl, sinHerramientas = false, extra = '') {
   const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
     // cache_control: las instrucciones y herramientas (iguales en cada llamada) se cachean 5 min → cada mensaje del mismo chat sale más barato.
-    body: JSON.stringify({ model: MODELO, max_tokens: 1024, system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }], tools: definiciones, ...(sinHerramientas ? { tool_choice: { type: 'none' } } : {}), messages }),
+    body: JSON.stringify({ model: MODELO, max_tokens: 1024, system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }, ...(extra ? [{ type: 'text', text: extra }] : [])], tools: definiciones, ...(sinHerramientas ? { tool_choice: { type: 'none' } } : {}), messages }),
   });
   if (!r.ok) throw new Error(`Anthropic ${r.status}: ${await r.text()}`);
   return r.json();
@@ -60,9 +60,11 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
   }
   const ctx = { telefono, store, derivaciones, fetchImpl };
 
+  // Correcciones de Gustavo desde /charlas (circuito de aprendizaje, 15/11): valen desde el próximo mensaje.
+  const correcciones = store.meta ? require('./aprendizaje').textoCorrecciones(store) : '';
   let pedidoTexto = false;
   for (let vuelta = 0; vuelta < 7; vuelta++) {
-    const res = await llamarClaude(messages, fetchImpl);
+    const res = await llamarClaude(messages, fetchImpl, 3, false, correcciones);
     const contenido = (res.content || []).filter((b) => b.type === 'text' ? b.text && b.text.trim() : true);
     const usos = contenido.filter((b) => b.type === 'tool_use');
     if (usos.length) {
@@ -113,11 +115,11 @@ async function empujon({ telefono, store, horas, cotizado, fetchImpl = fetch }) 
   }
   if (!messages.length || messages[messages.length - 1].role !== 'assistant') return null;
   messages.push({ role: 'user', content: INSTRUCCION_EMPUJON(horas, cotizado) });
-  const res = await llamarClaude(messages, fetchImpl, 3, true);
+  const res = await llamarClaude(messages, fetchImpl, 3, true, store.meta ? require('./aprendizaje').textoCorrecciones(store) : '');
   const txt = limpiar((res.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim());
   if (!txt) return null;
   store.agregar(telefono, 'assistant', txt);
   return txt;
 }
 
-module.exports = { responder, limpiar, empujon };
+module.exports = { responder, limpiar, empujon, SYSTEM };

@@ -586,8 +586,18 @@ function servidor() {
       if (!(firmaOk('charlas', url.searchParams.get('t')) || (clave && url.searchParams.get('key') === clave))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
-      const aviso = url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
-      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`));
+      const aviso = url.searchParams.get('corregido') === '1' ? 'Corrección guardada. El bot la aplica desde su próximo mensaje.' : url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
+      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`));
+    }
+    // Circuito de aprendizaje (15/11): Gustavo corrige al bot desde /charlas; no le llega nada al cliente.
+    if (req.method === 'POST' && url.pathname === '/corregir') {
+      const tel = soloDigitos(url.searchParams.get('tel') || '');
+      if (!tel || !firmaOk('corregir:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 20000) req.destroy(); });
+      return req.on('end', () => {
+        const ok = require('./aprendizaje').agregarCorreccion(store, tel, new URLSearchParams(raw).get('texto') || '');
+        res.writeHead(303, { location: `/charlas?t=${firma('charlas')}&abierto=${tel}${ok ? '&corregido=1' : '&error=' + encodeURIComponent('la corrección está vacía')}#c-${tel}` }); res.end();
+      });
     }
     // Prueba completa del bot (15/11): corre en segundo plano y avisa por ntfy con el link al informe.
     if (req.method === 'POST' && url.pathname === '/prueba-completa') {
@@ -721,6 +731,9 @@ if (require.main === module) {
   const { revisar } = require('./recordatorios');
   const tic = () => revisar({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), avisar: (t, titulo, prioridad, tel) => avisarNtfy(t, titulo, prioridad, fetch, tel), empujar: async (p) => { const txt = await require('./agent').empujon({ telefono: p.telefono, store, horas: p.horas, cotizado: p.cotizado }); if (txt) await enviar(p.telefono, txt); return !!txt; } }).catch((e) => console.error('Recordatorios:', e.message));
   const ticDifusion = () => require('./difusion').tick({ store, esGustavo: (tel) => require('./recordatorios').esGustavo(tel, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER)) }).catch((e) => console.error('Difusión:', e.message));
+  // Circuito de aprendizaje (15/11): a las 23 h revisa las charlas del día y sube el informe (sin datos personales) a la rama aprendizaje-bot.
+  const ticAprendizaje = () => require('./aprendizaje').tick({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), reglas: require('./agent').SYSTEM, dirLocal: path.join(path.dirname(process.env.DATA_FILE || DATA_FILE), 'aprendizaje'), avisar: (t, titulo, prioridad) => avisarNtfy(t, titulo, prioridad, fetch) }).catch((e) => console.error('Aprendizaje:', e.message));
+  setInterval(ticAprendizaje, 15 * 60e3).unref();
   // Dólar de referencia automático (antes se cambiaba a mano cada semana).
   const dol = require('../src/dolar'); dol.actualizar(); setInterval(() => dol.actualizar(), 12 * 3600e3).unref();
   setTimeout(() => { tic(); ticDifusion(); }, 60e3).unref(); setInterval(() => { tic(); ticDifusion(); }, 15 * 60e3).unref();
