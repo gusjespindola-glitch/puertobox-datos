@@ -124,7 +124,9 @@ function ejecutar(nombre, input, ctx) {
         ctx.store.guardarLead(ctx.telefono, { estado: 'cotizado', kg: input.kg, valor_usd: input.valor_factura_usd, precio_usd: r.flete_puertobox_usd + r.handling_puertobox_usd });
       }
       const avisos = [];
-      if (!conMedidas) avisos.push('No hay medidas de la caja: el flete se confirma con las medidas (una caja grande y liviana se cobra por tamaño). No lo presentes como firme y pasale al cliente el mensaje en inglés para el proveedor.');
+      if (!conMedidas) avisos.push('No hay medidas de la caja: el flete se confirma con las medidas (una caja grande y liviana se cobra por tamaño). No lo presentes como firme. Cerrá preguntando si tiene las medidas; el mensaje en inglés para el proveedor pasáselo solo si te dice que no las tiene.');
+      // 15/11 (prueba completa): 18 kg en 2 cajas de 60x40x40 se cobran como 38,5 kg y el cliente no se enteraba por qué le salía el doble.
+      if (conMedidas && r.kg_presupuestado > input.kg * 1.3) avisos.push(`Las cajas son grandes para lo que pesan: se cobran como ${String(r.kg_presupuestado).replace('.', ',')} kg en vez de ${String(input.kg).replace('.', ',')} kg. Decíselo al cliente en una línea, simple ("las cajas son grandes para lo que pesan, por eso el flete se cobra por tamaño") y sugerile pedirle al proveedor cajas más chicas o más llenas: así baja el flete.`);
       if (cajaPesada) avisos.push(`Hay cajas de más de ${NEG.caja_max_kg} kg: tienen recargo del courier que NO está en este flete. Recomendá dividirlas y no digas que el flete es firme.`);
       const totalPB = r.flete_puertobox_usd + r.handling_puertobox_usd;
       // Costo por unidad puesta en la casa del cliente: producto + flete + gestión + impuestos estimados, dividido las unidades.

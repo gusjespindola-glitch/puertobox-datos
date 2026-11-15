@@ -59,7 +59,7 @@ const ESCENARIOS = [
   { nombre: 'Repuestos de auto', msgs: ['repuestos de auto genericos para vender, 800 dolares, 20 kilos, 2 cajas'], espera: { presupuesto: true } },
 ];
 
-const MULETILLAS = /^(¡?genial|¡?anotado|¡?perfecto|¡?buen[ií]simo|¡?excelente|gracias|joya|dale|tranqui)\b/i;
+const MULETILLAS = /^(¡?genial|¡?anotado|¡?perfecto|¡?buen[ií]simo|¡?excelente|gracias(?! por escribir)|joya|dale|tranqui|entendido|entiendo|comprendido|correcto)\b/i;
 const JERGA = /peso bruto|volum[eé]tric|\bFOB\b|\bCIF\b|r[eé]gimen|courier comercial|peque[ñn]os env[ií]os|\bANMAT\b|\bINAL\b|\bSENASA\b/i;
 
 function revisar(resp, ctx) {

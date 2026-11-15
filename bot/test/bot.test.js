@@ -313,7 +313,7 @@ test('simulador: detecta frases de robot (15/11)', () => {
 
 test('prompt: tono humano, sin frases cortadas ni pregunta repetida', () => {
   const p = require('fs').readFileSync(require('path').join(__dirname, '..', 'prompt.md'), 'utf8');
-  assert.match(p, /Prohibido empezar con "Entendido", "Comprendido", "Correcto"/);
+  assert.match(p, /Prohibido empezar con "Entendido", "Entiendo", "Comprendido", "Correcto"/);
   assert.match(p, /Repetir la misma pregunta o la misma frase/);
   assert.match(p, /Contestá primero exactamente lo que te preguntaron/);
   assert.match(p, /asesor comercial de una empresa argentina/);

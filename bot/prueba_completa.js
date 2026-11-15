@@ -46,15 +46,15 @@ const CHARLAS = [
     msgs: ['Hola, buen día. Nos derivaron a este número para cotizar. Estamos evaluando traer de China este producto para revender en Mercado Libre: Trípode selfie con control Bluetooth y luz, extensible a 170 cm (modelo R1S-L / AL-5308). 0,300 kg por unidad, caja de 15×15×4 cm, FOB aprox. US$ 2,20. Trae batería de litio. La ficha dice HS 8513.10. ¿Nos pasan una cotización de flete e impuestos para 100 unidades (unos 30 kg) y para 300 (unos 90 kg)? Y si pueden, también: 1. ¿Por qué régimen entra siendo para reventa, y quién figura como importador? 2. ¿Aceptan batería de litio? 3. ¿Cómo resuelven ENACOM/RAMATEL para equipos con Bluetooth? 4. ¿Dónde está su depósito en Argentina? El destino final es el interior del país. ¡Muchas gracias! Agustín – Zona Norte'],
     controles: [
       { que: 'menciona la homologación por el Bluetooth', bien: /homolog|ENACOM/i },
-      { que: 'contesta lo del depósito (La Plata / online, sin local)', bien: /La Plata|sin local|online/i },
+      { que: 'contesta lo del depósito (sin local ni depósito en Argentina)', bien: /La Plata|sin local|ni local|online/i },
       { que: 'no usa frases de call center', mal: /a la brevedad|quedamos a disposici|no dudes/i },
     ],
   },
   { nombre: 'Cita un precio de un posteo viejo', msgs: ['vi que cobran 15 dolares el kilo desde 10 kg, es asi?'], controles: [{ que: 'explica que era una tarifa anterior / dice el precio de hoy', bien: /anterior|hoy|actual/i }, { que: 'no dice "no es nuestro precio"', mal: /no es nuestr|no puedo cotiz/i }] },
   { nombre: 'Pide más información (anuncio)', msgs: ['¡Hola! Quiero más información'], controles: [{ que: 'da información antes de preguntar', bien: /China|casa|impuestos/i }] },
-  { nombre: 'Pregunta aéreo o marítimo', msgs: ['remeras de algodón sin marca para vender, 100 unidades, 500 dolares, 12 kilos, una caja', 'es aereo o es maritimo?'], controles: [{ que: 'la primera palabra contesta: aéreo', bien: /^\s*(Es )?a[ée]reo/i, en: 'ultima' }, { que: 'no vuelve a pedir medidas ni código postal', mal: /medidas|c[oó]digo postal/i, en: 'ultima' }, { que: 'la posición de las remeras es 6109.10', posicionEsperada: '6109.10' }] },
+  { nombre: 'Pregunta aéreo o marítimo', msgs: ['remeras de algodón sin marca para vender, 100 unidades, 500 dolares, 12 kilos, una caja', 'es aereo o es maritimo?'], controles: [{ que: 'el presupuesto no pega el mensaje en inglés si no lo pidió', mal: /Could you please/i, en: 'primera' }, { que: 'la primera palabra contesta: aéreo', bien: /^\s*(Es )?a[ée]reo/i, en: 'ultima' }, { que: 'no vuelve a pedir medidas ni código postal', mal: /medidas|c[oó]digo postal/i, en: 'ultima' }, { que: 'la posición de las remeras es 6109.10', posicionEsperada: '6109.10' }] },
   { nombre: 'Dice que no', msgs: ['quiero traer ropa replica de marcas para vender', 'no graciass igualmente'], controles: [{ que: 'se despide corto, sin volver a ofrecer', mal: /presupuesto|sin marca|\?/i, en: 'ultima' }] },
-  { nombre: 'Zapatillas para revender (posición y costo por unidad)', msgs: ['zapatillas de running sin marca, parte de arriba de tela, para vender, 40 pares, 800 dolares, 18 kilos, 2 cajas de 60x40x40'], controles: [{ que: 'da presupuesto', bien: /Presupuesto PuertoBox/i }, { que: 'posición 6404.11 con derechos (no la de 0%)', posicionEsperada: '6404.11', dieMayorA: 0 }] },
+  { nombre: 'Zapatillas para revender (posición y costo por unidad)', msgs: ['zapatillas de running sin marca, parte de arriba de tela, para vender, 40 pares, 800 dolares, 18 kilos, 2 cajas de 60x40x40'], controles: [{ que: 'da presupuesto', bien: /Presupuesto PuertoBox/i }, { que: 'posición 6404.11 con derechos (no la de 0%)', posicionEsperada: '6404.11', dieMayorA: 0 }, { que: 'avisa que las cajas son grandes para lo que pesan', bien: /cajas? (son|es) grandes|por tamaño|m[aá]s chicas/i }] },
   { nombre: 'Pesado y barato (como Nusse)', msgs: ['mats de yoga, pesas de 1 kg y bolsos para mi marca propia Nusse, para vender, le pago 1395 dolares, pesa 298 kg en 15 cajas'], controles: [{ que: 'informativo: qué hace con un flete mayor que la mercadería', info: true }] },
 ];
 
@@ -98,7 +98,7 @@ async function probarCharlas(fetchImpl) {
     const con23 = (turnos.find((t) => /23 kg/.test(t.cliente)) || {}).bot || '';
     const lead = store.lead(tel) || {};
     const resultados = ch.controles.map((c) => {
-      const texto = c.en === 'ultima' ? ultima : c.en === 'con23' ? con23 : todo;
+      const texto = c.en === 'ultima' ? ultima : c.en === 'con23' ? con23 : c.en === 'primera' ? turnos[0].bot : todo;
       let ok = true;
       if (c.info) return { que: c.que, estado: 'ℹ️' };
       if (c.bien) ok = ok && c.bien.test(texto);
