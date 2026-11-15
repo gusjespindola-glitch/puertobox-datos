@@ -51,6 +51,9 @@ const definiciones = [
         con_bateria_litio: { type: 'boolean', description: 'true si el producto trae batería de litio incorporada (carga peligrosa: la aerolínea cobra un recargo sobre el flete).' },
         kg_por_unidad: { type: 'number', description: 'Peso de UNA unidad (con su caja) si el cliente lo dijo. Sirve para controlar que unidades y peso total cierren.' },
         largo_cm: { type: 'number' }, ancho_cm: { type: 'number' }, alto_cm: { type: 'number' },
+        peso_estimado: { type: 'boolean', description: 'true si el cliente todavía no sabe el peso y kg es TU estimación (unidades × peso típico de una unidad con su empaque). Da solo un aproximado del costo por unidad, nunca el presupuesto.' },
+        precio_venta_unidad: { type: 'number', description: 'A cuánto vende (o piensa vender) el cliente CADA unidad en Argentina, si lo dijo. Con esto se calcula cuánto le queda de ganancia por unidad.' },
+        moneda_venta: { type: 'string', enum: ['ARS', 'USD'], description: 'Moneda de precio_venta_unidad: ARS si lo dijo en pesos (lo normal), USD si lo dijo en dólares.' },
       },
       required: ['kg', 'valor_factura_usd', 'die', 'regimen'],
     },
@@ -130,7 +133,7 @@ function ejecutar(nombre, input, ctx) {
         ctx.store.guardarLead(ctx.telefono, { estado: 'cotizado', kg: input.kg, valor_usd: input.valor_factura_usd, precio_usd: r.flete_puertobox_usd + r.handling_puertobox_usd });
       }
       // Última cotización completa en el lead: con esto se arma solo el presupuesto formal en PDF (15/11).
-      if (ctx.store.guardarLead) ctx.store.guardarLead(ctx.telefono, { cotizacion: { en: new Date().toISOString(), input: { kg: input.kg, cantidad_cajas: cajas, largo_cm: input.largo_cm, ancho_cm: input.ancho_cm, alto_cm: input.alto_cm, valor_factura_usd: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen, unidades: input.unidades, con_cuit_puertobox: !!input.con_cuit_puertobox, con_bateria_litio: !!input.con_bateria_litio }, r: null } });
+      if (ctx.store.guardarLead) ctx.store.guardarLead(ctx.telefono, { cotizacion: { en: new Date().toISOString(), input: { kg: input.kg, cantidad_cajas: cajas, largo_cm: input.largo_cm, ancho_cm: input.ancho_cm, alto_cm: input.alto_cm, valor_factura_usd: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen, unidades: input.unidades, con_cuit_puertobox: !!input.con_cuit_puertobox, con_bateria_litio: !!input.con_bateria_litio, ...(input.peso_estimado ? { peso_estimado: true } : {}), ...(input.precio_venta_unidad > 0 ? { precio_venta_unidad: input.precio_venta_unidad, moneda_venta: input.moneda_venta || 'ARS' } : {}) }, r: null } });
       const avisos = [];
       if (!conMedidas) avisos.push('No hay medidas de la caja: el flete se confirma con las medidas (una caja grande y liviana se cobra por tamaño). No lo presentes como firme. Cerrá preguntando si tiene las medidas; el mensaje en inglés para el proveedor pasáselo solo si te dice que no las tiene.');
       // 15/11 (prueba completa): 18 kg en 2 cajas de 60x40x40 se cobran como 39 kg y el cliente no se enteraba por qué le salía el doble.
@@ -157,7 +160,22 @@ function ejecutar(nombre, input, ctx) {
         producto_por_unidad_usd: Math.round((input.valor_factura_usd / unidades) * 100) / 100,
         unidades,
       } : {};
+      // Ganancia por unidad (15/11, Gustavo aprobó "hablar de ganancia, no de costo"): precio de venta − costo puesto en su casa.
+      const dolar = NEG.dolar_referencia_ars;
+      if (porUnidad.costo_por_unidad_usd && input.precio_venta_unidad > 0 && dolar > 0) {
+        const ventaUsd = input.moneda_venta === 'USD' ? input.precio_venta_unidad : input.precio_venta_unidad / dolar;
+        const gan = ventaUsd - porUnidad.costo_por_unidad_usd;
+        porUnidad.ganancia_por_unidad_usd = Math.round(gan * 100) / 100;
+        porUnidad.ganancia_por_unidad_ars = Math.round((gan * dolar) / 100) * 100;
+        porUnidad.costo_por_unidad_ars = Math.round((porUnidad.costo_por_unidad_usd * dolar) / 100) * 100;
+        porUnidad.margen_sobre_costo_pct = Math.round((gan / porUnidad.costo_por_unidad_usd) * 100);
+        porUnidad.dolar_usado_ars = dolar;
+        avisos.push(`Ganancia: mostrala en una o dos líneas y en la moneda en que te habló el cliente: "Cada unidad te queda en unos $${porUnidad.costo_por_unidad_ars.toLocaleString('es-AR')} puesta en tu casa; si la vendés a $X, te quedan unos $${porUnidad.ganancia_por_unidad_ars.toLocaleString('es-AR')} por unidad (${porUnidad.margen_sobre_costo_pct}% sobre el costo)." Aclarale que es estimado, con dólar oficial de $${dolar}, y que no descuenta comisiones de venta (Mercado Libre, envío) ni tu monotributo.${gan <= 0 ? ' OJO: no le queda ganancia: decíselo con honestidad y sin vueltas.' : ''}`);
+      }
+      // Peso estimado por el bot (15/11): sirve para dar un primer número rápido, nunca como presupuesto.
+      if (input.peso_estimado) avisos.unshift(`El peso lo estimaste vos: esto es SOLO un aproximado. No mandes el presupuesto completo. Decile en una o dos líneas: "Para que tengas una idea, cada unidad te quedaría en unos USD ${porUnidad.costo_por_unidad_usd || '[costo]'} puesta en tu casa (calculando unos ${Math.round((input.kg / (unidades || 1)) * 100) / 100} kg por unidad)." y preguntá el peso real (¿lo sabe?). Con el peso real, ahí sí resumen + presupuesto.`);
       const resultado = {
+        ...(input.peso_estimado ? { peso_estimado: true, es_aproximado: true } : {}),
         ...(fija ? { posicion: fija.posicion, posicion_a_confirmar: fija.confianza !== 'alta' && !fija.confirmada } : { posicion: 'a confirmar' }),
         flete_firme: conMedidas && !cajaPesada,
         ...porUnidad,

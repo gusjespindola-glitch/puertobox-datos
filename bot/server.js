@@ -634,6 +634,9 @@ function servidor() {
       return req.on('end', async () => {
         const f = new URLSearchParams(raw);
         const volver = (extra) => { res.writeHead(303, { location: `/charlas?t=${firma('charlas')}&abierto=${tel}${extra}#c-${tel}` }); res.end(); };
+        // Posición corregida por Gustavo: se valida en ARCA, se recalcula y el bot la aprende (15/11).
+        const corr = require('./certeza').aplicar(store, tel, f.get('pos'), require('./tools').ejecutar);
+        if (corr.error) return volver('&error=' + encodeURIComponent(corr.error));
         const p = store.presupuestoDe(tel) && store.lead(tel).presupuesto && store.presupuestoDe(tel).cotizacionEn === (store.lead(tel).cotizacion || {}).en ? store.presupuestoDe(tel) : store.crearPresupuesto(tel);
         if (!p) return volver('&error=' + encodeURIComponent('ese cliente todavía no tiene una cotización completa'));
         store.actualizarPresupuesto(p.token, { cliente: { nombre: (f.get('nombre') || '').trim(), doc: (f.get('doc') || '').trim(), dom: (f.get('dom') || '').trim(), iva: (f.get('iva') || '').trim() } });
@@ -648,6 +651,7 @@ function servidor() {
         const ahora = Date.now();
         if (store.marcar) store.marcar(tel, { gustavoRespondioEn: ahora, recordatorios: 0, presupuestoEnviadoEn: ahora, ...(c.derivadoEn ? {} : { derivadoEn: ahora - 1, derivadoMotivo: 'listo_para_cerrar', derivadoResumen: 'Le mandaste el presupuesto formal.' }) });
         store.actualizarPresupuesto(p.token, { enviado: new Date(ahora).toISOString() });
+        require('./certeza').registrar(store, tel, p.token);
         return volver('&ok=1');
       });
     }

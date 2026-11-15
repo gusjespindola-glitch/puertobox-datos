@@ -28,6 +28,8 @@
     "unidades_iguales": 3
   },
   "tope_por_envio_usd": 3000,
+  "dolar_referencia_ars": 1570,
+  "_dolar_referencia_ars": "Dólar oficial Banco Nación, venta, 15/11/2026. Solo para mostrarle al cliente la ganancia por unidad en pesos. Actualizarlo cada semana.",
   "deposito_china": "Shenzhen",
   "envio_interno_china": "El envío de la fábrica al depósito en Shenzhen lo paga el cliente. Lo ideal es que lo incluya el proveedor. Si lo paga PuertoBox, se le suma al cliente aparte, a lo que cueste.",
   "anuncio_vigente": "Importá de China desde USD {{usd_kg_total_desde}} el kilo (flete + gestión, desde {{kg_desde}} kg). Envíos chicos desde USD {{envio_minimo_usd}}.\n\nAntes de que compres, te decimos la posición arancelaria y cuánto vas a pagar de impuestos.\n\nDespachante de aduana matriculado.",
