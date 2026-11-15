@@ -52,7 +52,7 @@ async function enviarInstagram(id, body, fetchImpl) {
   if (enviadosIG.size > 500) enviadosIG.clear();
 }
 
-async function enviar(to, body, fetchImpl = fetch) {
+async function enviar(to, body, fetchImpl = fetch, opciones = {}) {
   if (String(to).startsWith('ig:')) return enviarInstagram(String(to).slice(3), body, fetchImpl);
   if (process.env.YCLOUD_API_KEY || YCLOUD_API_KEY) {
     const r = await fetchImpl('https://api.ycloud.com/v2/whatsapp/messages/sendDirectly', {
@@ -60,7 +60,7 @@ async function enviar(to, body, fetchImpl = fetch) {
       headers: { 'content-type': 'application/json', 'x-api-key': process.env.YCLOUD_API_KEY || YCLOUD_API_KEY },
       body: JSON.stringify({ from: `+${soloDigitos(process.env.BUSINESS_NUMBER || BUSINESS_NUMBER)}`, to: `+${soloDigitos(to)}`, type: 'text', text: { body } }),
     });
-    if (!r.ok) console.error('YCloud error', r.status, await r.text());
+    if (!r.ok) { const t = await r.text(); console.error('YCloud error', r.status, t); if (opciones.lanzar) throw new Error(`YCloud ${r.status}: ${t.slice(0, 100)}`); }
     return;
   }
   const r = await fetchImpl(`${GRAPH}/${PHONE_NUMBER_ID}/messages`, {
@@ -68,7 +68,7 @@ async function enviar(to, body, fetchImpl = fetch) {
     headers: { 'content-type': 'application/json', authorization: `Bearer ${WHATSAPP_TOKEN}` },
     body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body } }),
   });
-  if (!r.ok) console.error('WhatsApp error', r.status, await r.text());
+  if (!r.ok) { const t = await r.text(); console.error('WhatsApp error', r.status, t); if (opciones.lanzar) throw new Error(`WhatsApp ${r.status}: ${t.slice(0, 100)}`); }
 }
 
 /** Convierte el webhook (Meta o YCloud) en una lista de eventos: { tipo: 'mensaje'|'eco', ... }. */
@@ -436,7 +436,7 @@ function servidor() {
       const t = url.searchParams.get('t');
       if (!firmaOk('pendientes', t)) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
-      const html = require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`, Date.now(), (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&volver=${t}`);
+      const html = require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`, Date.now(), (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&volver=${t}`, (tel) => `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}`);
       return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`));
     }
     if (url.pathname === '/difusion') {
@@ -465,7 +465,29 @@ function servidor() {
       const clave = process.env.ADMIN_KEY || ADMIN_KEY;
       if (!(firmaOk('charlas', url.searchParams.get('t')) || (clave && url.searchParams.get('key') === clave))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
-      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER)));
+      const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
+      const aviso = url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
+      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso));
+    }
+    // Gustavo le contesta a un cliente desde la página de charlas: sale por el 6773 (API) y el bot se calla en ese chat (15/11).
+    if (req.method === 'POST' && url.pathname === '/responder') {
+      const tel = soloDigitos(url.searchParams.get('tel') || '');
+      if (!tel || !firmaOk('responder:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 20000) req.destroy(); });
+      return req.on('end', async () => {
+        const texto = (new URLSearchParams(raw).get('texto') || '').trim();
+        const volver = (extra) => { res.writeHead(303, { location: `/charlas?t=${firma('charlas')}&abierto=${tel}${extra}#c-${tel}` }); res.end(); };
+        if (!texto) return volver('&error=' + encodeURIComponent('el mensaje está vacío'));
+        const c = store.chats().find((x) => x.telefono === tel);
+        if (!c || Date.now() - (c.ultimoClienteEn || 0) > 24 * 3600e3) return volver('&error=' + encodeURIComponent('pasaron más de 24 h desde su último mensaje'));
+        try { await enviar(tel, texto, fetch, { lanzar: true }); } catch (e) { return volver('&error=' + encodeURIComponent(String(e.message).slice(0, 120))); }
+        store.agregar(tel, 'assistant', `[Gustavo] ${texto}`);
+        store.pausar(tel, 'gustavo_respondio');
+        // Si el cliente le contesta a Gustavo, que aparezca en pendientes y le llegue el aviso (el bot ya no lo atiende).
+        const ahora = Date.now();
+        if (store.marcar) store.marcar(tel, { gustavoRespondioEn: ahora, recordatorios: 0, ...(c.derivadoEn ? {} : { derivadoEn: ahora - 1, derivadoMotivo: 'pide_humano', derivadoResumen: 'Le escribiste desde la página de charlas.' }) });
+        return volver('&ok=1');
+      });
     }
     if (req.method === 'GET' && url.pathname === '/leads' && ADMIN_KEY && url.searchParams.get('key') === ADMIN_KEY) {
       const leads = store.leads();
