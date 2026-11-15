@@ -38,6 +38,7 @@ Cambiás un dato en un solo lugar y cambia en el bot, la web, el buscador y las 
 - **Envío dentro de China** (fábrica → depósito en Shenzhen): lo paga el cliente; si lo paga PuertoBox, se suma aparte a lo que cueste (`negocio.json` → `envio_interno_china`). Lo dicen el bot (en cada presupuesto y en el mensaje al proveedor), la web y las dudas comunes.
 - **Impuestos estimados:** el CIF usa el flete que declara el courier (`precios_venta.json` → `flete_declarado_usd_kg` = 2,5, de facturas reales FedEx y UPS), no nuestro flete de venta. Validado contra la factura UPS (test). Si Howard/DHL declara otro valor, se cambia ahí.
 - El resto (envío mínimo, USD/kg desde 20 kg, tabla de la web) se calcula solo (`src/negocio.js`).
+- **Kilo entero (15/11, Gustavo):** el peso cobrable se redondea hacia arriba al kilo entero, como la aerolínea (nunca medios kilos). Cambia en bot, web y análisis de precios.
 - Plantillas con `{{dato}}`: `bot/prompt.md`, `web/sitio/index.html`. Un test falla si alguien escribe un precio o el teléfono a mano.
 
 Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web), `/buscador`, `/ncm/XXXX.XX.XX` (10.504 posiciones), `/importar/<producto>`, `/sitemap.xml`, `/robots.txt`.

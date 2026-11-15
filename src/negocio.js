@@ -19,9 +19,10 @@ function datos() {
   const precioKg = require('./flete_directo').fleteVenta; // un solo cálculo de flete para bot, web y páginas
   const ultimo = tramos[tramos.length - 1];
   const filas = tramos.map((t, i) => {
-    const desde = i === 0 ? null : t.desde_kg;
-    const hasta = t.hasta_kg == null ? null : t.hasta_kg - 0.5;
-    const rango = desde == null ? `Hasta ${fmtKg(t.hasta_kg - 0.5)} kg` : hasta == null ? `${fmtKg(desde)} kg o más` : `${fmtKg(desde)} a ${fmtKg(hasta)} kg`;
+    // Kilos enteros (15/11): el tramo va del primer kilo entero que alcanza hasta el último entero antes del siguiente.
+    const desde = i === 0 ? null : Math.ceil(t.desde_kg);
+    const hasta = t.hasta_kg == null ? null : Math.ceil(t.hasta_kg) - 1;
+    const rango = desde == null ? `Hasta ${fmtKg(hasta)} kg` : hasta == null ? `${fmtKg(desde)} kg o más` : desde === hasta ? `${fmtKg(desde)} kg` : `${fmtKg(desde)} a ${fmtKg(hasta)} kg`;
     const precio = t.total_usd != null ? `USD ${t.total_usd} total` : `USD ${t.usd_kg} / kg`;
     return { rango, precio };
   });

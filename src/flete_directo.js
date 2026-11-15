@@ -12,10 +12,11 @@ const r2 = (n) => Math.round(n * 100) / 100;
 
 const M = precios.flete_directo;
 
-/** Kg cobrable: mayor entre real y volumétrico, redondeado hacia arriba a 0,5 kg, mínimo 1. */
+/** Kg cobrable: mayor entre real y volumétrico, redondeado hacia arriba al kilo entero, mínimo 1.
+ * 15/11/2026 (Gustavo): nunca medios kilos; la aerolínea redondea al kilo, PuertoBox también. */
 function kgCobrable({ kg, largo, ancho, alto, cajas = 1 }) {
   const vol = largo && ancho && alto ? ((largo * ancho * alto) / M.divisor_volumetrico) * (cajas || 1) : 0;
-  return Math.max(Math.ceil(Math.max(kg, vol) * 2) / 2, 1);
+  return Math.max(Math.ceil(Math.max(kg, vol) - 1e-9), 1);
 }
 
 function tramo(kg, tabla) {
@@ -26,12 +27,12 @@ const precioTramo = (t, kg) => (t.total_usd !== undefined ? t.total_usd : r2(t.u
 
 /**
  * Flete que cobra PuertoBox para un kg cobrable.
- * Nunca más caro que el arranque de un tramo siguiente: sin esto 9,5 kg (USD 237,50) costaba más que 10 kg (USD 200),
- * y lo mismo en 4,5, 14,5 y 19,5 kg. Un cliente que pesa menos no puede pagar más.
+ * Nunca más caro que el arranque de un tramo siguiente: sin esto 9 kg (USD 225) costaba más que 10 kg (USD 200),
+ * y lo mismo en 4, 14 y 19 kg. Un cliente que pesa menos no puede pagar más. (Kilos enteros: el tramo arranca en el primer kilo entero.)
  */
 function fleteVenta(kg) {
   const t = tramo(kg, M.tramos_venta);
-  const siguientes = M.tramos_venta.filter((x) => x.desde_kg > kg).map((x) => precioTramo(x, x.desde_kg));
+  const siguientes = M.tramos_venta.filter((x) => Math.ceil(x.desde_kg) > kg).map((x) => precioTramo(x, Math.ceil(x.desde_kg)));
   return Math.min(precioTramo(t, kg), ...siguientes);
 }
 
@@ -72,7 +73,7 @@ function estimarImpuestos({ valorFactura, flete, die, internos = 0, regimen = 'c
 /** Presupuesto estimado para el cliente (flete final = peso de balanza). */
 function presupuesto({ kg, largo, ancho, alto, cajas = 1, valorFactura, die = 0, internos = 0, regimen = 'comercial', conFranquicia = true }) {
   const declarado = kgCobrable({ kg, largo, ancho, alto, cajas });
-  const kgPres = Math.ceil(declarado * (1 + (M.tolerancia || 0)) * 2) / 2;
+  const kgPres = Math.ceil(declarado * (1 + (M.tolerancia || 0)) - 1e-9);
   const flete = fleteVenta(kgPres);
   const handling = M.handling_usd || 0;
   // Aduana calcula el CIF con el flete que declara el courier en su factura (~USD 2,50/kg según facturas reales),
