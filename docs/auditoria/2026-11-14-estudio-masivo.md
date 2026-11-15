@@ -7,7 +7,9 @@ Ya estaba auditado (no se repite): `2026-11-14-completa.md`, `2026-11-14-revisio
 
 ## 🔴 Lo urgente (puede costar plata o clientes)
 
-### 1. Monotributistas que importan para vender: la respuesta del bot choca con la ley
+### 1. Monotributistas que importan para vender
+> **Decisión de Gustavo (14/11 22:58):** no hay problema, porque la importación viene a nombre del courier. La respuesta queda como está.
+
 El bot y la web dicen: "¿Un monotributista puede importar para vender? Sí, tranquilamente."
 La Ley de Monotributo (Ley 24.977, Anexo, art. 2 inc. d, texto vigente según Ley 27.743) pide como requisito para ser monotributista **no haber hecho importaciones de cosas muebles para su comercialización posterior** en los últimos 12 meses. Fuente: biblioteca de ARCA.
 Ejemplo: Laura, monotributista, trae 100 remeras para vender. El paquete llega bien, pero ARCA cruza su CUIT (desde julio de 2026 valida los CUIT de cada envío courier) y la puede excluir del Monotributo, y si la excluyen no puede volver por 3 años. Ella va a decir "PuertoBox me dijo que se podía".
