@@ -1,6 +1,6 @@
 # PuertoBox — contexto de marketing
 
-Lo lee la skill `ad-creative` (`.claude/skills/ad-creative`, de coreyhaines31/marketingskills, licencia MIT, versión 1f83744) antes de proponer anuncios. Los detalles y el historial están en `ESTADO.md` y `docs/APRENDIZAJES.md`: esto es el resumen.
+Lo leen las skills `ad-creative`, `competitor-profiling` y `offers` (`.claude/skills/`, de coreyhaines31/marketingskills, licencia MIT, versión 1f83744) antes de proponer anuncios, estudiar competidores u ofertas. Competidores conocidos y sus precios: `data/referencias_mercado.json`. Los detalles y el historial están en `ESTADO.md` y `docs/APRENDIZAJES.md`: esto es el resumen.
 
 ## Producto
 - Courier aéreo China → Argentina, puerta a puerta. PuertoBox es de La Plata, online, sin local ni retiro.
