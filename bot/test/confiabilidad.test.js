@@ -81,3 +81,17 @@ test('6. Links firmados: vencen a los 7 días y los viejos sin vencimiento ya no
   assert.strictEqual(srv.firmaOk('charlas', t), true);
   assert.strictEqual(srv.firmaOk('responder:1', t), false);
 });
+
+test('7. Mensaje que WhatsApp no entregó: queda marcado en rojo en /charlas', async () => {
+  const { procesar } = require('../server');
+  const { paginaCharlas } = require('../recordatorios');
+  const store = crearStore(null);
+  const fetchImpl = async (url) => {
+    if (/anthropic/.test(url)) return { ok: true, json: async () => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: '¿Qué querés traer?' }] }) };
+    return { ok: false, status: 402, text: async () => 'insufficient balance' };
+  };
+  await procesar(msg('5492000000005', 'hola'), { fetchImpl, store, debounceMs: 0 });
+  const h = store.historial('5492000000005');
+  assert.ok(h[h.length - 1].noEntregado);
+  assert.match(paginaCharlas(store, 'x', Date.now(), 3, () => '/r', '5492000000005'), /No se entregó: reenvialo/);
+});
