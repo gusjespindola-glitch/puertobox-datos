@@ -31,6 +31,9 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - Leads: `https://puertobox-datos-production.up.railway.app/leads?key=ADMIN_KEY`. Los números de Gustavo (698, 3034 y 9132 del trabajo, `negocio.json` → `numeros_gustavo`) no cuentan como clientes en el resumen ni en pendientes.
 
 
+### Imágenes y archivos de clientes (15/11/2026)
+- Fotos y PDF: se bajan de YCloud, la IA los lee y el bot recibe el contenido (lo anota y cotiza). Se guardan en /data/media y se ven en /charlas. Otros archivos (Excel, Word): se guardan y el bot pide los datos por texto. Usa el modelo del clasificador (una lectura por archivo).
+
 ### Presupuesto formal automático (15/11/2026)
 - Cada cotización del bot queda guardada en el cliente. Cuando el cliente confirma (derivación "listo para cerrar") se arma solo el presupuesto en PDF (comprobante "X", N° 0001-0000000N correlativo).
 - El aviso al celu dice "📄 Presupuesto formal N° … listo". En "Ver y contestar" está el recuadro: nombre, CUIT/DNI, domicilio y condición IVA (opcionales), "Ver PDF" y "Enviar presupuesto".

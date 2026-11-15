@@ -215,6 +215,13 @@ function paginaPendientes(store, owner, linkAtendido, ahora = Date.now(), linkBo
 }
 
 /** Texto legible de un mensaje guardado (string o bloques de la IA); deja afuera las herramientas internas. */
+/** Archivos del cliente (15/11): la marca [archivo:/media/...] se muestra como foto o link para abrirlo. */
+function conArchivos(html) {
+  return html.replace(/\s?\[archivo:(\/media\/[0-9a-f]{32}\.([a-z0-9]{1,5}))\]/g, (_, ruta, ext) => /^(jpg|png|webp|gif)$/.test(ext)
+    ? `<a href="${ruta}" target="_blank"><img src="${ruta}" alt="Imagen del cliente" style="display:block;max-width:100%;border-radius:10px;margin:6px 0"></a>`
+    : `<a href="${ruta}" target="_blank" style="display:block;margin:6px 0;font-weight:600">📎 Abrir el archivo (${ext.toUpperCase()})</a>`);
+}
+
 function textoMensaje(content) {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
@@ -260,7 +267,7 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder
     const ultimoCliente = [...msgs].reverse().find((m) => m.quien === 'cliente');
     const cabecera = [c.origen === 'anuncio' ? '📣 Del anuncio' : c.origen === '698' ? '📲 Del 698' : '', l.estado ? ESTADO[l.estado] || l.estado : 'Sin datos todavía', hace(ahora - c.ultimo)].filter(Boolean).join(' · ');
     return `<li id="c-${esc(c.telefono)}"><details${abierto === c.telefono ? ' open' : ''}><summary><b>+${esc(c.telefono)}${l.nombre ? ' · ' + esc(l.nombre) : ''}</b>${l.producto ? '<br>' + esc(l.producto) : ''}<br><small>${esc(cabecera)}</small>${ultimoCliente ? `<p>“${esc(ultimoCliente.txt.slice(0, 120))}”</p>` : ''}<span class="ver">Ver charla ▾</span></summary>
-<div class="chat">${msgs.map((m) => `<div class="m ${m.quien}">${m.quien === 'vos' ? '<b>Vos:</b> ' : ''}${esc(m.txt).replace(/\n/g, '<br>')}</div>`).join('')}</div>${caja}${presu(c, l)}</details></li>`;
+<div class="chat">${msgs.map((m) => `<div class="m ${m.quien}">${m.quien === 'vos' ? '<b>Vos:</b> ' : ''}${conArchivos(esc(m.txt)).replace(/\n/g, '<br>')}</div>`).join('')}</div>${caja}${presu(c, l)}</details></li>`;
   };
   const delAnuncio = chats.filter((c) => c.origen === 'anuncio').length;
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Charlas PuertoBox</title>
