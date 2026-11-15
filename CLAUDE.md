@@ -11,7 +11,7 @@ Después de cada cambio o cada cosa nueva que aprendas:
 - Si leíste material del curso, agregá o completá su resumen en `docs/curso/` y marcalo en el índice.
 - Corré los tests: `npm test`.
 
-Publicidad: para proponer, evaluar o apagar anuncios usá la skill `ad-creative` (`.claude/skills/ad-creative`, con el contexto de `.claude/product-marketing.md`). Gustavo aprobó solo esa (15/11/2026).
+Publicidad: usá las skills de `.claude/skills` (de coreyhaines31/marketingskills, MIT), con el contexto de `.claude/product-marketing.md`: `ad-creative` para proponer, evaluar o apagar anuncios; `competitor-profiling` para estudiar a la competencia; `offers` para armar la oferta. Gustavo aprobó esas 3 (15/11/2026).
 
 Reglas fijas:
 - Gustavo habla en castellano rioplatense informal. Un paso por vez, simple y directo.
