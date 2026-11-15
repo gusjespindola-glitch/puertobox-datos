@@ -697,6 +697,13 @@ function servidor() {
 
 if (require.main === module) {
   servidor().listen(PORT, () => console.log(`Bot escuchando en :${PORT}`));
+  // 15/11: los links vencen a los 7 días; al arrancar, si hace más de 20 h que no recibió accesos nuevos, le llegan por ntfy
+  // (botones "Ver pendientes" y "Ver charlas"), así nunca se queda sin poder entrar.
+  setTimeout(() => {
+    if (Date.now() - (store.meta('accesosEn') || 0) < 20 * 3600e3) return;
+    avisarNtfy('Accesos actualizados: Pendientes (con el botón de Prueba completa) y Charlas. Los links vencen a los 7 días; cada mañana llegan nuevos con el resumen.', 'PuertoBox: accesos', 'low')
+      .then((ok) => { if (ok) store.meta('accesosEn', Date.now()); }).catch(() => {});
+  }, 20e3).unref();
   // Auditoría 15/11: lo que quedó sin contestar por un reinicio (deploy) se contesta al arrancar.
   setTimeout(() => {
     for (const c of pendientesSinResponder(store)) atender(c.telefono, '', store, fetch, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), true).catch((e) => console.error('Sin responder:', e.message));
