@@ -65,17 +65,6 @@ test('posición mal escrita: avisa y no toca el presupuesto', () => {
   assert.strictEqual(store.lead(tel).posicion_fija.posicion, '8504.40.90.900R');
 });
 
-test('cotizar: peso estimado da solo un aproximado y no arma presupuesto formal', () => {
-  const store = crearStore(null);
-  const tel = '5491100000002';
-  const ctx = { store, telefono: tel, derivaciones: [] };
-  const r = ejecutar('cotizar', { kg: 30, valor_factura_usd: 400, die: 20, regimen: 'comercial', unidades: 200, peso_estimado: true }, ctx);
-  assert.strictEqual(r.es_aproximado, true);
-  assert.match(r.aviso, /SOLO un aproximado/);
-  assert.ok(r.costo_por_unidad_usd > 2);
-  assert.strictEqual(store.crearPresupuesto(tel), null);
-});
-
 test('cotizar: con el precio de venta muestra la ganancia por unidad en pesos', () => {
   const store = crearStore(null);
   const ctx = { store, telefono: '5491100000003', derivaciones: [] };

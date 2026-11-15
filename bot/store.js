@@ -83,7 +83,6 @@ function crearStore(archivo) {
     crearPresupuesto(tel) {
       const l = db.leads[tel];
       if (!l || !l.cotizacion || !l.cotizacion.r) return null;
-      if (l.cotizacion.input && l.cotizacion.input.peso_estimado) return null; // un aproximado con peso estimado no es presupuesto (15/11)
       db.presupuestos ||= {};
       const existente = Object.values(db.presupuestos).find((p) => p.tel === tel && p.cotizacionEn === l.cotizacion.en);
       if (existente) return existente;

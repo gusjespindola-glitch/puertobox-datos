@@ -266,7 +266,7 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder
     const conf = fija.confirmada ? (fija.bot_propuso ? `Corregida por vos (el bot había puesto ${esc(fija.bot_propuso)})` : 'Confirmada por vos antes') : `Elegida por el bot, confianza ${esc(fija.confianza || '-')}`;
     const pos = `<label>Posición arancelaria <input name="pos" value="${esc(fija.posicion || '')}" placeholder="Ej.: 8507.60.00"></label>
 <small>${fija.posicion ? `${conf}. ${esc(fija.nombre_tecnico || fija.descripcion_arancel || '')} · DIE ${esc(fija.die)}%.` : '⚠️ El bot no eligió posición: escribila.'} Si está mal, escribí la correcta: se recalcula el presupuesto y el bot la aprende para ese producto.</small>
-${m ? `<small>🎯 El bot acertó ${m.bien} de ${m.total} posiciones a la primera · ${m.seguidas} seguidas${m.listo ? ' · ya se puede prender el envío automático' : ` · faltan ${m.falta} seguidas para el envío automático`}.</small>` : ''}`;
+${m && m.total ? `<small>✅ De los presupuestos que mandaste, en ${m.bien} de ${m.total} no tuviste que cambiar la posición.${m.listo ? ' Los últimos 20 salieron bien: ya se podrían mandar solos.' : ''}</small>` : ''}`;
     return `<form class="presu" method="post"><b>📄 Presupuesto formal (PDF)</b><small>${estado} Total a PuertoBox USD ${esc(l.cotizacion.r.total_puertobox_usd)}.</small>
 ${pos}
 <input name="nombre" placeholder="Nombre y apellido" value="${esc(cli.nombre || l.nombre || '')}"><input name="doc" placeholder="CUIT / DNI (opcional)" value="${esc(cli.doc || '')}"><input name="dom" placeholder="Domicilio (opcional)" value="${esc(cli.dom || '')}">
