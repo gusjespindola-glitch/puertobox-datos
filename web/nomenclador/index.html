@@ -122,6 +122,7 @@ button.ghost{background:transparent;color:var(--acc)}
 @media (max-width:600px){#doc{padding:18px 14px}#doc .hd{grid-template-columns:1fr 70px}#doc .hd .cp{grid-column:1/-1;border-top:1.5px solid #1b2333}#doc .lt{border-right:0}#doc .bx{grid-template-columns:1fr}}
 @media print{body>*:not(#pres){display:none!important}#pres{position:static;background:none;padding:0;display:block;overflow:visible}#pres .bar{display:none}html,body{background:#fff!important;height:auto}#doc{max-width:none;width:100%;padding:0 1px;border-radius:0;font-size:12px}#doc .hd{grid-template-columns:1fr 84px 1fr}#doc h3{margin:12px 0 5px}#doc td{padding:5px 4px}@page{size:A4;margin:12mm}}
 @media (prefers-reduced-motion:no-preference){.res{transition:border-color .12s}}
+.charla{background:#eef5ff;border-left:4px solid #0b4f8a;padding:12px;border-radius:10px;margin:10px 0;line-height:1.5}.charla.mal{background:#fff1f0;border-color:#c8102e}.charla.bien{background:#eefaf0;border-color:#1a7f37}button.enviar{background:#1a7f37;color:#fff;font-size:17px;padding:14px 18px;width:100%;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -145,6 +146,7 @@ button.ghost{background:transparent;color:var(--acc)}
     <section class="panel cot" id="cot">
       <h2>Cotizador PuertoBox (presupuesto a mano)</h2>
       <p class="note">Mismo cálculo que el bot: flete por kilo entero (real o volumétrico, el mayor), gestión, recargos e impuestos estimados. La posición y el DIE se toman de la ficha de arriba.</p>
+      <div id="c_charla" class="charla" hidden></div>
       <div class="form">
         <div><label for="c_valor">Valor al proveedor (USD)</label><input id="c_valor" type="number" min="0" step="0.01" value="300"></div>
         <div><label for="c_kg">Peso real total (kg)</label><input id="c_kg" type="number" min="0" step="0.1" value="10"></div>
@@ -173,7 +175,7 @@ button.ghost{background:transparent;color:var(--acc)}
           <div><label for="p_vali">Validez (días)</label><input id="p_vali" type="number" min="1" value="7"></div>
         </div>
       </details>
-      <div class="row"><button id="c_pres" type="button">Generar presupuesto (PDF)</button><button id="c_copy" type="button" class="ghost">Copiar para WhatsApp</button><span class="note" id="c_copied"></span></div>
+      <div class="row"><button id="c_enviar" type="button" class="enviar" hidden>📲 Enviar presupuesto al cliente</button><button id="c_pres" type="button">Generar presupuesto (PDF)</button><button id="c_copy" type="button" class="ghost">Copiar para WhatsApp</button><span class="note" id="c_copied"></span></div>
     </section>
     <section class="panel calc" id="calc">
       <h2>Liquidación estimada</h2>
@@ -220,25 +222,55 @@ async function cargar() {
   N = Nomenclador.crear({ sim, sufijos, intervenciones, sinonimos, notas, frecuentes });
   $('src').textContent = `Arancel Integrado ARCA · archivos del ${N.meta.fecha_archivos.split('-').reverse().join('/')} · ${N.meta.posiciones_sim.toLocaleString('es-AR')} posiciones SIM`;
   $('frec').innerHTML = FREC.map((f) => `<button type="button" class="chip" data-q="${esc(f)}">${esc(f)}</button>`).join('');
-  // Viene desde una charla (15/11): #cot&pos=...&valor=...&kg=... → carga el cotizador con los datos del cliente.
-  if (location.hash.startsWith('#cot&')) {
-    const q = new URLSearchParams(location.hash.slice(5));
-    const pos = (q.get('pos') || '').replace(/\D/g, '');
-    if (pos) { const r = N.buscar(pos, 1); if (r[0]) { $('q').value = r[0].c; buscar(); abrir(r[0].c); } }
-    const m = { valor: 'c_valor', kg: 'c_kg', cajas: 'c_cajas', largo: 'c_largo', ancho: 'c_ancho', alto: 'c_alto', unid: 'c_unid', reg: 'c_reg', die: 'c_die', ii: 'c_ii', cli: 'p_cli', prod: 'p_prod' };
-    Object.entries(m).forEach(([k, id]) => { if (q.has(k) && $(id)) $(id).value = q.get(k); });
-    if (!q.has('valor')) $('c_valor').value = '';
-    if (!q.has('kg')) $('c_kg').value = '';
-    ['litio', 'cuit'].forEach((k) => { const el = $('c_' + k); if (el) el.checked = q.get(k) === '1'; });
-    const det = document.querySelector('#cot details'); if (det && (q.has('cli') || q.has('prod'))) det.open = true;
-    cotizar();
-    setTimeout(() => $('cot').scrollIntoView({ behavior: 'smooth' }), 300);
-    verHist(); return;
-  }
+  // Viene desde una charla (15/11, Gustavo): #cot&tel=... → el servidor lee la charla y carga todo; Gustavo revisa y manda.
+  if (location.hash.startsWith('#cot&tel=')) { verHist(); return desdeCharla(location.hash.slice(9).replace(/\D/g, '')); }
   const h = location.hash.match(/^#p-(\d+)/);
   if (h) { const r = N.buscar(h[1], 1); if (r[0]) { $('q').value = r[0].c; buscar(); abrir(r[0].c); } }
   else { $('q').value = 'zapatillas'; buscar(); const r = N.buscar('zapatillas', 30).find((f) => f.die > 0); if (r) abrir(r.c); }
   verHist();
+}
+
+let CHARLA = null;
+async function desdeCharla(tel) {
+  const box = $('c_charla');
+  box.hidden = false; box.className = 'charla'; box.innerHTML = 'Leyendo la charla y buscando la posición… (puede tardar unos segundos)';
+  setTimeout(() => $('cot').scrollIntoView({ behavior: 'smooth' }), 200);
+  let d;
+  try { d = await fetch('api/charla?tel=' + tel).then((r) => r.json()); } catch (e) { d = { error: 'No pude conectarme.' }; }
+  if (d.error) { box.className = 'charla mal'; box.textContent = d.error; return; }
+  CHARLA = d;
+  // El DIE sale siempre de la ficha de ARCA. Sin posición, no queda abierta ninguna ficha vieja.
+  const r0 = d.posicion ? N.buscar(d.posicion, 1)[0] : null;
+  if (r0) { $('q').value = r0.c; buscar(); abrir(r0.c); }
+  else { sel = null; $('q').value = (d.producto || '').slice(0, 60); buscar(); $('ficha').innerHTML = '<div class="empty">Sin posición todavía: elegila en la lista de arriba.</div>'; $('c_die').value = ''; $('c_ii').value = 0; }
+  const m = { valor: 'c_valor', kg: 'c_kg', cajas: 'c_cajas', largo: 'c_largo', ancho: 'c_ancho', alto: 'c_alto', unid: 'c_unid', reg: 'c_reg' };
+  Object.entries(m).forEach(([k, id]) => { $(id).value = d.input[k] ?? ''; });
+  $('c_litio').checked = !!d.input.litio; $('c_cuit').checked = !!d.input.cuit;
+  $('p_cli').value = d.nombre || ''; $('p_prod').value = d.producto || '';
+  document.querySelector('#cot details').open = true;
+  cotizar();
+  const falta = d.faltan.length ? `<b>Falta:</b> ${esc(d.faltan.join(', '))}. Completalo arriba.` : '<b>Está todo.</b> Revisalo y mandalo.';
+  box.innerHTML = `<b>Cargado de la charla${d.nombre ? ' con ' + esc(d.nombre) : ''}</b> (${d.fuente === 'cotizacion' ? 'lo que cotizó el bot' : 'datos que dio el cliente'}).<br>${falta}`
+    + (d.posicion_a_confirmar ? '<br>⚠️ La posición no es segura: confirmala en la ficha de arriba (si cambiás de posición, se usa la que tengas abierta).' : '')
+    + (d.notas ? `<br>📝 ${esc(d.notas)}` : '')
+    + `<br><small>${d.ventana_horas > 0 ? `Te quedan ${d.ventana_horas} h para mandárselo por WhatsApp.` : 'Pasaron más de 24 h: WhatsApp no deja mandarle el PDF.'}</small>`;
+  $('c_enviar').hidden = !(d.ventana_horas > 0);
+}
+
+async function enviarPresupuesto() {
+  const b = $('c_enviar');
+  if (!CHARLA) return;
+  if (b.dataset.ok !== '1') { b.dataset.ok = '1'; b.textContent = 'Tocá de nuevo para mandarlo'; setTimeout(() => { b.dataset.ok = ''; b.textContent = '📲 Enviar presupuesto al cliente'; }, 6000); return; }
+  b.disabled = true; b.textContent = 'Enviando…';
+  const body = { tel: CHARLA.telefono, posicion: sel || '', valor: $('c_valor').value, kg: $('c_kg').value, cajas: $('c_cajas').value, largo: $('c_largo').value, ancho: $('c_ancho').value, alto: $('c_alto').value,
+    unid: $('c_unid').value, reg: $('c_reg').value, die: $('c_die').value, ii: $('c_ii').value, litio: $('c_litio').checked ? '1' : '', cuit: $('c_cuit').checked ? '1' : '', sinfr: $('c_sinfr').checked ? '1' : '',
+    cli: $('p_cli').value, doc: $('p_doc').value, dom: $('p_dom').value, iva: $('p_iva').value, prod: $('p_prod').value };
+  let r;
+  try { r = await fetch('api/enviar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((x) => x.json()); } catch (e) { r = { error: 'No pude conectarme.' }; }
+  b.disabled = false; b.dataset.ok = '';
+  const box = $('c_charla');
+  if (r.ok) { b.textContent = '✅ Enviado'; box.className = 'charla bien'; box.innerHTML = `<b>Presupuesto N° ${esc(r.nro)} enviado</b> por WhatsApp (total a PuertoBox USD ${esc(r.total)}). El bot queda en pausa en esa charla. <a href="/presupuesto/${esc(r.link.split('/').pop())}" target="_blank">Ver el PDF que le llegó</a>`; }
+  else { b.textContent = '📲 Enviar presupuesto al cliente'; box.className = 'charla mal'; box.textContent = 'No se mandó: ' + r.error; }
 }
 
 function buscar() {
@@ -332,6 +364,7 @@ async function cotizar() {
   // la liquidación de abajo toma los mismos datos
   $('fob').value = $('c_valor').value || 0; $('flete').value = d.cif ? Math.max(0, d.cif / 1.01 - (parseFloat($('c_valor').value) || 0)).toFixed(2) : $('flete').value; liquidar();
 }
+$('c_enviar').addEventListener('click', enviarPresupuesto);
 ['c_valor', 'c_kg', 'c_cajas', 'c_largo', 'c_ancho', 'c_alto', 'c_unid', 'c_reg', 'c_die', 'c_ii', 'c_litio', 'c_cuit', 'c_sinfr'].forEach((id) => $(id).addEventListener('input', () => { clearTimeout(cotizar.t); cotizar.t = setTimeout(cotizar, 200); }));
 $('c_copy').addEventListener('click', async () => {
   const r = cotizar.ultimo; if (!r) return;

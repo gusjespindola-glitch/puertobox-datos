@@ -233,19 +233,9 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder
   const ESTADO = { nuevo: 'Consultó', cotizado: 'Tiene presupuesto', derivado: 'Derivado a vos', listo_para_cerrar: 'Quiere pagar' };
   // Presupuesto formal en PDF (15/11): se arma solo con la última cotización; lo manda Gustavo con un botón.
   // Botón al cotizador del nomenclador con los datos del cliente ya cargados (15/11: chats sin cotización guardada o para retocarla).
-  const aCotizador = (l, texto) => {
-    if (!linkCotizador) return '';
-    const i = (l.cotizacion && l.cotizacion.input) || {};
-    const f = l.posicion_fija || {};
-    const q = new URLSearchParams();
-    const pon = (k, v) => { if (v !== undefined && v !== null && v !== '' && v !== false) q.set(k, v === true ? '1' : v); };
-    pon('pos', f.posicion || l.posicion); pon('die', i.die ?? f.die); pon('ii', i.internos || f.internos); pon('valor', i.valor_factura_usd); pon('kg', i.kg);
-    pon('cajas', i.cantidad_cajas); pon('largo', i.largo_cm); pon('ancho', i.ancho_cm); pon('alto', i.alto_cm); pon('unid', i.unidades); pon('reg', i.regimen);
-    pon('litio', i.con_bateria_litio); pon('cuit', i.con_cuit_puertobox); pon('cli', l.nombre); pon('prod', l.producto);
-    return `<a class="acot" href="${esc(linkCotizador)}#cot&${esc(q.toString())}">${texto}</a>`;
-  };
+  const aCotizador = (tel, texto) => (linkCotizador ? `<a class="acot" href="${esc(linkCotizador)}#cot&tel=${esc(tel)}">${texto}</a>` : '');
   const presu = (c, l) => {
-    if (!linkPresu || !l.cotizacion || !l.cotizacion.r) return aCotizador(l, '🧮 Armar presupuesto en el cotizador');
+    if (!linkPresu || !l.cotizacion || !l.cotizacion.r) return aCotizador(c.telefono, '🧮 Armar presupuesto (ya cargado con la charla)');
     const q = linkPresu(c.telefono);
     const p = l.presupuesto && store.presupuesto ? store.presupuesto(l.presupuesto) : null;
     const cli = (p && p.cliente) || {};
@@ -253,7 +243,7 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder
     return `<form class="presu" method="post"><b>📄 Presupuesto formal (PDF)</b><small>${estado} Total a PuertoBox USD ${esc(l.cotizacion.r.total_puertobox_usd)}.</small>
 <input name="nombre" placeholder="Nombre y apellido" value="${esc(cli.nombre || l.nombre || '')}"><input name="doc" placeholder="CUIT / DNI (opcional)" value="${esc(cli.doc || '')}"><input name="dom" placeholder="Domicilio (opcional)" value="${esc(cli.dom || '')}">
 <select name="iva">${['', 'Consumidor final', 'Monotributista', 'Responsable inscripto'].map((o) => `<option${(cli.iva || '') === o ? ' selected' : ''}>${o}</option>`).join('')}</select>
-<div class="bt"><button formaction="/presupuesto-ver${q}" class="sec">Ver PDF</button><button formaction="/presupuesto-enviar${q}">Enviar presupuesto</button></div>${aCotizador(l, '🧮 Retocar en el cotizador')}</form>`;
+<div class="bt"><button formaction="/presupuesto-ver${q}" class="sec">Ver PDF</button><button formaction="/presupuesto-enviar${q}">Enviar presupuesto</button></div>${aCotizador(c.telefono, '🧮 Revisar en el cotizador')}</form>`;
   };
   const tarjeta = (c) => {
     const l = (store.lead ? store.lead(c.telefono) : null) || {};

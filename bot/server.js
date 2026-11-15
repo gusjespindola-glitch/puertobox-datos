@@ -430,6 +430,25 @@ function servirNomenclador(req, res, url) {
   if (url.pathname === '/nomenclador') { res.writeHead(302, { location: '/nomenclador/' + (dada ? '?key=' + encodeURIComponent(dada) : '') }); return res.end(); }
   const rel = decodeURIComponent(url.pathname.slice('/nomenclador/'.length)) || 'index.html';
   // Cotizador a mano (15/11, Gustavo): el mismo motor que usa el bot (`cotizar`), así los números siempre coinciden.
+  // Presupuesto desde una charla (15/11): datos cargados solos y envío del PDF cuando Gustavo lo aprueba.
+  if (rel === 'api/charla') {
+    const tel = soloDigitos(url.searchParams.get('tel'));
+    return require('./presupuesto_charla').datosDeCharla(tel, { store, fetchImpl: fetch })
+      .then((d) => { res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(d)); })
+      .catch((e) => { res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify({ error: e.message })); });
+  }
+  if (rel === 'api/enviar') {
+    if (req.method !== 'POST') { res.writeHead(405); return res.end(); }
+    let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 20000) req.destroy(); });
+    return req.on('end', async () => {
+      let out;
+      try {
+        const f = JSON.parse(raw || '{}');
+        out = await require('./presupuesto_charla').enviarDesdeCotizador(soloDigitos(f.tel), f, { store, enviarDoc: (to, link, fn, cap) => enviarDocumento(to, link, fn, cap), baseUrl: BASE_URL() });
+      } catch (e) { out = { error: String(e.message).slice(0, 160) }; }
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(out));
+    });
+  }
   if (rel === 'api/cotizar') {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
     return res.end(JSON.stringify(cotizarAMano(url.searchParams)));
@@ -628,7 +647,7 @@ function servidor() {
       return correrEscenarios().then((txt) => { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }); res.end(txt); })
         .catch((e) => { res.writeHead(500); res.end('Error: ' + e.message); });
     }
-    if (req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) return servirNomenclador(req, res, url);
+    if ((req.method === 'GET' || (req.method === 'POST' && url.pathname === '/nomenclador/api/enviar')) && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) return servirNomenclador(req, res, url);
     if (req.method === 'GET' || req.method === 'HEAD') {
       const pag = paginas.servir(url.pathname, url.searchParams);
       if (pag) { res.writeHead(200, { 'content-type': pag.tipo, 'cache-control': 'public, max-age=60, s-maxage=60' }); return res.end(req.method === 'HEAD' ? undefined : pag.cuerpo); }
