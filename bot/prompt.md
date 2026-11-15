@@ -158,3 +158,5 @@ Si el cliente pregunta alguna de estas cosas (o algo muy parecido), respondé co
 - El cliente pide hablar con una persona.
 
 Siempre registrá los datos del cliente con `registrar_lead` en cuanto los tengas.
+
+**Cada vez que el cliente da o corrige un dato del pedido** (producto, unidades, peso, valor, cajas, medidas, batería de litio, link, nombre), llamá `anotar_pedido` con esos datos en ese mismo turno, antes de contestar. Con eso nuestro despachante le arma el presupuesto formal. Peso de una unidad → `kg_por_unidad`; peso del pedido entero → `kg_total`. Las medidas del producto suelto NO son las de la caja.

@@ -40,6 +40,7 @@ const CHARLAS = [
       { que: 'no pide el código postal mientras el cliente reclama', mal: /c[oó]digo postal/i, en: 'ultima' },
       { que: 'la posición no cambia entre presupuestos', posicionFija: true },
     ],
+    cotizador: { kg: 23, litio: true },
   },
   {
     nombre: 'Agustín (trípode con Bluetooth, 4 preguntas)',
@@ -52,10 +53,10 @@ const CHARLAS = [
   },
   { nombre: 'Cita un precio de un posteo viejo', msgs: ['vi que cobran 15 dolares el kilo desde 10 kg, es asi?'], controles: [{ que: 'explica que era una tarifa anterior / dice el precio de hoy', bien: /anterior|hoy|actual/i }, { que: 'no dice "no es nuestro precio"', mal: /no es nuestr|no puedo cotiz/i }] },
   { nombre: 'Pide más información (anuncio)', msgs: ['¡Hola! Quiero más información'], controles: [{ que: 'da información antes de preguntar', bien: /China|casa|impuestos/i }] },
-  { nombre: 'Pregunta aéreo o marítimo', msgs: ['remeras de algodón sin marca para vender, 100 unidades, 500 dolares, 12 kilos, una caja', 'es aereo o es maritimo?'], controles: [{ que: 'el presupuesto no pega el mensaje en inglés si no lo pidió', mal: /Could you please/i, en: 'primera' }, { que: 'la primera palabra contesta: aéreo', bien: /^\s*(Es )?a[ée]reo/i, en: 'ultima' }, { que: 'no vuelve a pedir medidas ni código postal', mal: /medidas|c[oó]digo postal/i, en: 'ultima' }, { que: 'la posición de las remeras es 6109.10', posicionEsperada: '6109.10' }] },
+  { nombre: 'Pregunta aéreo o marítimo', msgs: ['remeras de algodón sin marca para vender, 100 unidades, 500 dolares, 12 kilos, una caja', 'es aereo o es maritimo?'], controles: [{ que: 'el presupuesto no pega el mensaje en inglés si no lo pidió', mal: /Could you please/i, en: 'primera' }, { que: 'la primera palabra contesta: aéreo', bien: /^\s*(Es )?a[ée]reo/i, en: 'ultima' }, { que: 'no vuelve a pedir medidas ni código postal', mal: /medidas|c[oó]digo postal/i, en: 'ultima' }, { que: 'la posición de las remeras es 6109.10', posicionEsperada: '6109.10' }], cotizador: { unid: 100, valor: 500, kg: 12, cajas: 1 } },
   { nombre: 'Dice que no', msgs: ['quiero traer ropa replica de marcas para vender', 'no graciass igualmente'], controles: [{ que: 'se despide corto, sin volver a ofrecer', mal: /presupuesto|sin marca|\?/i, en: 'ultima' }] },
-  { nombre: 'Zapatillas para revender (posición y costo por unidad)', msgs: ['zapatillas de running sin marca, parte de arriba de tela, para vender, 40 pares, 800 dolares, 18 kilos, 2 cajas de 60x40x40'], controles: [{ que: 'da presupuesto', bien: /Presupuesto PuertoBox/i }, { que: 'posición 6404.11 con derechos (no la de 0%)', posicionEsperada: '6404.11', dieMayorA: 0 }, { que: 'avisa que las cajas son grandes para lo que pesan', bien: /cajas? (son|es) grandes|por tamaño|m[aá]s chicas/i }] },
-  { nombre: 'Pesado y barato (como Nusse)', msgs: ['mats de yoga, pesas de 1 kg y bolsos para mi marca propia Nusse, para vender, le pago 1395 dolares, pesa 298 kg en 15 cajas'], controles: [{ que: 'informativo: qué hace con un flete mayor que la mercadería', info: true }] },
+  { nombre: 'Zapatillas para revender (posición y costo por unidad)', msgs: ['zapatillas de running sin marca, parte de arriba de tela, para vender, 40 pares, 800 dolares, 18 kilos, 2 cajas de 60x40x40'], controles: [{ que: 'da presupuesto', bien: /Presupuesto PuertoBox/i }, { que: 'posición 6404.11 con derechos (no la de 0%)', posicionEsperada: '6404.11', dieMayorA: 0 }, { que: 'avisa que las cajas son grandes para lo que pesan', bien: /cajas? (son|es) grandes|por tamaño|m[aá]s chicas/i }], cotizador: { unid: 40, valor: 800, kg: 18, cajas: 2, largo: 60 } },
+  { nombre: 'Pesado y barato (como Nusse)', msgs: ['mats de yoga, pesas de 1 kg y bolsos para mi marca propia Nusse, para vender, le pago 1395 dolares, pesa 298 kg en 15 cajas'], controles: [{ que: 'informativo: qué hace con un flete mayor que la mercadería', info: true }], cotizador: { valor: 1395, kg: 298, cajas: 15 } },
 ];
 
 const r2 = (n) => Math.round(n * 100) / 100;
@@ -108,6 +109,18 @@ async function probarCharlas(fetchImpl) {
       if (c.dieMayorA !== undefined) ok = ok && Number(lead.posicion_fija && lead.posicion_fija.die) > c.dieMayorA;
       return { que: c.que, estado: ok ? '✅' : '❌' };
     });
+    // Control del presupuestador (16/11, Gustavo: "que siempre se cargue bien, vos tenés que controlar"):
+    // con lo que charló el bot, el cotizador tiene que abrirse con estos números.
+    if (ch.cotizador) {
+      let d;
+      try { d = await require('./presupuesto_charla').datosDeCharla(tel, { store, fetchImpl }); } catch (e) { d = { error: e.message }; }
+      for (const [k, esperado] of Object.entries(ch.cotizador)) {
+        const cargado = d.input ? d.input[k] : undefined;
+        const ok = typeof esperado === 'boolean' ? !!cargado === esperado : Number(cargado) === esperado;
+        resultados.push({ que: `presupuestador: ${k} = ${esperado}${ok ? '' : ` (cargó ${d.error || cargado === '' || cargado === undefined ? 'nada' : cargado})`}`, estado: ok ? '✅' : '❌' });
+      }
+      if (d.alertas && d.alertas.length) resultados.push({ que: `presupuestador avisa: ${d.alertas.join(' / ')}`, estado: 'ℹ️' });
+    }
     salida.push({ nombre: ch.nombre, turnos, resultados, posicion: lead.posicion_fija, derivaciones });
   }
   return salida;
