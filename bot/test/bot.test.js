@@ -261,3 +261,44 @@ test('sin saldo en Anthropic: el cliente recibe espera y Gustavo un aviso', asyn
   assert.ok(enviados.some((b) => b.includes('te va a responder nuestro despachante')), 'mensaje de espera al cliente');
   assert.ok(enviados.some((b) => b.includes('SIN SALDO')), 'aviso a Gustavo');
 });
+
+// 15/11: charla real del arrancador. 10 unidades de 0,9 kg recotizadas como 23 kg inflaron el costo por unidad.
+test('cotizar: si unidades y peso no cierran, no cotiza y pide las unidades nuevas', async () => {
+  const store = crearStore(null);
+  let r;
+  const { fetchImpl } = mock([
+    tool('cotizar', { kg: 23, valor_factura_usd: 200, die: 20, regimen: 'comercial', unidades: 10, kg_por_unidad: 0.9 }),
+    (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('¿Cuántas unidades serían con esos 23 kg?'); },
+  ]);
+  await procesar(msg('5493', 'serian 23 kg'), { fetchImpl, store, debounceMs: 0 });
+  assert.ok(r.error && /unidades/.test(r.error));
+  assert.strictEqual(r.costo_por_unidad_usd, undefined);
+});
+
+test('cotizar: devuelve el kilo con la gestión incluida (para comparar con la publicidad)', async () => {
+  const store = crearStore(null);
+  let r;
+  const { fetchImpl } = mock([
+    tool('cotizar', { kg: 23, valor_factura_usd: 500, die: 20, regimen: 'comercial', unidades: 25, kg_por_unidad: 0.9 }),
+    (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('ok'); },
+  ]);
+  await procesar(msg('5494', 'cotizame'), { fetchImpl, store, debounceMs: 0 });
+  assert.strictEqual(r.total_puertobox_usd, 434); // 23 kg x USD 18 + USD 20
+  assert.strictEqual(r.usd_por_kilo_con_gestion, 18.87);
+  assert.strictEqual(r.unidades, 25);
+});
+
+test('simulador: incluye los casos de la charla del arrancador', () => {
+  const { ESCENARIOS, revisar } = require('../simulador');
+  const nombres = ESCENARIOS.map((e) => e.nombre);
+  for (const n of ['Cambia el peso: preguntar unidades nuevas', 'Compara con el precio de la publicidad', 'Confunde costo por unidad con el kilo', 'Se enoja y pide una persona']) assert.ok(nombres.includes(n), n);
+  assert.ok(revisar('El dato de USD 16 por kilo no es nuestro precio, así que no puedo cotizarlo.', { ultimo: 'x' }).some((p) => /publicidad/.test(p)));
+});
+
+test('prompt: reglas de cambio de peso, precio por kilo y cliente molesto', () => {
+  const p = require('fs').readFileSync(require('path').join(__dirname, '..', 'prompt.md'), 'utf8');
+  assert.match(p, /no reuses las unidades ni el valor viejos/);
+  assert.match(p, /usd_por_kilo_con_gestion/);
+  assert.match(p, /No vuelvas a hacer la pregunta pendiente/);
+  assert.match(p, /no del kilo/);
+});
