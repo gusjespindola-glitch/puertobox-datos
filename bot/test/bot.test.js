@@ -336,3 +336,15 @@ test('decisiones de Gustavo 15/11: régimen por unidades, CUIT, litio y 50 kg po
   assert.match(faq, /lo traemos con el CUIT de PuertoBox/);
   assert.doesNotMatch(faq, /figur/);
 });
+
+test('cotizar sin cantidad de cajas: no cobra recargo por caja pesada ni pide dividir (auditoría de charlas 15/11)', async () => {
+  const { ejecutar } = require('../tools');
+  for (const kg of [30, 90]) {
+    const r = await ejecutar('cotizar', { kg, valor_factura_usd: 220, die: 16, regimen: 'comercial' }, { store: crearStore(null), telefono: 'x', derivaciones: [] });
+    assert.ok(!r.recargo_cajas_usd, `${kg} kg: no debería cobrar recargo`);
+    assert.ok(!/más de 50 kg|dividir/.test(r.aviso || ''), `${kg} kg: no debería pedir dividir`);
+    assert.strictEqual(r.flete_firme, false);
+  }
+  const conCajas = await ejecutar('cotizar', { kg: 30, cantidad_cajas: 1, valor_factura_usd: 220, die: 16, regimen: 'comercial' }, { store: crearStore(null), telefono: 'x', derivaciones: [] });
+  assert.ok(conCajas.recargo_cajas_usd > 0);
+});
