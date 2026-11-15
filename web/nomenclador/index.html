@@ -92,6 +92,35 @@ button.ghost{background:transparent;color:var(--acc)}
 .pesos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .big .v{font-size:1.4rem;color:var(--acc)}
 .warnbox{font-size:.84rem;color:var(--warn);display:flex;flex-direction:column;gap:4px}
+/* Presupuesto tipo comprobante argentino (se imprime / guarda como PDF) */
+#pres{position:fixed;inset:0;background:rgba(10,16,24,.75);z-index:50;overflow:auto;padding:16px;display:none}
+#pres.on{display:block}
+#pres .bar{max-width:800px;margin:0 auto 10px;display:flex;gap:8px;justify-content:flex-end}
+#doc{background:#fff;color:#1b2333;max-width:800px;margin:0 auto;padding:34px 38px;font:13px/1.45 var(--f-body);border-radius:4px}
+#doc .hd{display:grid;grid-template-columns:1fr 92px 1fr;border:1.5px solid #1b2333}
+#doc .hd>div{padding:12px 14px}
+#doc .em .lg{font:700 24px var(--f-body);letter-spacing:-.02em}#doc .em .lg span{color:#c8102e}
+#doc .em p,#doc .cp p{margin:2px 0;font-size:11.5px;color:#3c4556}
+#doc .lt{border-left:1.5px solid #1b2333;border-right:1.5px solid #1b2333;text-align:center;padding:8px 4px!important}
+#doc .lt b{display:block;font:700 42px/1 var(--f-body);border:1.5px solid #1b2333;width:58px;margin:0 auto 4px;padding:4px 0}
+#doc .lt small{font-size:9px;line-height:1.2;display:block;color:#3c4556}
+#doc .cp h2{font:700 18px var(--f-body);margin:0 0 6px;letter-spacing:.04em}
+#doc .bx{border:1.5px solid #1b2333;border-top:0;padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:3px 18px;font-size:12px}
+#doc .bx span{color:#5b6475}
+#doc h3{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:#5b6475;margin:16px 0 6px}
+#doc table{width:100%;border-collapse:collapse;font-size:12.5px}
+#doc th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#5b6475;text-align:left;border-bottom:1.5px solid #1b2333;padding:6px 4px;background:none}
+#doc td{padding:7px 4px;border-bottom:1px solid #e6e9ef}
+#doc td.r,#doc th.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#doc tr.tot td{border-top:1.5px solid #1b2333;border-bottom:0;font-weight:700;font-size:14px}
+#doc .total{display:flex;justify-content:space-between;align-items:center;background:#1b2333;color:#fff;padding:12px 16px;margin-top:10px;border-radius:3px}
+#doc .total b{font-size:20px}
+#doc .imp{background:#f4f6fa;border:1px solid #e3e7ee;border-radius:3px;padding:10px 14px;margin-top:6px}
+#doc .cond{font-size:10.5px;color:#3c4556;padding-left:16px;margin:0;line-height:1.5}
+#doc .pie{display:flex;justify-content:space-between;gap:12px;margin-top:22px;font-size:11px;color:#3c4556;flex-wrap:wrap}
+#doc .firma{border-top:1px solid #1b2333;padding-top:6px;min-width:220px;text-align:center}
+@media (max-width:600px){#doc{padding:18px 14px}#doc .hd{grid-template-columns:1fr 70px}#doc .hd .cp{grid-column:1/-1;border-top:1.5px solid #1b2333}#doc .lt{border-right:0}#doc .bx{grid-template-columns:1fr}}
+@media print{body>*:not(#pres){display:none!important}#pres{position:static;background:none;padding:0;display:block;overflow:visible}#pres .bar{display:none}html,body{background:#fff!important;height:auto}#doc{max-width:none;width:100%;padding:0 1px;border-radius:0;font-size:12px}#doc .hd{grid-template-columns:1fr 84px 1fr}#doc h3{margin:12px 0 5px}#doc td{padding:5px 4px}@page{size:A4;margin:12mm}}
 @media (prefers-reduced-motion:no-preference){.res{transition:border-color .12s}}
 </style>
 </head>
@@ -134,7 +163,17 @@ button.ghost{background:transparent;color:var(--acc)}
       <div class="pesos" id="c_pesos"></div>
       <div class="tbl"><table id="c_tabla"></table></div>
       <div class="warnbox" id="c_avisos"></div>
-      <div class="row"><button id="c_copy" type="button">Copiar presupuesto para WhatsApp</button><span class="note" id="c_copied"></span></div>
+      <details><summary>Datos del cliente para el presupuesto</summary>
+        <div class="form" style="margin-top:10px">
+          <div><label for="p_cli">Cliente / razón social</label><input id="p_cli" placeholder="Nombre y apellido"></div>
+          <div><label for="p_doc">CUIT / DNI</label><input id="p_doc" placeholder="20-12345678-9"></div>
+          <div><label for="p_dom">Domicilio de entrega</label><input id="p_dom" placeholder="Calle, número, localidad, CP"></div>
+          <div><label for="p_iva">Condición frente al IVA</label><select id="p_iva"><option>Consumidor final</option><option>Monotributista</option><option>Responsable inscripto</option><option>Exento</option></select></div>
+          <div><label for="p_prod">Mercadería</label><input id="p_prod" placeholder="ej. Kit de 3 bandas elásticas"></div>
+          <div><label for="p_vali">Validez (días)</label><input id="p_vali" type="number" min="1" value="7"></div>
+        </div>
+      </details>
+      <div class="row"><button id="c_pres" type="button">Generar presupuesto (PDF)</button><button id="c_copy" type="button" class="ghost">Copiar para WhatsApp</button><span class="note" id="c_copied"></span></div>
     </section>
     <section class="panel calc" id="calc">
       <h2>Liquidación estimada</h2>
@@ -162,6 +201,7 @@ button.ghost{background:transparent;color:var(--acc)}
     </section>
   </main>
 </div>
+<div id="pres" role="dialog" aria-label="Presupuesto"><div class="bar"><button type="button" id="p_print">Imprimir / Guardar PDF</button><button type="button" class="ghost" id="p_close" style="background:#fff">Cerrar</button></div><div id="doc"></div></div>
 <script src="nomenclador.js"></script>
 <script>
 'use strict';
@@ -290,6 +330,69 @@ $('c_copy').addEventListener('click', async () => {
   L.push('', 'El envío del proveedor hasta el depósito en Shenzhen no está incluido: pedile que lo incluya en su precio.');
   try { await navigator.clipboard.writeText(L.join('\n')); $('c_copied').textContent = 'Copiado: pegalo en WhatsApp.'; } catch (e) { $('c_copied').textContent = 'No se pudo copiar desde este navegador.'; }
 });
+// ---- Presupuesto tipo comprobante (formato argentino, no válido como factura) ----
+const PB = { nombre: 'PuertoBox', titular: 'Gustavo Espíndola', rol: 'Despachante de Aduana matriculado · ARCA', ciudad: 'La Plata, Buenos Aires', web: 'puertobox.com.ar', mail: 'info@puertobox.com.ar', wa: '+54 9 221 682-6773' };
+function numeroPresupuesto(avanzar) {
+  let n = store('pb-pres-nro') || 1;
+  if (avanzar) store('pb-pres-nro', n + 1);
+  return '0001-' + String(n).padStart(8, '0');
+}
+function generarPresupuesto() {
+  const r = cotizar.ultimo; if (!r) { $('c_copied').textContent = 'Completá el cotizador primero.'; return; }
+  const v = (id) => esc($(id).value.trim());
+  const hoy = new Date(); const vence = new Date(hoy); vence.setDate(vence.getDate() + (parseInt($('p_vali').value, 10) || 7));
+  const f = (d) => d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const n2 = (x) => Number(x).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const kgTxt = (x) => Number(x).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' kg';
+  const medidas = $('c_largo').value && $('c_ancho').value && $('c_alto').value ? `${$('c_cajas').value || 1} × ${$('c_largo').value}×${$('c_ancho').value}×${$('c_alto').value} cm` : 'a confirmar';
+  const nro = numeroPresupuesto(true);
+  const items = [[`Flete aéreo courier China → domicilio (${r.kg_presupuestado} kg cobrables)`, r.flete_puertobox_usd]];
+  if (r.recargo_cajas_usd) items.push(['Recargo de la aerolínea por cajas de más de 23 kg', r.recargo_cajas_usd]);
+  if (r.recargo_litio_usd) items.push(['Recargo de la aerolínea por batería de litio (carga peligrosa)', r.recargo_litio_usd]);
+  items.push([$('c_cuit').checked ? 'Gestión de importación con CUIT de PuertoBox' : 'Gestión de importación y seguimiento', r.handling_puertobox_usd]);
+  const d = r.detalle_impuestos || {};
+  const imp = [[`Derecho de importación (${$('c_die').value || 0}%) y tasa de estadística`, d.derechos_y_tasa], ['IVA', d.iva]];
+  if (d.internos) imp.push(['Impuestos internos', d.internos]);
+  imp.push(['Gasto administrativo de la empresa de transporte (con IVA)', d.gasto_administrativo]);
+  const fila = ([l, m]) => `<tr><td>${l}</td><td class="r">USD ${n2(m)}</td></tr>`;
+  $('doc').innerHTML = `
+  <div class="hd">
+    <div class="em"><div class="lg">Puerto<span>Box</span></div><p><b>${PB.titular}</b></p><p>${PB.rol}</p><p>${PB.ciudad}</p><p>${PB.web} · ${PB.mail}</p><p>WhatsApp ${PB.wa}</p></div>
+    <div class="lt"><b>X</b><small>Documento no válido como factura</small></div>
+    <div class="cp"><h2>PRESUPUESTO</h2><p><b>N° ${nro}</b></p><p>Fecha: ${f(hoy)}</p><p>Válido hasta: ${f(vence)}</p><p>Moneda: dólares estadounidenses (USD)</p></div>
+  </div>
+  <div class="bx">
+    <div><span>Cliente:</span> ${v('p_cli') || '—'}</div><div><span>CUIT/DNI:</span> ${v('p_doc') || '—'}</div>
+    <div><span>Domicilio:</span> ${v('p_dom') || '—'}</div><div><span>Condición IVA:</span> ${v('p_iva')}</div>
+  </div>
+  <h3>Mercadería</h3>
+  <div class="bx" style="border-top:1.5px solid #1b2333">
+    <div><span>Descripción:</span> ${v('p_prod') || '—'}</div><div><span>Posición arancelaria:</span> ${esc(sel || 'a confirmar')}</div>
+    <div><span>Valor de la mercadería (FOB):</span> USD ${n2($('c_valor').value || 0)}</div><div><span>Unidades:</span> ${$('c_unid').value || '—'}</div>
+    <div><span>Peso real:</span> ${kgTxt(r.peso_real_kg)} · <span>volumétrico:</span> ${r.peso_volumetrico_kg == null ? 'a confirmar' : kgTxt(r.peso_volumetrico_kg)}</div><div><span>Bultos:</span> ${medidas}</div>
+    <div><span>Envío:</span> ${$('c_reg').value === 'personal' ? 'Pequeño envío (hasta 3 unidades iguales)' : 'Courier comercial'}</div><div><span>Peso cobrable:</span> ${kgTxt(r.kg_presupuestado)}</div>
+  </div>
+  <h3>Detalle de servicios PuertoBox</h3>
+  <table><thead><tr><th>Concepto</th><th class="r">Importe</th></tr></thead><tbody>${items.map(fila).join('')}</tbody></table>
+  <div class="total"><span>TOTAL A ABONAR A PUERTOBOX</span><b>USD ${n2(r.total_puertobox_usd)}</b></div>
+  <h3>Impuestos y gastos de importación estimados — no los cobra PuertoBox</h3>
+  <div class="imp"><table><tbody>${imp.map(fila).join('')}<tr class="tot"><td>Total estimado (se abona a la empresa de transporte al recibir)</td><td class="r">USD ${n2(r.impuestos_y_gastos_estimados_usd)}</td></tr></tbody></table></div>
+  ${r.costo_por_unidad_usd ? `<p style="margin:10px 0 0;font-size:12.5px"><b>Costo estimado por unidad puesta en su domicilio: USD ${n2(r.costo_por_unidad_usd)}</b> (mercadería + servicios + impuestos estimados ÷ ${r.unidades} u.)</p>` : ''}
+  <h3>Condiciones</h3>
+  <ol class="cond">
+    <li>Los servicios de PuertoBox se abonan al 100% cuando la mercadería ingresa al depósito en Shenzhen y se pesa, antes de su despacho.</li>
+    <li>${r.flete_firme ? `Precio cerrado: el flete se respeta aunque la caja llegue hasta un 15% más pesada o grande que lo informado. Si supera ese margen, se ajusta con foto de balanza y medidas.` : 'El flete se confirma con las medidas y el peso de las cajas al ingresar al depósito.'} El peso se cobra por kilo entero.</li>
+    <li>El envío desde la fábrica hasta el depósito en Shenzhen no está incluido; se recomienda que lo incluya el proveedor.</li>
+    <li>Los impuestos son una estimación sobre la posición indicada. Los liquida y cobra la empresa de transporte al entregar y pueden variar por tipo de cambio, valoración o clasificación aduanera.${$('c_cuit').checked ? ' Por ingresar con CUIT de PuertoBox, el cliente abona los impuestos a PuertoBox antes del despacho; el envío dentro de Argentina se cobra aparte.' : ''}</li>
+    <li>La factura del proveedor debe reflejar el valor real de la mercadería.${r.recargo_litio_usd ? ' Para productos con batería de litio, el proveedor debe enviar la hoja de seguridad (MSDS) y el informe de ensayo UN38.3.' : ''}</li>
+    <li>Presupuesto válido hasta el ${f(vence)}. Sujeto a disponibilidad de espacio y a las condiciones de la empresa de transporte.</li>
+  </ol>
+  <div class="pie"><div>Emitido por ${PB.nombre} · ${PB.web}</div><div class="firma">${PB.titular}<br>${PB.rol}</div></div>`;
+  $('pres').classList.add('on');
+}
+$('c_pres').addEventListener('click', generarPresupuesto);
+$('p_close').addEventListener('click', () => $('pres').classList.remove('on'));
+$('p_print').addEventListener('click', () => window.print());
 $('q').addEventListener('input', () => { clearTimeout(buscar.t); buscar.t = setTimeout(buscar, 140); });
 $('list').addEventListener('click', (e) => { const r = e.target.closest('.res'); if (r) abrir(r.dataset.c); });
 $('list').addEventListener('keydown', (e) => { const r = e.target.closest('.res'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); abrir(r.dataset.c); } });
