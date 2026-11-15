@@ -10,11 +10,13 @@
 const { clasificar } = require('./clasificador');
 const { ejecutar } = require('./tools');
 
-const MODELO = process.env.MODELO_EXTRAER || 'claude-haiku-5-5';
+const MODELO = process.env.MODELO_EXTRAER || process.env.CLASIFICADOR_MODEL || 'claude-sonnet-5-5';
+const VERSION = 2; // si cambia, se vuelven a leer las charlas guardadas
 const texto = (c) => (typeof c === 'string' ? c : Array.isArray(c) ? c.filter((b) => b && b.type === 'text').map((b) => b.text).join('\n') : '');
 
 const INSTRUCCIONES = `Leés una charla de WhatsApp entre un cliente y el asistente de PuertoBox (importación courier desde China a Argentina).
-Sacá SOLO datos que el cliente haya dicho o confirmado. Si un dato no está, poné null. No inventes nada.
+Sacá los datos que dijo el cliente o que quedaron claros en la charla (por ejemplo, si PuertoBox le dijo que el producto tiene batería de litio, litio = true). Si un dato no está, poné null. No inventes valores.
+Si dice "aprox" o "unas", usá ese número igual.
 Si da el peso por unidad y la cantidad, calculá el peso total (kg_total = peso por unidad × unidades; usá el peso con caja si lo da).
 Si da las medidas del producto y no las de la caja, NO las pongas como medidas de caja: dejá las medidas en null y anotalo en "notas".
 Respondé SOLO con este JSON:
@@ -37,8 +39,26 @@ async function extraerConIA(mensajes, fetchImpl) {
   return m ? JSON.parse(m[0]) : {};
 }
 
+/** Respaldo sin IA: unidades, peso por unidad (prefiere "con caja") y litio, buscados en lo que escribió el cliente. */
+function extraerSimple(mensajes) {
+  const cli = mensajes.filter((m) => m.role === 'user').map((m) => texto(m.content)).join('\n').toLowerCase();
+  const todo = mensajes.map((m) => texto(m.content)).join('\n').toLowerCase();
+  const n = (x) => parseFloat(String(x).replace(',', '.'));
+  const u = cli.match(/(\d+[.,]?\d*)\s*(unidades|unid\.?|u\.|pares|piezas|pcs)\b/);
+  const unidades = u ? Math.round(n(u[1])) : null;
+  const pesoDe = (re) => { const m = cli.match(re); if (!m) return null; const v = n(m[1]); return /^g/.test(m[2]) ? v / 1000 : v; };
+  const porUnidad = pesoDe(/con caja[^\d\n]{0,15}(\d+[.,]?\d*)\s*(gramos|grs?|g|kg|kilos?)\b/) || pesoDe(/(\d+[.,]?\d*)\s*(gramos|grs?|g|kg|kilos?)\b[^\n]{0,15}con caja/) || pesoDe(/(\d+[.,]?\d*)\s*(gramos|grs?|g|kg|kilos?)\b/);
+  const total = cli.match(/(\d+[.,]?\d*)\s*(kg|kilos?)\s*(en total|total)/);
+  return {
+    unidades, kg_total: total ? n(total[1]) : porUnidad && unidades ? Math.round(porUnidad * unidades * 100) / 100 : null,
+    litio: /litio|lithium|li-?ion/.test(todo),
+  };
+}
+
+const vacio = (d) => !d || !['unidades', 'kg_total', 'valor_usd', 'largo_cm'].some((k) => d[k]);
+
 /** Datos para cargar el cotizador con lo que habló el bot. */
-async function datosDeCharla(tel, { store, fetchImpl = fetch }) {
+async function datosDeCharla(tel, { store, fetchImpl = fetch, nuevo = false }) {
   const c = store.chats().find((x) => x.telefono === tel);
   if (!c) return { error: 'No encuentro esa charla.' };
   const lead = store.lead(tel) || {};
@@ -48,14 +68,22 @@ async function datosDeCharla(tel, { store, fetchImpl = fetch }) {
     const i = lead.cotizacion.input;
     fuente = 'cotizacion';
     d = { nombre: lead.nombre, producto: lead.producto, unidades: i.unidades, kg_total: i.kg, valor_usd: i.valor_factura_usd, cajas: i.cantidad_cajas, largo_cm: i.largo_cm, ancho_cm: i.ancho_cm, alto_cm: i.alto_cm, litio: i.con_bateria_litio, cuit_puertobox: i.con_cuit_puertobox, regimen: i.regimen, notas: '' };
-  } else if (lead.extraida && lead.extraida.hasta === c.ultimo) {
+  } else if (!nuevo && lead.extraida && lead.extraida.hasta === c.ultimo && lead.extraida.v === VERSION) {
     fuente = 'charla'; d = lead.extraida.datos;
   } else {
     fuente = 'charla';
-    try { d = await extraerConIA(c.mensajes, fetchImpl); } catch (e) { d = { notas: `No pude leer la charla (${e.message}). Cargá los datos a mano.` }; }
+    let error = '';
+    try { d = await extraerConIA(c.mensajes, fetchImpl); } catch (e) { d = {}; error = e.message; }
+    // Lo que la IA no encontró, lo completa el respaldo simple.
+    const simple = extraerSimple(c.mensajes);
+    d.unidades = d.unidades || simple.unidades;
+    d.kg_total = d.kg_total || simple.kg_total;
+    d.litio = !!(d.litio || simple.litio);
     d.nombre = d.nombre || lead.nombre || null;
     d.producto = d.producto || lead.producto || null;
-    store.guardarLead(tel, { extraida: { hasta: c.ultimo, datos: d } });
+    if (error) d.notas = `No pude leer bien la charla (${error}): revisá los datos.${d.notas ? ' ' + d.notas : ''}`;
+    // Solo se guarda si sacó algo: así la próxima vez lo vuelve a intentar.
+    if (!vacio(d)) store.guardarLead(tel, { extraida: { v: VERSION, hasta: c.ultimo, datos: d } });
   }
   // Posición: la de la charla; si no hay, el clasificador con el producto completo.
   let pos = lead.posicion_fija || null;
@@ -117,4 +145,4 @@ async function enviarDesdeCotizador(tel, f, { store, enviarDoc, baseUrl }) {
   return { ok: true, nro: p.nro, total: r.total_puertobox_usd, link: `/presupuesto/${p.token}.pdf` };
 }
 
-module.exports = { datosDeCharla, enviarDesdeCotizador, extraerConIA, INSTRUCCIONES };
+module.exports = { datosDeCharla, enviarDesdeCotizador, extraerConIA, extraerSimple, INSTRUCCIONES };

@@ -71,3 +71,24 @@ test('enviar: sin valor o peso, o fuera de las 24 h, no manda nada', async () =>
   store.marcar(tel, { ultimoClienteEn: Date.now() - 25 * 3600e3 });
   assert.match((await enviarDesdeCotizador(tel, { kg: '5', valor: '100', posicion: '1' }, { store, baseUrl: 'x', enviarDoc })).error, /24 h/);
 });
+
+test('si la IA falla o no encuentra nada, el respaldo saca unidades, peso con caja y litio (charla real del arrancador, 15/11)', async () => {
+  const store = crearStore(null);
+  const tel = '5492983385140';
+  store.agregar(tel, 'user', 'https://www.alibaba.com/product-detail/12V-Car-Jump-Starter-With-Air_1601952873179.html\nEste seria el producto, aprox 10 unidades por avion\n24 × 14,5 × 11 cm, producto sin caja 763 gramos, con caja 900 gramos aprox');
+  store.agregar(tel, 'assistant', 'Como el producto tiene batería de litio, nuestro despachante tiene que revisarlo.');
+  store.guardarLead(tel, { producto: 'Arrancador 12V' });
+  let llamadas = 0;
+  const falla = async () => { llamadas++; return { ok: false, status: 529 }; };
+  const d = await datosDeCharla(tel, { store, fetchImpl: falla });
+  assert.strictEqual(d.input.unid, 10);
+  assert.strictEqual(d.input.kg, 9);
+  assert.strictEqual(d.input.litio, true);
+  assert.match(d.notas, /No pude leer bien la charla/);
+  // Con IA que no encuentra nada tampoco queda vacío, y no se guarda vacío
+  const store2 = crearStore(null);
+  store2.agregar(tel, 'user', 'quiero traer 5 unidades de 2 kg');
+  const d2 = await datosDeCharla(tel, { store: store2, fetchImpl: iaResponde({}) });
+  assert.strictEqual(d2.input.unid, 5);
+  assert.strictEqual(d2.input.kg, 10);
+});

@@ -433,7 +433,7 @@ function servirNomenclador(req, res, url) {
   // Presupuesto desde una charla (15/11): datos cargados solos y envío del PDF cuando Gustavo lo aprueba.
   if (rel === 'api/charla') {
     const tel = soloDigitos(url.searchParams.get('tel'));
-    return require('./presupuesto_charla').datosDeCharla(tel, { store, fetchImpl: fetch })
+    return require('./presupuesto_charla').datosDeCharla(tel, { store, fetchImpl: fetch, nuevo: url.searchParams.get('nuevo') === '1' })
       .then((d) => { res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(d)); })
       .catch((e) => { res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify({ error: e.message })); });
   }
