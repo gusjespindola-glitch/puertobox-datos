@@ -50,6 +50,10 @@ const ESCENARIOS = [
   { nombre: 'Compara con el precio de la publicidad', msgs: ['remeras sin marca para vender, 100 unidades, pago 500 dolares, 23 kilos, una caja', 'en la publicidad decian que arriba de 20 kg es 16 por kilo, por que me cobras mas?'], espera: { presupuesto: true, ultima: { contiene: /kilo/i, noContiene: /no es (nuestr[oa]|el nuestro)|no puedo cotiz|como dice tu publicidad|c[oó]digo postal/i } } },
   { nombre: 'Confunde costo por unidad con el kilo', msgs: ['remeras sin marca para vender, 100 unidades, pago 500 dolares, 23 kilos, una caja', 'me estas cobrando 13 dolares el kilo? no tiene sentido'], espera: { ultima: { contiene: /unidad|remera/i, noContiene: /c[oó]digo postal/i } } },
   { nombre: 'Se enoja y pide una persona', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja', 'no entiendo nada, esto es un papelon, quiero hablar con una persona'], espera: { deriva: true, ultima: { noContiene: /c[oó]digo postal/i } } },
+  // 15/11 (Gustavo: "la charla es muy bot"): que suene a persona y conteste lo que le preguntan.
+  { nombre: 'Pide más información (anuncio)', msgs: ['¡Hola! Quiero más información'], espera: { ultima: { contiene: /China|casa|impuestos/i } } },
+  { nombre: 'Pregunta aéreo o marítimo', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja', 'es aereo o es maritimo?'], espera: { ultima: { contiene: /^\s*(Es )?a[ée]reo/i, noContiene: /medidas|c[oó]digo postal/i } } },
+  { nombre: 'Dice que no', msgs: ['quiero traer ropa replica de marcas para vender', 'no graciass igualmente'], espera: { ultima: { noContiene: /presupuesto|sin marca|\?/i } } },
   { nombre: 'Repuestos de auto', msgs: ['repuestos de auto genericos para vender, 800 dolares, 20 kilos, 2 cajas'], espera: { presupuesto: true } },
 ];
 
@@ -82,6 +86,10 @@ function revisar(resp, ctx) {
   if (/(pag[aá]s|paga|pagan)[^.]{0,20}al courier/i.test(t)) prob.push('dice que se paga al courier (tiene que decir "la empresa de transporte")');
   if (/soy (una )?persona|soy humano/i.test(t)) prob.push('dice que es humano');
   if (/no es nuestr[oa] (precio|tarifa)|no puedo cotizarlo|como dice tu publicidad/i.test(t)) prob.push('discute el precio de la publicidad en vez de dar el kilo de su presupuesto');
+  // 15/11 (Gustavo: "es muy bot"): frases de robot o de call center.
+  if (/^(por el dato|por la info|por el link|por escribirnos|por los datos|por tu consulta)\b/i.test(t.trim())) prob.push('arranca con frase cortada ("Por el dato.")');
+  if (/a la brevedad|le informamos|quedamos a (tu |su )?disposici[oó]n|no dudes en consultar|gratis y sin compromiso|tomamos \d/i.test(t)) prob.push('frase de plantilla o call center');
+  if (!esPresupuesto && (t.length > 420 || t.split('\n').filter((l) => l.trim()).length > 5)) prob.push('mensaje largo (no es presupuesto)');
   return prob;
 }
 

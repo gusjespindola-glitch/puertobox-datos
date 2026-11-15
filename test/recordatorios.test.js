@@ -260,3 +260,19 @@ test('los códigos de verificación de Meta (+44 7974 905090) no se contestan ni
   assert.strictEqual(llamadas.length, 0);
   assert.ok(!st.chats().some((c) => c.telefono === '447974905090' && (c.mensajes || []).length));
 });
+
+test('empujón: nunca al que dijo que no (15/11)', () => {
+  const { paraEmpujar } = require('../bot/recordatorios');
+  const st = crearStore(null);
+  st.agregar('5491100000081', 'user', 'no graciass igualmente'); st.agregar('5491100000081', 'assistant', 'Entendido, gracias por escribir.');
+  st.agregar('5491100000082', 'user', 'ropa'); st.agregar('5491100000082', 'assistant', 'No la podemos traer.'); st.guardarLead('5491100000082', { estado: 'rechazado' });
+  st.agregar('5491100000083', 'user', 'remeras'); st.agregar('5491100000083', 'assistant', '¿Para vender?');
+  let t = Date.now() + 5 * 3600e3;
+  const horaArg = (x) => (new Date(x - 3 * 3600e3)).getUTCHours();
+  while (horaArg(t) < 9 || horaArg(t) >= 21) t += 3600e3;
+  if ((t - Date.now()) / 3600e3 > 22) return;
+  const r = paraEmpujar(st, OWNER, t).map((x) => x.telefono);
+  assert.ok(!r.includes('5491100000081'));
+  assert.ok(!r.includes('5491100000082'));
+  assert.ok(r.includes('5491100000083'));
+});

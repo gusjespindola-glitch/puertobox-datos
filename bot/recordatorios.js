@@ -149,7 +149,10 @@ function paraEmpujar(store, owner, ahora = Date.now()) {
     const msgs = c.mensajes || [];
     if (!msgs.length || msgs[msgs.length - 1].role !== 'assistant') continue;
     const lead = store.lead ? store.lead(c.telefono) : null;
-    if (lead && ['listo_para_cerrar', 'derivado'].includes(lead.estado)) continue;
+    // 15/11: al que dijo "no gracias" (rechazado) no se le vuelve a escribir.
+    if (lead && ['listo_para_cerrar', 'derivado', 'rechazado'].includes(lead.estado)) continue;
+    const ultCliente = [...msgs].reverse().find((m) => m.role === 'user');
+    if (ultCliente && /\bno,?\s*grac+ia+s+\b|\bno me interesa|\blo dejo\b|\bno por ahora\b/i.test(ultCliente.content || '')) continue;
     out.push({ telefono: c.telefono, horas: Math.round(pasaron), cotizado: lead?.estado === 'cotizado' });
   }
   return out;

@@ -302,3 +302,18 @@ test('prompt: reglas de cambio de peso, precio por kilo y cliente molesto', () =
   assert.match(p, /No vuelvas a hacer la pregunta pendiente/);
   assert.match(p, /no del kilo/);
 });
+
+test('simulador: detecta frases de robot (15/11)', () => {
+  const { revisar, ESCENARIOS } = require('../simulador');
+  assert.ok(revisar('Por el dato. ¿Cuánto pesa?', { ultimo: 'x' }).some((p) => /cortada/.test(p)));
+  assert.ok(revisar('Te escribe a la brevedad.', { ultimo: 'x' }).some((p) => /plantilla/.test(p)));
+  assert.deepStrictEqual(revisar('¿Tiene alguna marca o logo?', { ultimo: 'x' }), []);
+  for (const n of ['Pide más información (anuncio)', 'Pregunta aéreo o marítimo', 'Dice que no']) assert.ok(ESCENARIOS.some((e) => e.nombre === n), n);
+});
+
+test('prompt: tono humano, sin frases cortadas ni pregunta repetida', () => {
+  const p = require('fs').readFileSync(require('path').join(__dirname, '..', 'prompt.md'), 'utf8');
+  assert.match(p, /Prohibido arrancar con frases cortadas/);
+  assert.match(p, /No repitas la misma pregunta en cada mensaje/);
+  assert.match(p, /Contestá exactamente lo que te preguntaron/);
+});
