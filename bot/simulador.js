@@ -73,7 +73,7 @@ function revisar(resp, ctx) {
   if (/d[oó]nde/i.test(ctx.ultimo) && (/AMBA|CABA/.test(t) || !/La Plata/.test(t))) prob.push('ubicación mal (es La Plata, sin local)');
   if (/retir(o|ar) (en|por) (el|nuestro) local/i.test(t)) prob.push('ofrece retiro en local');
   if (!esPresupuesto && JERGA.test(t)) prob.push('usa palabras técnicas');
-  if (/pesa menos/i.test(t)) prob.push('dice "si pesa menos paga menos"');
+  if (/pesa menos[^.]{0,40}(paga|pag[aá]s|sale) menos/i.test(t)) prob.push('dice "si pesa menos paga menos"');
   if (/\bDHL\b/.test(t) && !/dhl|courier/i.test(ctx.ultimo)) prob.push('nombra DHL sin que pregunten');
   if (MULETILLAS.test(t.trim())) prob.push('arranca con muletilla');
   if (/al toque|\bjoya\b|\bche\b|\btranqui\b|buen[ií]simo|\bposta\b|\bre (bien|lindo)\b/i.test(t)) prob.push('tono poco profesional');

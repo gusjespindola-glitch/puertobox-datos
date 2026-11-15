@@ -39,6 +39,8 @@ const CHARLAS = [
       { que: 'con 23 kg pregunta cuántas unidades son (no recotiza con 10)', bien: /unidades|cu[aá]nt[oa]s (arrancadores|entran|ser[ií]an)/i, en: 'con23' },
       { que: 'no pide el código postal mientras el cliente reclama', mal: /c[oó]digo postal/i, en: 'ultima' },
       { que: 'la posición no cambia entre presupuestos', posicionFija: true },
+      { que: 'no nombra la posición antes del presupuesto ni se corrige sola', antesDelPresupuesto: /8507|posici[oó]n|te corrijo|sin verificar/i },
+      { que: 'no toma las medidas del producto como de la caja (no dice precio cerrado)', mal: /Precio cerrado/i },
     ],
   },
   {
@@ -59,9 +61,9 @@ const CHARLAS = [
   // Charlas reales del 15/11 (auditoría de procesos): cada falla real queda como prueba fija.
   { nombre: 'Real: "Quiero más información" del anuncio (2 de 7 no contestaron más)', msgs: ['¡Hola! Quiero más información'], controles: [{ que: 'explica qué hacemos antes de preguntar', bien: /China|casa|impuestos/i, en: 'ultima' }, { que: 'pide algo fácil: foto, link o qué querés traer', bien: /foto|link|qu[eé] quer[eé]s traer/i, en: 'ultima' }, { que: 'no usa el saludo viejo', mal: /gracias por comunicarte/i }] },
   { nombre: 'Real: ropa réplica (tardó 7 mensajes en decir que no)', msgs: ['ropa', 'remeras, buzos, pantalones', 'tienen marca, son replicas'], controles: [{ que: 'dice que no traemos réplicas', bien: /r[eé]plica/i, en: 'ultima' }, { que: 'nunca pregunta si es para vender', mal: /uso propio|para vender\?/i }, { que: 'no empieza con "Por el dato"', mal: /^Por (el dato|la info)/im }] },
-  { nombre: 'Real: máquina de más de 50 kg', msgs: ['Traigo maquinas de depilacion grandes, q pesan un poco mas de 50kg'], controles: [{ que: 'el límite que dice es 50 kg (no 23)', mal: /hasta 23 kg/i, en: 'ultima' }] },
-  { nombre: 'Real: quién figura como importador (Agustín)', msgs: ['Para reventa, ¿quién figura como importador? Tengo CUIT de monotributo'], controles: [{ que: 'dice que importa la empresa de transporte', bien: /empresa de transporte/i, en: 'ultima' }, { que: 'no dice que el cliente figura como importador', mal: /(figur[aá]s|figura) como importador(?! ni)|a nombre de quien importa/i, en: 'ultima' }] },
-  { nombre: 'Real: pedido de más de USD 3.000 (sopladores)', msgs: ['80 sopladores para mineras, USD 4160 en total, 307 kg en 27 cajas de 56x48x27'], controles: [{ que: 'lo divide en 2 envíos y cotiza', bien: /env[ií]o 1|2 env[ií]os/i }, { que: 'no lo deriva por el tope', mal: /lo arma nuestro despachante a medida/i }] },
+  { nombre: 'Real: máquina de más de 50 kg', msgs: ['Traigo maquinas de depilacion grandes, q pesan un poco mas de 50kg'], controles: [{ que: 'el límite que dice es 50 kg (no 23)', mal: /hasta 23 kg/i, en: 'ultima' }, { que: 'una máquina de más de 50 kg no se divide: no entra', mal: /dividir|divida|m[aá]s cajas/i, en: 'ultima' }] },
+  { nombre: 'Real: quién figura como importador (Agustín)', msgs: ['Para reventa, ¿quién figura como importador? Tengo CUIT de monotributo'], controles: [{ que: 'dice que importa la empresa de transporte', bien: /empresa de transporte/i, en: 'ultima' }, { que: 'no dice que el cliente figura como importador', mal: /(?<!no )(?<!no lo )(figur[aá]s|figura) como importador|a nombre de quien importa/i, en: 'ultima' }] },
+  { nombre: 'Real: pedido de más de USD 3.000 (sopladores)', msgs: ['80 sopladores para mineras de bitcoin (ventiladores eléctricos que se le ponen a la minera ASIC), USD 4160 en total, 307 kg en 27 cajas de 56x48x27'], controles: [{ que: 'lo divide en 2 envíos y cotiza', bien: /env[ií]o 1|2 env[ií]os/i }, { que: 'no lo deriva por el tope', mal: /lo arma nuestro despachante a medida/i }] },
 ];
 
 const r2 = (n) => Math.round(n * 100) / 100;
@@ -110,6 +112,7 @@ async function probarCharlas(fetchImpl) {
       if (c.bien) ok = ok && c.bien.test(texto);
       if (c.mal) ok = ok && !c.mal.test(texto);
       if (c.posicionFija) ok = ok && new Set(posiciones).size <= 1;
+      if (c.antesDelPresupuesto) { const i = turnos.findIndex((t) => /Presupuesto PuertoBox/.test(t.bot)); ok = ok && !turnos.slice(0, i < 0 ? turnos.length : i).some((t) => c.antesDelPresupuesto.test(t.bot)); }
       if (c.posicionEsperada) ok = ok && String(lead.posicion || '').replace(/\./g, '').startsWith(c.posicionEsperada.replace(/\./g, ''));
       if (c.dieMayorA !== undefined) ok = ok && Number(lead.posicion_fija && lead.posicion_fija.die) > c.dieMayorA;
       return { que: c.que, estado: ok ? '✅' : '❌' };
