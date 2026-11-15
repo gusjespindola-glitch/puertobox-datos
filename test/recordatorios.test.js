@@ -38,7 +38,7 @@ test('recordatorio: avisa a la hora, después cada 3 h, como mucho 4 veces', asy
   const avisar = async (t, titulo, prio) => avisos.push({ t, titulo, prio });
   assert.deepStrictEqual(await revisar({ store: st, owner: OWNER, avisar, ahora: TARDE }), ['5491100000001']);
   assert.strictEqual(avisos[0].prio, 'high');
-  assert.match(avisos[0].t, /Ya lo atendí/);
+  assert.match(avisos[0].t, /Espera hace/); // corto: quién, qué quiere, qué hacer y cuánto espera (el botón «Ya lo atendí» viene en la notificación)
   assert.deepStrictEqual(await revisar({ store: st, owner: OWNER, avisar, ahora: TARDE + 45 * 60e3 }), ['5491100000002'], 'el de 20 min ya cumplió la hora (65 min); Ana no repite antes de 3 h');
   for (let i = 1; i <= 5; i++) await revisar({ store: st, owner: OWNER, avisar, ahora: TARDE + i * 3 * H + 60e3 });
   // Ana: 4 avisos como máximo (algunos caen en horario de silencio y no cuentan)
@@ -83,16 +83,27 @@ test('un solo aviso: con ntfy no manda además WhatsApp', async () => {
   assert.deepStrictEqual(urls.map((u) => new URL(u).host), ['api.ycloud.com']);
 });
 
-test('botones: la notificación trae "Ya lo atendí" y "Ver pendientes", con firma y sin la clave', async () => {
+test('avisos: van como JSON a ntfy (con tildes), con botones firmados, y si ntfy rechaza se reintenta sin botones (15/11)', async () => {
   process.env.ADMIN_KEY = 'clave-secreta'; process.env.PUBLIC_URL = 'https://puertobox.com.ar';
   const { accionesNtfy } = require('../bot/server');
   const a = accionesNtfy('5491100000001');
-  assert.match(a, /^http, Ya lo atendí, https:\/\/puertobox\.com\.ar\/atendido\?tel=5491100000001&t=[0-9a-f]{24}, method=POST, clear=true; view, Ver pendientes, https:\/\/puertobox\.com\.ar\/pendientes\?t=[0-9a-f]{24}$/);
-  assert.ok(!a.includes('clave-secreta'));
-  const headers = [];
+  assert.deepStrictEqual(a.map((x) => x.label), ['Ver y contestar', 'Ya lo atendí', 'Ver pendientes']);
+  assert.match(a[1].url, /^https:\/\/puertobox\.com\.ar\/atendido\?tel=5491100000001&t=[0-9a-f]{24}$/);
+  assert.strictEqual(a[1].method, 'POST');
+  assert.ok(!JSON.stringify(a).includes('clave-secreta'));
   process.env.NTFY_TOPIC = 'prueba';
-  await avisarGustavo(OWNER, 'cliente', async (u, o) => { headers.push(o.headers); return { ok: true }; }, undefined, '5491100000001');
-  assert.match(headers[0].Actions, /Ya lo atendí/);
+  const cuerpos = [];
+  // Todos los encabezados tienen que ser ASCII (si no, ntfy rechaza el aviso).
+  await avisarGustavo(OWNER, 'Cliente: Agustín — trípode', async (u, o) => { cuerpos.push(JSON.parse(o.body)); for (const v of Object.values(o.headers)) assert.match(v, /^[\x20-\x7e]*$/); return { ok: true }; }, undefined, '5491100000001');
+  assert.strictEqual(cuerpos[0].topic, 'prueba');
+  assert.strictEqual(cuerpos[0].message, 'Cliente: Agustín — trípode');
+  assert.strictEqual(cuerpos[0].actions[1].label, 'Ya lo atendí');
+  // ntfy rechaza → reintenta sin botones y el aviso llega igual.
+  const intentos = [];
+  const ok = await avisarGustavo(OWNER, 'hola', async (u, o) => { const b = JSON.parse(o.body); intentos.push(b); return b.actions ? { ok: false, status: 400, text: async () => 'invalid' } : { ok: true }; }, undefined, '5491100000001');
+  assert.strictEqual(ok, true);
+  assert.strictEqual(intentos.length, 2);
+  assert.ok(!intentos[1].actions);
   delete process.env.NTFY_TOPIC;
 });
 

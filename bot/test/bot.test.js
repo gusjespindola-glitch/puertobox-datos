@@ -55,11 +55,14 @@ test('régimen personal con franquicia: sin derechos hasta USD 400', async () =>
 test('al derivar avisa a Gustavo y pausa el chat', async () => {
   const store = crearStore(null);
   const { fetchImpl, llamadas } = mock([
-    tool('derivar_a_gustavo', { motivo: 'listo_para_cerrar', resumen: 'Juan · remeras 6109.10 · 2 kg · USD 80 · precio USD 100' }),
+    tool('derivar_a_gustavo', { motivo: 'listo_para_cerrar', quiere: 'Pagar el envío de remeras', para_vos: 'Pasarle los datos para pagar', resumen: 'Juan · remeras 6109.10 · 2 kg · USD 80 · precio USD 100' }),
     txt('¡Genial! Gustavo te escribe enseguida para cerrar.'),
   ]);
   const out = await procesar(msg('5493', 'Dale, quiero avanzar'), { fetchImpl, store, debounceMs: 0 });
-  assert.ok(out.some((o) => o.to === process.env.OWNER_NUMBER && o.body.includes('listo para cerrar')));
+  // 15/11: aviso corto, lo que quiere y lo que tiene que hacer Gustavo arriba.
+  const aviso = out.find((o) => o.to === process.env.OWNER_NUMBER);
+  assert.match(aviso.body, /^👤 \+5493/);
+  assert.match(aviso.body, /\nQuiere: Pagar el envío de remeras\nVos: Pasarle los datos para pagar/);
   assert.ok(store.estaPausado('5493'));
   // siguiente mensaje del cliente: el bot no responde
   const antes = llamadas.claude.length;

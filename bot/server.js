@@ -137,13 +137,22 @@ async function transcribirAudio(audio, fetchImpl = fetch) {
 /** Aviso solo por ntfy (recordatorios y resumen): no gasta mensajes de WhatsApp. */
 async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fetchImpl = fetch, tel = null) {
   const topic = process.env.NTFY_TOPIC;
-  if (!topic) return;
-  const headers = { Title: titulo, Priority: prioridad };
+  if (!topic) return false;
+  // 15/11: se manda como JSON (UTF-8). Antes iba en encabezados y el botón "Ya lo atendí" (con tilde) hacía que ntfy
+  // rechazara el aviso: solo llegaba el resumen de las 9 (que no tiene ese botón). Ahora se revisa la respuesta y,
+  // si falla, se reintenta sin botones para que el aviso llegue igual.
+  const PRIORIDAD = { min: 1, low: 2, default: 3, high: 4, urgent: 5, max: 5 };
+  const base = { topic, title: titulo, message: texto, priority: PRIORIDAD[prioridad] || 3 };
   const acciones = accionesNtfy(tel);
-  if (acciones) headers.Actions = acciones;
-  try {
-    await fetchImpl(`https://ntfy.sh/${encodeURIComponent(topic)}`, { method: 'POST', headers, body: texto });
-  } catch (e) { console.error('ntfy error', e.message); }
+  const intentar = async (cuerpo) => {
+    const r = await fetchImpl('https://ntfy.sh/', { method: 'POST', headers: { 'content-type': 'application/json; charset=utf-8' }, body: JSON.stringify(cuerpo) });
+    if (r && r.ok === false) throw new Error(`ntfy ${r.status}: ${r.text ? (await r.text()).slice(0, 200) : ''}`);
+    return true;
+  };
+  try { return await intentar(acciones ? { ...base, actions: acciones } : base); } catch (e) {
+    console.error('ntfy error', e.message);
+    try { return await intentar(base); } catch (e2) { console.error('ntfy error (sin botones)', e2.message); return false; }
+  }
 }
 
 /**
@@ -163,10 +172,11 @@ function firmaOk(que, dada) {
 function accionesNtfy(tel) {
   const fp = firma('pendientes');
   if (!fp) return null;
-  const ver = `view, Ver pendientes, ${BASE_URL()}/pendientes?t=${fp}`;
-  const charlas = `view, Ver charlas, ${BASE_URL()}/charlas?t=${firma('charlas')}`;
-  if (!tel) return `${ver}; ${charlas}`;
-  return `http, Ya lo atendí, ${BASE_URL()}/atendido?tel=${encodeURIComponent(tel)}&t=${firma('atendido:' + tel)}, method=POST, clear=true; ${ver}`;
+  const ver = { action: 'view', label: 'Ver pendientes', url: `${BASE_URL()}/pendientes?t=${fp}` };
+  const charlas = { action: 'view', label: 'Ver charlas', url: `${BASE_URL()}/charlas?t=${firma('charlas')}` };
+  if (!tel) return [ver, charlas];
+  const contestar = { action: 'view', label: 'Ver y contestar', url: `${BASE_URL()}/charlas?t=${firma('charlas')}&abierto=${encodeURIComponent(tel)}#c-${encodeURIComponent(tel)}` };
+  return [contestar, { action: 'http', label: 'Ya lo atendí', url: `${BASE_URL()}/atendido?tel=${encodeURIComponent(tel)}&t=${firma('atendido:' + tel)}`, method: 'POST', clear: true }, ver];
 }
 
 /**
@@ -185,6 +195,19 @@ function intencionGustavo(texto) {
  * Aviso a Gustavo por UN solo canal (pedido del 14/11: no duplicar).
  * Si hay NTFY_TOPIC, solo ntfy (llega siempre y no gasta WhatsApp). Si no, WhatsApp al 698 (solo llega si le escribió al bot en las últimas 24 h).
  */
+/** Aviso de derivación corto (15/11, Gustavo: "tengo que leer mucho para darme cuenta qué pide el cliente"). */
+function avisoCorto(d, st) {
+  const lead = (st && st.lead ? st.lead(d.telefono) : null) || {};
+  const quien = lead.nombre ? `${lead.nombre} (+${d.telefono})` : `+${d.telefono}`;
+  const lineas = [`👤 ${quien}${lead.producto ? ' · ' + lead.producto : ''}`];
+  if (d.quiere) lineas.push(`Quiere: ${d.quiere}`);
+  if (d.para_vos) lineas.push(`Vos: ${d.para_vos}`);
+  if (!d.quiere && !d.para_vos) lineas.push(String(d.resumen || '').slice(0, 200));
+  else if (d.resumen) lineas.push('', String(d.resumen).slice(0, 220));
+  if (d.motivo !== 'duda') lineas.push('', 'El bot ya no le contesta: le escribís vos desde «Ver y contestar».');
+  return lineas.join('\n');
+}
+
 async function avisarGustavo(owner, texto, fetchImpl = fetch, titulo = 'PuertoBox: cliente para atender', tel = null) {
   if (process.env.NTFY_TOPIC) return avisarNtfy(texto, titulo, 'high', fetchImpl, tel);
   if (owner) await enviar(owner, texto, fetchImpl);
@@ -330,8 +353,9 @@ async function atender(tel, texto, st, fetchImpl, owner) {
         ? `🔎 PuertoBox: confirmá la posición\nCliente: +${d.telefono}\n${d.resumen}\n(El bot sigue atendiendo con esta posición "a confirmar".)`
         : esIG
         ? `🔔 PuertoBox (Instagram): ${d.motivo.replace(/_/g, ' ')}\n${d.resumen}\n(Respondele desde los mensajes de Instagram de PuertoBox. El bot quedó pausado en ese chat; para reactivarlo escribí #bot en ese mismo chat.)`
-        : `🔔 PuertoBox: ${d.motivo.replace(/_/g, ' ')}\nCliente: +${d.telefono}\n${d.resumen}\n(El bot quedó pausado en ese chat. Para reactivarlo mandá: #bot ${d.telefono})`;
-      await avisarGustavo(owner, aviso, fetchImpl, undefined, d.telefono);
+        : avisoCorto(d, st);
+      const TITULO = { listo_para_cerrar: 'Quiere pagar', mayorista: 'Pedido grande', reclamo: 'Reclamo', pide_humano: 'Pide hablar con vos', duda: 'Duda para vos' };
+      await avisarGustavo(owner, aviso, fetchImpl, `PuertoBox: ${TITULO[d.motivo] || 'cliente para atender'}`, d.telefono);
       salidas.push({ to: owner, body: aviso });
     }
   }
