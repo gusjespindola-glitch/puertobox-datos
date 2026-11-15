@@ -44,8 +44,8 @@ function limpiar(t) {
 }
 
 /** Procesa un mensaje del cliente y devuelve el texto de respuesta (o null si no corresponde responder). */
-async function responder({ telefono, texto, store, fetchImpl = fetch, derivaciones = [] }) {
-  store.agregar(telefono, 'user', texto);
+async function responder({ telefono, texto, store, fetchImpl = fetch, derivaciones = [], guardado = false }) {
+  if (!guardado) store.agregar(telefono, 'user', texto); // guardado: el servidor ya lo guardó al llegar (15/11)
   // La API exige alternar user/assistant: se unen los mensajes seguidos del mismo rol.
   const messages = [];
   // Si le escribimos nosotros primero (difusión a clientes del 698), la IA tiene que saber qué le dijimos.

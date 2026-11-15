@@ -88,7 +88,7 @@ test('avisos: van como JSON a ntfy (con tildes), con botones firmados, y si ntfy
   const { accionesNtfy } = require('../bot/server');
   const a = accionesNtfy('5491100000001');
   assert.deepStrictEqual(a.map((x) => x.label), ['Ver y contestar', 'Ya lo atendí', 'Ver pendientes']);
-  assert.match(a[1].url, /^https:\/\/puertobox\.com\.ar\/atendido\?tel=5491100000001&t=[0-9a-f]{24}$/);
+  assert.match(a[1].url, /^https:\/\/puertobox\.com\.ar\/atendido\?tel=5491100000001&t=[0-9a-z]+-[0-9a-f]{24}$/);
   assert.strictEqual(a[1].method, 'POST');
   assert.ok(!JSON.stringify(a).includes('clave-secreta'));
   process.env.NTFY_TOPIC = 'prueba';

@@ -8,10 +8,26 @@ const RESET_HORAS = Number(process.env.RESET_HORAS || 48); // conversación nuev
 
 function crearStore(archivo) {
   let db = { chats: {}, leads: {}, vistos: [] };
-  if (archivo && fs.existsSync(archivo)) {
-    try { db = JSON.parse(fs.readFileSync(archivo, 'utf8')); } catch { /* archivo dañado: arrancar vacío */ }
+  // Auditoría 15/11: antes, si un reinicio cortaba el archivo a mitad de escritura, arrancaba vacío y pisaba todo.
+  // Ahora se escribe en un temporal y se renombra (nunca queda a medias), y se guarda la copia anterior (.bak).
+  if (archivo) {
+    const leer = (f) => { try { return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null; } catch { return undefined; } };
+    const principal = leer(archivo);
+    if (principal) db = principal;
+    else if (principal === undefined) {
+      const copia = leer(archivo + '.bak');
+      try { fs.copyFileSync(archivo, `${archivo}.danado-${Date.now()}`); } catch { /* se guarda el dañado para revisar */ }
+      if (copia) { db = copia; console.error('Datos: el archivo estaba dañado, se usó la copia anterior (.bak).'); } else console.error('Datos: archivo dañado y sin copia; se guardó aparte.');
+    }
   }
-  const guardar = () => { if (archivo) fs.writeFileSync(archivo, JSON.stringify(db, null, 1)); };
+  db.chats ||= {}; db.leads ||= {}; db.vistos ||= [];
+  const guardar = () => {
+    if (!archivo) return;
+    const tmp = archivo + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(db, null, 1));
+    try { if (fs.existsSync(archivo)) fs.copyFileSync(archivo, archivo + '.bak'); } catch { /* sin copia esta vez */ }
+    fs.renameSync(tmp, archivo);
+  };
   const chat = (tel) => (db.chats[tel] ||= { mensajes: [], pausadoHasta: 0, motivoPausa: null });
 
   return {

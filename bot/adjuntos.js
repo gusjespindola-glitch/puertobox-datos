@@ -67,7 +67,7 @@ function guardar(buf, mime, dir, filename) {
  * Convierte el adjunto en el texto que se guarda en la charla.
  * Lleva la marca [archivo:/media/...] para que /charlas muestre el link, y el contenido leído para el bot.
  */
-async function procesar(e, { fetchImpl = fetch, dir, apiKey } = {}) {
+async function procesar(e, { fetchImpl = fetch, dir, apiKey, puedeLeer = true } = {}) {
   const media = e.image || e.document || e.video || e.sticker || null;
   const que = NOMBRE[e.type] || 'un archivo';
   const caption = media && media.caption ? ` Escribió: "${media.caption}".` : '';
@@ -78,7 +78,7 @@ async function procesar(e, { fetchImpl = fetch, dir, apiKey } = {}) {
   try { buf = await descargar(media, fetchImpl, apiKey); ruta = guardar(buf, mime, dir, media.filename); } catch (err) { console.error('Adjunto: no se pudo bajar', err.message); }
   const marca = ruta ? ` [archivo:${ruta}]` : ' [no se pudo bajar el archivo: pedíselo de nuevo]';
   const nombreArch = media.filename ? ` (${media.filename})` : '';
-  if (buf && LEGIBLE.has(mime)) {
+  if (buf && LEGIBLE.has(mime) && puedeLeer) {
     try {
       const leido = await leerConIA(buf, mime, fetchImpl);
       if (leido) return `[El cliente mandó ${que}${nombreArch}, leído automáticamente.${caption}${marca}]\n${leido}`;
