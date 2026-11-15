@@ -116,7 +116,9 @@ function ejecutar(nombre, input, ctx) {
       if (fija) { input = { ...input, die: fija.die, internos: fija.internos || 0 }; }
       const cajas = input.cantidad_cajas || 1;
       const conMedidas = !!(input.largo_cm && input.ancho_cm && input.alto_cm);
-      const cajaPesada = input.kg / cajas > NEG.caja_max_kg;
+      // Sin cantidad de cajas no se sabe cuánto pesa cada una: no se cobra recargo ni se pide dividir (15/11, auditoría de charlas: 30 kg sin cajas sumaba USD 45).
+      const cajasDadas = input.cantidad_cajas > 0 || !!(input.largo_cm && input.ancho_cm && input.alto_cm); // con medidas de una caja, se sabe que es una
+      const cajaPesada = cajasDadas && input.kg / cajas > NEG.caja_max_kg;
       const r = presupuesto({
         kg: input.kg, cajas: input.cantidad_cajas || 1, largo: input.largo_cm, ancho: input.ancho_cm, alto: input.alto_cm,
         valorFactura: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen,
@@ -138,7 +140,7 @@ function ejecutar(nombre, input, ctx) {
       const sob = require('../data/forwarder.json').recargos?.sobrepeso_bulto || require('../data/forwarder.json').sobrepeso_bulto;
       const tc = require('../data/forwarder.json').tipo_cambio.rmb_a_usd;
       const kgPorCaja = input.kg / cajas;
-      const recargoCajas = sob && kgPorCaja > sob.umbral_kg && kgPorCaja <= NEG.caja_max_kg ? Math.ceil(sob.monto_rmb * sob.factor * tc) * cajas : 0;
+      const recargoCajas = sob && cajasDadas && kgPorCaja > sob.umbral_kg && kgPorCaja <= NEG.caja_max_kg ? Math.ceil(sob.monto_rmb * sob.factor * tc) * cajas : 0;
       if (recargoCajas) avisos.push(`Cajas de más de ${sob.umbral_kg} kg: la aerolínea cobra un recargo por caja, ya sumado (recargo_cajas_usd). Mostralo en una línea aparte en el presupuesto ("Recargo por cajas de más de ${sob.umbral_kg} kg: USD X") y decile que si el proveedor arma cajas de hasta ${sob.umbral_kg} kg, se ahorra ese recargo.`);
       // Batería de litio: carga peligrosa, recargo sobre el flete (data/forwarder.json → recargos.bateria_litio).
       const lit = require('../data/forwarder.json').recargos?.bateria_litio;
