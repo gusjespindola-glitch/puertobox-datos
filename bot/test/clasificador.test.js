@@ -117,7 +117,7 @@ test('base única: el bot sabe lo que dice el anuncio y los precios viejos que c
 
 test('cotizar: avisa cuando las cajas son grandes para lo que pesan (15/11, prueba completa)', () => {
   const r = ejecutar('cotizar', { kg: 18, cantidad_cajas: 2, largo_cm: 60, ancho_cm: 40, alto_cm: 40, valor_factura_usd: 800, die: 20, regimen: 'comercial' }, { telefono: 'z', store: crearStore(null), derivaciones: [] });
-  assert.strictEqual(r.kg_presupuestado, 38.5);
+  assert.strictEqual(r.kg_presupuestado, 39); // kilo entero, como la aerolínea (15/11)
   assert.match(r.aviso, /cajas son grandes para lo que pesan/);
   const sin = ejecutar('cotizar', { kg: 10, valor_factura_usd: 300, die: 20, regimen: 'comercial' }, { telefono: 'y', store: crearStore(null), derivaciones: [] });
   assert.match(sin.aviso, /solo si te dice que no las tiene/);

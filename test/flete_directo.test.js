@@ -21,3 +21,14 @@ test('pequeños envíos hasta USD 400: solo IVA', () => {
   const r = estimarImpuestos({ valorFactura: 300, flete: 50, die: 20, regimen: 'personal' });
   assert.strictEqual(r.derechos_y_tasa, 0);
 });
+
+test('kilos enteros: nunca se cobran medios kilos (15/11, Gustavo: la aerolínea redondea)', () => {
+  const { kgCobrable, presupuesto } = require('../src/flete_directo');
+  assert.strictEqual(kgCobrable({ kg: 1.2 }), 2);
+  assert.strictEqual(kgCobrable({ kg: 9.5 }), 10);
+  assert.strictEqual(kgCobrable({ kg: 2 }), 2);
+  assert.strictEqual(kgCobrable({ kg: 18, cajas: 2, largo: 60, ancho: 40, alto: 40 }), 39);
+  for (let kg = 0.1; kg <= 60; kg += 0.3) assert.ok(Number.isInteger(presupuesto({ kg, valorFactura: 100, die: 20 }).kg_presupuestado), `${kg} kg`);
+  const d = require('../src/negocio').datos();
+  assert.doesNotMatch(d.tabla_texto, /,5/);
+});
