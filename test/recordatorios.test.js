@@ -276,3 +276,41 @@ test('empujón: nunca al que dijo que no (15/11)', () => {
   assert.ok(!r.includes('5491100000082'));
   assert.ok(r.includes('5491100000083'));
 });
+
+test('charlas: Gustavo le contesta al cliente desde la página (sale por el 6773 y el bot se calla) (15/11)', async () => {
+  const fs = require('fs'); const os = require('os'); const path = require('path');
+  const archivo = path.join(os.tmpdir(), `pb-resp-${process.pid}.json`);
+  const ahora = Date.now();
+  fs.writeFileSync(archivo, JSON.stringify({ vistos: [], leads: {}, chats: {
+    '5492364652566': { mensajes: [{ role: 'user', content: 'podriamos cotizar maritimo?' }, { role: 'assistant', content: 'Te escribe nuestro despachante.' }], ultimo: ahora - 3600e3, ultimoClienteEn: ahora - 3600e3, pausadoHasta: 0 },
+    '5491100000777': { mensajes: [{ role: 'user', content: 'hola' }, { role: 'assistant', content: '¿Qué querés traer?' }], ultimo: ahora - 30 * 3600e3, ultimoClienteEn: ahora - 30 * 3600e3, pausadoHasta: 0 },
+  } }));
+  process.env.ADMIN_KEY = 'clave-secreta'; process.env.OWNER_NUMBER = OWNER; process.env.DATA_FILE = archivo;
+  process.env.YCLOUD_API_KEY = 'yc'; process.env.BUSINESS_NUMBER = '5492216826773';
+  delete require.cache[require.resolve('../bot/server')];
+  const srv = require('../bot/server');
+  const s = srv.servidor().listen(0); await new Promise((r) => s.once('listening', r));
+  const base = `http://127.0.0.1:${s.address().port}`;
+  const fetchReal = globalThis.fetch;
+  const enviados = [];
+  try {
+    const pag = await (await fetchReal(`${base}/charlas?t=${srv.firma('charlas')}`)).text();
+    assert.match(pag, /Enviar desde el 6773/);
+    assert.match(pag, /Pasaron más de 24 h/); // el de 30 h no tiene caja
+    assert.strictEqual((await fetchReal(`${base}/responder?tel=5492364652566&t=mal`, { method: 'POST', body: 'texto=hola' })).status, 401);
+    // WhatsApp (YCloud) simulado: solo se intercepta la llamada a YCloud.
+    globalThis.fetch = async (url, opt) => { if (String(url).includes('ycloud')) { enviados.push(JSON.parse(opt.body)); return { ok: true, text: async () => '' }; } return fetchReal(url, opt); };
+    const r = await fetchReal(`${base}/responder?tel=5492364652566&t=${srv.firma('responder:5492364652566')}`, { method: 'POST', body: new URLSearchParams({ texto: 'Hola, soy Gustavo. Te paso una opción.' }), redirect: 'manual' });
+    assert.strictEqual(r.status, 303);
+    assert.match(r.headers.get('location'), /ok=1/);
+    assert.strictEqual(enviados[0].to, '+5492364652566');
+    assert.strictEqual(enviados[0].from, '+5492216826773');
+    const pag2 = await (await fetchReal(`${base}/charlas?t=${srv.firma('charlas')}&abierto=5492364652566&ok=1`)).text();
+    assert.match(pag2, /Vos:<\/b> Hola, soy Gustavo/);
+    assert.match(pag2, /Mensaje enviado/);
+    // Fuera de la ventana de 24 h no se manda.
+    const v = await fetchReal(`${base}/responder?tel=5491100000777&t=${srv.firma('responder:5491100000777')}`, { method: 'POST', body: new URLSearchParams({ texto: 'hola' }), redirect: 'manual' });
+    assert.match(v.headers.get('location'), /error=/);
+    assert.strictEqual(enviados.length, 1);
+  } finally { globalThis.fetch = fetchReal; s.close(); delete process.env.YCLOUD_API_KEY; }
+});
