@@ -160,6 +160,27 @@ test('anuncio de Meta: el chat que entra con el texto del anuncio queda marcado 
   assert.match(e.texto, /Del anuncio de Meta: 1 escribieron · 1 con presupuesto/);
 });
 
+test('698: el chat que entra con el texto del automático del 698 queda marcado y sale en el resumen', async () => {
+  const { embudo, paginaCharlas } = require('../bot/recordatorios');
+  const { datos } = require('../src/negocio');
+  const st = crearStore(null);
+  const fetchImpl = async () => ({ ok: true, json: async () => ({}), text: async () => '' });
+  st.pausar('5491100000079', 'manual');
+  await procesar({ type: 'whatsapp.inbound_message.received', whatsappInboundMessage: { id: 'w698', from: '+5491100000079', type: 'text', text: { body: datos().mensaje_698 } } }, { store: st, fetchImpl, debounceMs: 0 });
+  assert.strictEqual(st.chats().find((c) => c.telefono === '5491100000079').origen, '698');
+  const e = embudo(st, OWNER);
+  assert.strictEqual(e.del698, 1);
+  assert.strictEqual(e.anuncio.chats, 0);
+  assert.match(e.texto, /Desde el 698 \(link del automático\): 1 llegaron al bot/);
+});
+
+test('el link del automático del 698 lleva el texto de negocio.json', () => {
+  const fs = require('fs'); const path = require('path');
+  const { datos } = require('../src/negocio');
+  const txt = fs.readFileSync(path.join(__dirname, '../ycloud-agent/whatsapp_698_bienvenida.txt'), 'utf8');
+  assert.ok(txt.includes(`https://wa.me/${datos().whatsapp_bot}?text=${encodeURIComponent(datos().mensaje_698)}`));
+});
+
 test('el 3034 (WhatsApp personal de Gustavo) tampoco cuenta como cliente', () => {
   const { embudo, esGustavo } = require('../bot/recordatorios');
   const st = crearStore(null);

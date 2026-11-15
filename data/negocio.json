@@ -9,6 +9,8 @@
   "mensaje_whatsapp": "Hola, vi la web y quiero cotizar un envío desde China",
   "mensaje_anuncio": "Hola, quiero cotizar un envío desde China",
   "_mensaje_anuncio": "Texto precargado del link del anuncio de Meta (wa.me). Si un chat empieza con este texto, queda marcado como que vino del anuncio. Si se cambia en el anuncio, cambiarlo acá.",
+  "mensaje_698": "Hola, me pasaron este número para cotizar un envío desde China",
+  "_mensaje_698": "Texto precargado del link que va en el mensaje automático del 698 (ycloud-agent/whatsapp_698_bienvenida.txt). Si un chat empieza con este texto, queda marcado como que vino del 698. Si se cambia acá, cambiar también el link del automático.",
   "instagram": "puertobox.ok",
   "email": "info@puertobox.com.ar",
   "horario": "Lun–Vie 9:00 a 18:00 hs",
