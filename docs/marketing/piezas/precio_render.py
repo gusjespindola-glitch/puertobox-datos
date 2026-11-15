@@ -1,4 +1,7 @@
-import pathlib
+import pathlib, json, subprocess
+# Números desde la base única (data/): nunca escritos a mano (15/11/2026).
+REPO=pathlib.Path(__file__).resolve().parents[3]
+D=json.loads(subprocess.check_output(['node','-e',"const d=require('./src/negocio').datos();console.log(JSON.stringify({kg:d.usd_kg_total_desde,desde:d.kg_desde,min:d.envio_minimo_usd}))"],cwd=REPO))
 from playwright.sync_api import sync_playwright
 F='/home/claude/render/node_modules/@fontsource/montserrat/files'
 faces=''.join(f"@font-face{{font-family:'M';font-weight:{w};src:url('file://{F}/montserrat-latin-{w}-normal.woff2')}}" for w in (500,600,700,800,900))
@@ -16,8 +19,8 @@ display:flex;flex-direction:column;align-items:center;text-align:center;padding-
 </style></head><body><div class="r">{deco.format(by=by)}<div class="c">
 <img src="file:///home/claude/render/logo.png" style="width:330px">
 <div style="font-weight:800;font-size:76px;letter-spacing:1px">IMPORTÁ DE CHINA</div>
-<div style="line-height:.92;font-weight:900;text-shadow:0 6px 24px rgba(0,0,0,.45)"><div style="font-size:{big[0]}px">USD</div><div style="font-size:{big[1]}px">19/KG</div></div>
-<div style="font-weight:700;font-size:44px;line-height:1.3">FLETE + GESTIÓN<br><span style="font-weight:600;font-size:38px;color:#c9d1e4">desde 20 kg · envíos chicos desde USD 65</span></div>
+<div style="line-height:.92;font-weight:900;text-shadow:0 6px 24px rgba(0,0,0,.45)"><div style="font-size:{big[0]}px">USD</div><div style="font-size:{big[1]}px">{D["kg"]}/KG</div></div>
+<div style="font-weight:700;font-size:44px;line-height:1.3">FLETE + GESTIÓN<br><span style="font-weight:600;font-size:38px;color:#c9d1e4">desde {D["desde"]} kg · envíos chicos desde USD {D["min"]}</span></div>
 <div style="background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.18);border-radius:18px;padding:18px 30px;font-weight:700;font-size:38px;line-height:1.25;max-width:880px">Impuestos: te los decimos<br>ANTES de que compres</div>
 <div style="background:linear-gradient(180deg,#e0262f,#b3101b);border-radius:999px;padding:30px 90px;font-weight:800;font-size:60px;box-shadow:0 10px 30px rgba(200,20,30,.45);margin-top:10px">COTIZÁ GRATIS</div>
 <div style="font-weight:600;font-size:30px;color:#aab3c7;letter-spacing:.5px">DESPACHANTE DE ADUANA MATRICULADO · ARCA</div>

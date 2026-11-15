@@ -23,7 +23,10 @@ function crearStore(archivo) {
     historial: (tel) => chat(tel).mensajes,
     agregar(tel, role, content) {
       const c = chat(tel);
-      if (role === 'user' && c.ultimo && Date.now() - c.ultimo > RESET_HORAS * 3600e3) c.mensajes = [];
+      if (role === 'user' && c.ultimo && Date.now() - c.ultimo > RESET_HORAS * 3600e3) {
+        c.mensajes = [];
+        if (db.leads[tel]) delete db.leads[tel].posicion_fija; // charla nueva: puede ser otro producto
+      }
       c.ultimo = Date.now();
       if (role === 'user') { c.ultimoClienteEn = c.ultimo; c.avisoVentana = false; } // ventana de 24 h nueva
       c.mensajes.push({ role, content });
@@ -58,6 +61,10 @@ function crearStore(archivo) {
       c.respuestasHoy += 1; guardar(); return c.respuestasHoy;
     },
     chats: () => Object.entries(db.chats).map(([telefono, c]) => ({ telefono, ...c })),
+    // Clasificación arancelaria (15/11): caché por producto y contador diario de búsquedas web.
+    cacheClasificacion() { return (db.clasificaciones ||= {}); },
+    guardarClasificacion(k, r) { (db.clasificaciones ||= {})[k] = { ...r, en: new Date().toISOString() }; guardar(); },
+    contarClasificacion(dia, sumar = 0) { db.clasifDia ||= {}; if (sumar) { db.clasifDia = { [dia]: (db.clasifDia[dia] || 0) + sumar }; guardar(); } return db.clasifDia[dia] || 0; },
     meta(clave, valor) { db.meta ||= {}; if (valor !== undefined) { db.meta[clave] = valor; guardar(); } return db.meta[clave]; },
   };
 }
