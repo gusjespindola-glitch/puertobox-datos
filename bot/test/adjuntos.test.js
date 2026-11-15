@@ -79,3 +79,13 @@ test('audio: se guarda el original para que Gustavo lo escuche, y en /charlas ap
   assert.match(h, /<audio controls/);
   assert.match(h, /No se pudo bajar el archivo: pedíselo de nuevo/);
 });
+
+test('vista previa de la tarjeta: sin el código del archivo', () => {
+  const { crearStore } = require('../store');
+  const { paginaCharlas } = require('../recordatorios');
+  const store = crearStore(null);
+  store.agregar('5493', 'user', '[El cliente mandó una imagen, leído automáticamente. [archivo:/media/2a8f8f8a602164d01fc5361fa6b87b57.jpg]]\nEs la foto de una minera ASIC');
+  const h = paginaCharlas(store, 'x', Date.now(), 3, () => '/r');
+  assert.match(h, /“📷 Foto: Es la foto de una minera ASIC”/);
+  assert.ok(!/“[^”]*\[archivo:/.test(h));
+});

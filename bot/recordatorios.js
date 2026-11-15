@@ -227,6 +227,15 @@ function conArchivos(html) {
     .replace(/\[no se pudo bajar el archivo: pedíselo de nuevo\]/g, '<b style="color:#c8102e">⚠️ No se pudo bajar el archivo: pedíselo de nuevo.</b>');
 }
 
+/** Vista previa de la tarjeta: sin el código del archivo. "📷 Foto: …", "📎 Archivo: …", "🎧 Audio: …". */
+function resumenVista(t) {
+  let v = String(t);
+  const icono = /^\[El cliente mandó una imagen/.test(v) ? '📷 Foto' : /^\[El cliente mandó (un archivo|un video)/.test(v) ? '📎 Archivo' : /^\[(Audio del cliente|El cliente mandó un audio)/.test(v) ? '🎧 Audio' : '';
+  v = v.replace(/\s?\[archivo:[^\]]*\]/g, '').replace(/\s?\[no se pudo bajar el archivo[^\]]*\]/g, '');
+  if (icono) v = icono + ': ' + v.replace(/^\[[^\]]*\]\s*/, '').trim();
+  return v.length > 120 ? v.slice(0, 118) + '…' : v;
+}
+
 function textoMensaje(content) {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
@@ -271,7 +280,7 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3, linkResponder
       : '<p class="vencida">Pasaron más de 24 h desde su último mensaje: WhatsApp no deja escribirle libre (solo con una plantilla paga).</p>';
     const ultimoCliente = [...msgs].reverse().find((m) => m.quien === 'cliente');
     const cabecera = [c.origen === 'anuncio' ? '📣 Del anuncio' : c.origen === '698' ? '📲 Del 698' : '', l.estado ? ESTADO[l.estado] || l.estado : 'Sin datos todavía', hace(ahora - c.ultimo)].filter(Boolean).join(' · ');
-    return `<li id="c-${esc(c.telefono)}"><details${abierto === c.telefono ? ' open' : ''}><summary><b>+${esc(c.telefono)}${l.nombre ? ' · ' + esc(l.nombre) : ''}</b>${l.producto ? '<br>' + esc(l.producto) : ''}<br><small>${esc(cabecera)}</small>${ultimoCliente ? `<p>“${esc(ultimoCliente.txt.slice(0, 120))}”</p>` : ''}<span class="ver">Ver charla ▾</span></summary>
+    return `<li id="c-${esc(c.telefono)}"><details${abierto === c.telefono ? ' open' : ''}><summary><b>+${esc(c.telefono)}${l.nombre ? ' · ' + esc(l.nombre) : ''}</b>${l.producto ? '<br>' + esc(l.producto) : ''}<br><small>${esc(cabecera)}</small>${ultimoCliente ? `<p>“${esc(resumenVista(ultimoCliente.txt))}”</p>` : ''}<span class="ver">Ver charla ▾</span></summary>
 <div class="chat">${msgs.map((m) => `<div class="m ${m.quien}">${m.quien === 'vos' ? '<b>Vos:</b> ' : ''}${conArchivos(esc(m.txt)).replace(/\n/g, '<br>')}</div>`).join('')}</div>${caja}${presu(c, l)}</details></li>`;
   };
   const delAnuncio = chats.filter((c) => c.origen === 'anuncio').length;
