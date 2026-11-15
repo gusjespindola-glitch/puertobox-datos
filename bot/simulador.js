@@ -44,6 +44,12 @@ const ESCENARIOS = [
   { nombre: 'Audio pasado a texto', msgs: ['[Audio del cliente, pasado a texto automáticamente] hola buen día quería saber cuánto me sale traer unas mochilas sin marca para vender, son como 400 dólares y pesan 8 kilos'], espera: { presupuesto: true, noContiene: /no (puedo )?escuch/i } },
   { nombre: 'Marca desconocida para vender (INPI)', msgs: ['cargadores marca Baseus para vender, 300 dolares, 5 kilos, una caja'], espera: { presupuesto: true, deriva: true } },
   { nombre: 'Fundas para vender (respuesta clara)', msgs: ['quiero traer fundas de celular para vender'], espera: { contiene: /\bs[ií]\b|traemos/i } },
+  // 15/11: charla real del arrancador (10 unidades de 0,9 kg que pasaron a "23 kg"): el bot recotizó con las 10 unidades viejas,
+  // el costo por unidad saltó a USD 82 y el cliente lo leyó como precio por kilo; después negó el precio de la publicidad y repitió el código postal.
+  { nombre: 'Cambia el peso: preguntar unidades nuevas', msgs: ['arrancadores portatiles 12V sin marca para vender, 10 unidades, cada una pesa 900 gramos con caja, le pago 200 dolares en total', 'serian mas de 20 kilos, unos 23 kg'], espera: { ultima: { contiene: /unidades/i, noContiene: /Presupuesto PuertoBox/i } } },
+  { nombre: 'Compara con el precio de la publicidad', msgs: ['remeras sin marca para vender, 100 unidades, pago 500 dolares, 23 kilos, una caja', 'en la publicidad decian que arriba de 20 kg es 16 por kilo, por que me cobras mas?'], espera: { presupuesto: true, ultima: { contiene: /kilo/i, noContiene: /no es (nuestr[oa]|el nuestro)|no puedo cotiz|como dice tu publicidad|c[oó]digo postal/i } } },
+  { nombre: 'Confunde costo por unidad con el kilo', msgs: ['remeras sin marca para vender, 100 unidades, pago 500 dolares, 23 kilos, una caja', 'me estas cobrando 13 dolares el kilo? no tiene sentido'], espera: { ultima: { contiene: /unidad|remera/i, noContiene: /c[oó]digo postal/i } } },
+  { nombre: 'Se enoja y pide una persona', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja', 'no entiendo nada, esto es un papelon, quiero hablar con una persona'], espera: { deriva: true, ultima: { noContiene: /c[oó]digo postal/i } } },
   { nombre: 'Repuestos de auto', msgs: ['repuestos de auto genericos para vender, 800 dolares, 20 kilos, 2 cajas'], espera: { presupuesto: true } },
 ];
 
@@ -75,6 +81,7 @@ function revisar(resp, ctx) {
   if (/Gustavo/.test(t)) prob.push('nombra a Gustavo (tiene que decir "nuestro despachante")');
   if (/(pag[aá]s|paga|pagan)[^.]{0,20}al courier/i.test(t)) prob.push('dice que se paga al courier (tiene que decir "la empresa de transporte")');
   if (/soy (una )?persona|soy humano/i.test(t)) prob.push('dice que es humano');
+  if (/no es nuestr[oa] (precio|tarifa)|no puedo cotizarlo|como dice tu publicidad/i.test(t)) prob.push('discute el precio de la publicidad en vez de dar el kilo de su presupuesto');
   return prob;
 }
 
@@ -105,6 +112,10 @@ async function correrEscenarios() {
     if (e.deriva && !derivaciones.length) finales.push('no derivó a Gustavo');
     if (e.contiene && !e.contiene.test(junto)) finales.push(`le faltó mencionar ${e.contiene}`);
     if (e.noContiene && e.noContiene.test(junto)) finales.push(`no debía decir ${e.noContiene}`);
+    // Revisión solo de la última respuesta (para ver cómo reacciona a un cambio o a una queja).
+    const ultima = todas[todas.length - 1] || '';
+    if (e.ultima?.contiene && !e.ultima.contiene.test(ultima)) finales.push(`al final le faltó mencionar ${e.ultima.contiene}`);
+    if (e.ultima?.noContiene && e.ultima.noContiene.test(ultima)) finales.push(`al final no debía decir ${e.ultima.noContiene}`);
     fallas += finales.length;
     salida.push(finales.length ? `**Resultado:** ❌ ${finales.join(' · ')}` : '**Resultado:** ✅', '');
   }

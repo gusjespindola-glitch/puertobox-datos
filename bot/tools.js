@@ -34,7 +34,8 @@ const definiciones = [
         internos: { type: 'number', description: 'Impuestos internos (%) si la posición los tiene, si no 0' },
         regimen: { type: 'string', enum: ['personal', 'comercial'], description: 'personal = uso propio, hasta 3 unidades iguales; comercial = para revender' },
         sin_franquicia: { type: 'boolean', description: 'true si el cliente de uso propio ya usó sus envíos con beneficio del año' },
-        unidades: { type: 'number', description: 'Cantidad TOTAL de unidades que trae (por ejemplo 100 remeras). Para revender, siempre que se sepa: con esto se calcula cuánto le queda cada unidad puesta en su casa.' },
+        unidades: { type: 'number', description: 'Cantidad TOTAL de unidades que trae (por ejemplo 100 remeras). Para revender, siempre que se sepa: con esto se calcula cuánto le queda cada unidad puesta en su casa. Si el cliente cambió el peso o el pedido, tiene que ser la cantidad NUEVA (preguntala), nunca la vieja.' },
+        kg_por_unidad: { type: 'number', description: 'Peso de UNA unidad (con su caja) si el cliente lo dijo. Sirve para controlar que unidades y peso total cierren.' },
         largo_cm: { type: 'number' }, ancho_cm: { type: 'number' }, alto_cm: { type: 'number' },
       },
       required: ['kg', 'valor_factura_usd', 'die', 'regimen'],
@@ -84,6 +85,13 @@ function ejecutar(nombre, input, ctx) {
       // Controles antes de dar un precio: datos imposibles o pedidos que no se cotizan por acá.
       if (!(input.kg > 0) || !(input.valor_factura_usd > 0)) return { error: 'Faltan el peso o el valor (tienen que ser mayores a 0). Preguntáselos al cliente; no cotices.' };
       if (input.valor_factura_usd > NEG.tope_por_envio_usd) return { aviso: `Supera el tope de USD ${NEG.tope_por_envio_usd} por envío: no cotices. Seguí las reglas de pedidos grandes (juntá datos y derivá a Gustavo).` };
+      // Unidades y peso tienen que cerrar (15/11: 10 arrancadores de 0,9 kg cotizados como 23 kg → el costo por unidad salió inflado).
+      if (input.unidades > 0 && input.kg_por_unidad > 0) {
+        const esperado = input.unidades * input.kg_por_unidad;
+        if (Math.abs(input.kg - esperado) / esperado > 0.3) {
+          return { error: `No cierran unidades y peso: ${input.unidades} unidades de ${input.kg_por_unidad} kg son unos ${Math.round(esperado * 10) / 10} kg, no ${input.kg} kg. No cotices: preguntale al cliente (una sola pregunta) cuántas unidades entran en ${input.kg} kg, y después cuánto paga por ese pedido.` };
+        }
+      }
       const cajas = input.cantidad_cajas || 1;
       const conMedidas = !!(input.largo_cm && input.ancho_cm && input.alto_cm);
       const cajaPesada = input.kg / cajas > NEG.caja_max_kg;
@@ -118,6 +126,8 @@ function ejecutar(nombre, input, ctx) {
         impuestos_y_gastos_estimados_usd: r.impuestos_estimados_usd.total,
         detalle_impuestos: r.impuestos_estimados_usd,
         total_puertobox_usd: totalPB,
+        // Para cuando el cliente pregunta "¿cuánto me sale el kilo?" o compara con la publicidad (que dice el kilo con la gestión incluida).
+        usd_por_kilo_con_gestion: Math.round((totalPB / r.kg_presupuestado) * 100) / 100,
         reglas: `El flete es PRECIO CERRADO: se respeta aunque la caja llegue hasta ${NEG.precio_cerrado_hasta_pct}% más pesada o grande; si supera eso, se ajusta con foto de la balanza. Se suma una gestión fija de USD ${NEG.gestion_usd} por envío. El cliente le paga a PuertoBox SOLO total_puertobox_usd (flete + gestión); los impuestos son un estimado aparte que cobra el courier: nunca los sumes al total de PuertoBox. Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. El envío de la fábrica al depósito en ${NEG.deposito_china} NO está incluido: lo paga el cliente (ideal: que lo incluya el proveedor; si lo paga PuertoBox, se suma aparte a lo que cueste). Impuestos y gasto administrativo son ESTIMADOS y se pagan directo a la empresa de transporte cuando entrega el paquete (decí "la empresa de transporte"; puede ser DHL, UPS o FedEx, no nombres una salvo que pregunten).`,
       };
     }
