@@ -21,7 +21,7 @@ Fuente: PDF de /charlas que mandó Gustavo (12 clientes, últimos 3 días).
 - Arrancador ("pasame su número"): derivado hace 12 h, sin respuesta.
 - Nusse: "ok" hace 26 h, ventana de WhatsApp cerrada.
 
-## Pendiente de decisión de Gustavo
+## Decisiones de Gustavo (15/11 15:41)
 
-- Pedidos de más de USD 3.000: ¿se dividen en dos envíos cuando el cliente lo pide?
-- Pedidos donde el flete supera el valor de la mercadería (Nusse, sopladores): ¿qué se le dice al cliente?
+- Pedidos de más de USD 3.000: se dividen en varios envíos de hasta USD 3.000.
+- Flete mayor que la mercadería: se cotiza igual, es parte del proceso.
