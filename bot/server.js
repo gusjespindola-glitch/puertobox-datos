@@ -86,7 +86,7 @@ function normalizar(payload) {
   const ev = [];
   if (payload.type === 'whatsapp.inbound_message.received' && payload.whatsappInboundMessage) {
     const m = payload.whatsappInboundMessage;
-    ev.push({ tipo: 'mensaje', id: m.wamid || m.id, from: soloDigitos(m.from), type: m.type, text: m.text, image: m.image, audio: m.audio || m.voice, referral: m.referral || (m.context && m.context.referral) || null });
+    ev.push({ tipo: 'mensaje', id: m.wamid || m.id, from: soloDigitos(m.from), type: m.type, text: m.text, image: m.image, document: m.document, video: m.video, sticker: m.sticker, audio: m.audio || m.voice, referral: m.referral || (m.context && m.context.referral) || null });
   }
   if ((payload.type === 'whatsapp.echo_message.created') && payload.whatsappMessage) {
     const m = payload.whatsappMessage;
@@ -113,7 +113,7 @@ function normalizar(payload) {
     for (const change of entry.changes || []) {
       const v = change.value || {};
       for (const eco of v.message_echoes || []) ev.push({ tipo: 'eco', to: soloDigitos(eco.to), text: eco.text });
-      for (const msg of v.messages || []) ev.push({ tipo: 'mensaje', id: msg.id, from: soloDigitos(msg.from), type: msg.type, text: msg.text, image: msg.image });
+      for (const msg of v.messages || []) ev.push({ tipo: 'mensaje', id: msg.id, from: soloDigitos(msg.from), type: msg.type, text: msg.text, image: msg.image, document: msg.document });
     }
   }
   return ev;
@@ -170,6 +170,8 @@ async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fe
  * "Ya lo atendí" marca al cliente sin abrir nada; "Ver pendientes" abre la lista con un botón por cliente.
  * Los links llevan una firma por cliente (HMAC con ADMIN_KEY), nunca la clave.
  */
+// Archivos que mandan los clientes (15/11): se guardan junto a los datos y se sirven en /media/<nombre largo al azar>.
+const DIR_MEDIA = () => path.join(path.dirname(process.env.DATA_FILE || DATA_FILE), 'media');
 const BASE_URL = () => process.env.PUBLIC_URL || `https://${require('../src/negocio').datos().dominio}`;
 function firma(que) {
   const clave = process.env.ADMIN_KEY || ADMIN_KEY;
@@ -293,7 +295,9 @@ async function procesar(payload, deps = {}) {
     const transcripto = e.transcripto !== undefined ? e.transcripto : (e.audio ? await transcribirAudio(e.audio, fetchImpl) : null); // no transcribir dos veces
     const texto = e.type === 'text' ? e.text.body
       : transcripto ? `[Audio del cliente, pasado a texto automáticamente] ${transcripto}`
-      : `[El cliente mandó un ${e.type}${e.image?.caption ? `: ${e.image.caption}` : ''}. Pedile que lo describa por texto o derivá si hace falta.]`;
+      : ['image', 'document', 'video', 'sticker'].includes(e.type)
+        ? await require('./adjuntos').procesar(e, { fetchImpl, dir: DIR_MEDIA(), apiKey: process.env.YCLOUD_API_KEY || YCLOUD_API_KEY })
+        : `[El cliente mandó un ${e.type}. Pedile los datos por texto sin decir que no se abre.]`;
     // Códigos de verificación de Meta/Facebook (llegan desde números oficiales, como +44 7974 905090): no son clientes.
     // WhatsApp no deja leerlos por la API (llegan como "unsupported"): no se contestan ni se derivan.
     if (NUMEROS_META.has(tel)) continue;
@@ -588,6 +592,14 @@ function servidor() {
       if (!txt) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Informe no encontrado.'); }
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
       return res.end(txt);
+    }
+    if (req.method === 'GET' && /^\/media\/[0-9a-f]{32}\.[a-z0-9]{1,5}$/.test(url.pathname)) {
+      const archivo = path.join(DIR_MEDIA(), url.pathname.slice(7));
+      if (!fs.existsSync(archivo)) { res.writeHead(404); return res.end('No encontrado'); }
+      const ext = path.extname(archivo).slice(1);
+      const tipo = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', pdf: 'application/pdf' }[ext] || 'application/octet-stream';
+      res.writeHead(200, { 'content-type': tipo, 'cache-control': 'private, max-age=86400', 'x-robots-tag': 'noindex', ...(tipo === 'application/octet-stream' ? { 'content-disposition': 'attachment' } : {}) });
+      return fs.createReadStream(archivo).pipe(res);
     }
     // Presupuesto formal en PDF (15/11). El PDF se sirve por un código largo (lo necesita WhatsApp para descargarlo).
     if (req.method === 'GET' && /^\/presupuesto\/[0-9a-f]{32}\.pdf$/.test(url.pathname)) {
