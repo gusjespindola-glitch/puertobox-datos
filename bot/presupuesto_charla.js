@@ -102,6 +102,7 @@ async function datosDeCharla(tel, { store, fetchImpl = fetch, nuevo = false }) {
     posicion_a_confirmar: !!pos && pos.confianza !== 'alta' && !pos.confirmada,
     input: { valor: d.valor_usd || '', kg: d.kg_total || '', cajas: d.cajas || 1, largo: d.largo_cm || '', ancho: d.ancho_cm || '', alto: d.alto_cm || '', unid: d.unidades || '', reg: regimen, litio: !!d.litio, cuit: !!d.cuit_puertobox },
     faltan,
+    link: ((c.mensajes.filter((m) => m.role === 'user').map((m) => texto(m.content)).join(' ').match(/https?:\/\/[^\s]+/) || [])[0]) || '',
     ventana_horas: Math.max(0, Math.round(24 - (Date.now() - (c.ultimoClienteEn || 0)) / 3600e3)),
   };
 }

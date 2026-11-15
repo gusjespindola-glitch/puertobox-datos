@@ -122,7 +122,7 @@ button.ghost{background:transparent;color:var(--acc)}
 @media (max-width:600px){#doc{padding:18px 14px}#doc .hd{grid-template-columns:1fr 70px}#doc .hd .cp{grid-column:1/-1;border-top:1.5px solid #1b2333}#doc .lt{border-right:0}#doc .bx{grid-template-columns:1fr}}
 @media print{body>*:not(#pres){display:none!important}#pres{position:static;background:none;padding:0;display:block;overflow:visible}#pres .bar{display:none}html,body{background:#fff!important;height:auto}#doc{max-width:none;width:100%;padding:0 1px;border-radius:0;font-size:12px}#doc .hd{grid-template-columns:1fr 84px 1fr}#doc h3{margin:12px 0 5px}#doc td{padding:5px 4px}@page{size:A4;margin:12mm}}
 @media (prefers-reduced-motion:no-preference){.res{transition:border-color .12s}}
-.charla{background:#eef5ff;border-left:4px solid #0b4f8a;padding:12px;border-radius:10px;margin:10px 0;line-height:1.5}.charla.mal{background:#fff1f0;border-color:#c8102e}.charla.bien{background:#eefaf0;border-color:#1a7f37}button.enviar{background:#1a7f37;color:#fff;font-size:17px;padding:14px 18px;width:100%;margin-bottom:8px}
+input.falta{border:2px solid #c8102e;background:#fff5f5}.charla{background:#eef5ff;border-left:4px solid #0b4f8a;padding:12px;border-radius:10px;margin:10px 0;line-height:1.5}.charla.mal{background:#fff1f0;border-color:#c8102e}.charla.bien{background:#eefaf0;border-color:#1a7f37}button.enviar{background:#1a7f37;color:#fff;font-size:17px;padding:14px 18px;width:100%;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -249,7 +249,12 @@ async function desdeCharla(tel, nuevo) {
   $('p_cli').value = d.nombre || ''; $('p_prod').value = d.producto || '';
   document.querySelector('#cot details').open = true;
   cotizar();
-  const falta = d.faltan.length ? `<b>Falta:</b> ${esc(d.faltan.join(', '))}. Completalo arriba.` : '<b>Está todo.</b> Revisalo y mandalo.';
+  const bloquea = d.faltan.filter((x) => x !== 'medidas de la caja');
+  const ficha = sel ? N.ficha(sel) : null;
+  const falta = (bloquea.length ? `<b>Falta:</b> ${esc(bloquea.join(', '))}.` : '<b>Está todo.</b> Revisalo y mandalo.')
+    + (d.faltan.includes('medidas de la caja') ? '<br>Sin medidas de la caja: se cotiza por peso real y el flete no queda cerrado.' : '')
+    + (ficha ? `<br><b>Posición:</b> ${esc(ficha.posicion)} · DIE ${esc(ficha.die)}% — ${(() => { const t = ficha.jerarquia[ficha.jerarquia.length - 1]; return esc(t.length > 80 ? t.slice(0, 78) + '…' : t); })()}` : '')
+    + (d.link ? `<br>🔗 <a href="${esc(d.link)}" target="_blank" rel="noopener">Ver el producto que mandó (precio)</a>` : '');
   box.innerHTML = `<b>Cargado de la charla${d.nombre ? ' con ' + esc(d.nombre) : ''}</b> (${d.fuente === 'cotizacion' ? 'lo que cotizó el bot' : 'datos que dio el cliente'}).<br>${falta}`
     + (d.posicion_a_confirmar ? '<br>⚠️ La posición no es segura: confirmala en la ficha de arriba (si cambiás de posición, se usa la que tengas abierta).' : '')
     + (d.notas ? `<br>📝 ${esc(d.notas)}` : '')
@@ -347,7 +352,14 @@ async function cotizar() {
   let r;
   try { r = await fetch('api/cotizar?' + p).then((x) => x.json()); } catch (e) { $('c_avisos').innerHTML = '<div>No se pudo calcular (sin conexión).</div>'; return; }
   if (pedido !== cotizar.n) return; // llegó una respuesta vieja
-  if (r.error) { $('c_pesos').innerHTML = ''; $('c_tabla').innerHTML = ''; $('c_avisos').innerHTML = `<div>${esc(r.error)}</div>`; cotizar.ultimo = null; return; }
+  ['c_valor', 'c_kg'].forEach((id) => $(id).classList.toggle('falta', !(parseFloat($(id).value) > 0)));
+  if (r.error) {
+    const f = [!(parseFloat($('c_valor').value) > 0) && 'el valor al proveedor (USD)', !(parseFloat($('c_kg').value) > 0) && 'el peso'].filter(Boolean);
+    $('c_pesos').innerHTML = ''; $('c_tabla').innerHTML = ''; $('c_avisos').innerHTML = `<div>${f.length ? 'Para calcular, cargá ' + f.join(' y ') + ' (marcado en rojo).' : esc(r.error)}</div>`; cotizar.ultimo = null;
+    if (CHARLA) { $('c_enviar').disabled = true; $('c_enviar').textContent = 'Falta ' + (f[0] || 'completar datos'); }
+    return;
+  }
+  if (CHARLA && $('c_enviar').textContent.startsWith('Falta')) { $('c_enviar').disabled = false; $('c_enviar').textContent = '📲 Enviar presupuesto al cliente'; }
   const k = (l, v, hi) => `<div class="k${hi ? ' hi big' : ''}"><div class="l">${l}</div><div class="v">${v}</div></div>`;
   $('c_pesos').innerHTML = k('Peso real', kgs(r.peso_real_kg)) + k('Peso volumétrico', r.peso_volumetrico_kg == null ? 'sin medidas' : kgs(r.peso_volumetrico_kg) + `<div class="l">L×A×H ÷ ${r.divisor_volumetrico} × cajas</div>`) + k('Kg cobrable', kgs(r.kg_presupuestado), true) + k('Kg por caja', r.kg_por_caja == null ? '—' : kgs(r.kg_por_caja)) + k('USD por kilo (con gestión)', usd(r.usd_por_kilo_con_gestion));
   const filas = [['Flete China → domicilio', r.flete_puertobox_usd]];
