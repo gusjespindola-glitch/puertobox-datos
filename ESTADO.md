@@ -35,12 +35,11 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 - Fotos y PDF: se bajan de YCloud, la IA los lee y el bot recibe el contenido (lo anota y cotiza). Se guardan en /data/media y se ven en /charlas. Otros archivos (Excel, Word): se guardan y el bot pide los datos por texto. Usa el modelo del clasificador (una lectura por archivo).
 
 ### Presupuesto formal automático (15/11/2026)
+- 15/11 a la tarde: se SACÓ el presupuestador cargado desde la charla (no era confiable). Queda solo lo de abajo: el PDF con los números que el bot ya le pasó al cliente.
 - Cada cotización del bot queda guardada en el cliente. Cuando el cliente confirma (derivación "listo para cerrar") se arma solo el presupuesto en PDF (comprobante "X", N° 0001-0000000N correlativo).
 - El aviso al celu dice "📄 Presupuesto formal N° … listo". En "Ver y contestar" está el recuadro: nombre, CUIT/DNI, domicilio y condición IVA (opcionales), "Ver PDF" y "Enviar presupuesto".
 - "Enviar presupuesto" lo manda por WhatsApp desde el 6773 como PDF (solo dentro de las 24 h del último mensaje del cliente) y pausa el bot. El bot nunca lo manda solo.
 - El PDF se sirve en /presupuesto/<código largo>.pdf (lo necesita WhatsApp para bajarlo).
-- En cada charla hay un botón "🧮 Armar presupuesto (ya cargado con la charla)": abre el cotizador del nomenclador con TODO cargado. Si el bot cotizó, usa esa cotización; si no, una IA lee la charla y saca los datos que dio el cliente (y la posición: la de la charla o el clasificador). Arriba dice qué falta y qué revisar. Gustavo revisa, toca "📲 Enviar presupuesto al cliente" (dos toques) y le llega el PDF por WhatsApp desde el 6773; la posición que él dejó queda confirmada en la charla.
-- El bot anota el pedido mientras charla (`anotar_pedido`: unidades, peso, valor, cajas, medidas, litio, link). El presupuestador junta campo por campo (bot → IA leyendo la charla → respaldo por texto), marca 🚩 lo que no cierra con la charla y en rojo lo que falta. El aviso al celu dice qué falta para el presupuesto. La prueba completa controla que el presupuestador cargue bien. Auditoría: docs/auditoria/2026-11-15-pedidos-de-gustavo.md.
 
 ## Base única (desde 13/11/2026)
 Cambiás un dato en un solo lugar y cambia en el bot, la web, el buscador y las páginas:

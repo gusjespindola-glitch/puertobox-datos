@@ -217,13 +217,6 @@ function avisoCorto(d, st) {
   if (!d.quiere && !d.para_vos) lineas.push(String(d.resumen || '').slice(0, 200));
   else if (d.resumen) lineas.push('', String(d.resumen).slice(0, 220));
   if (d.presupuesto) lineas.push('', `📄 Presupuesto formal N° ${d.presupuesto} listo: en «Ver y contestar» tocá «Enviar presupuesto».`);
-  // Control del presupuesto (16/11): qué datos ya anotó el bot y qué falta, para que Gustavo no tenga que revisarlo.
-  if (d.motivo !== 'duda' && d.motivo !== 'reclamo') {
-    const i = (lead.cotizacion && lead.cotizacion.input) || {};
-    const pe = lead.pedido || {};
-    const falta = [!(pe.valor_usd || i.valor_factura_usd) && 'valor', !(pe.kg_total || i.kg) && 'peso', !(pe.unidades || i.unidades) && 'unidades', !(lead.posicion_fija) && 'posición'].filter(Boolean);
-    lineas.push('', falta.length ? `📄 Para el presupuesto falta: ${falta.join(', ')}.` : '📄 Presupuesto: datos completos, solo revisar y mandar.');
-  }
   if (d.motivo !== 'duda') lineas.push('', 'El bot ya no le contesta: le escribís vos desde «Ver y contestar».');
   return lineas.join('\n');
 }
@@ -442,25 +435,6 @@ function servirNomenclador(req, res, url) {
   if (url.pathname === '/nomenclador') { res.writeHead(302, { location: '/nomenclador/' + (dada ? '?key=' + encodeURIComponent(dada) : '') }); return res.end(); }
   const rel = decodeURIComponent(url.pathname.slice('/nomenclador/'.length)) || 'index.html';
   // Cotizador a mano (15/11, Gustavo): el mismo motor que usa el bot (`cotizar`), así los números siempre coinciden.
-  // Presupuesto desde una charla (15/11): datos cargados solos y envío del PDF cuando Gustavo lo aprueba.
-  if (rel === 'api/charla') {
-    const tel = soloDigitos(url.searchParams.get('tel'));
-    return require('./presupuesto_charla').datosDeCharla(tel, { store, fetchImpl: fetch, nuevo: url.searchParams.get('nuevo') === '1' })
-      .then((d) => { res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(d)); })
-      .catch((e) => { res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify({ error: e.message })); });
-  }
-  if (rel === 'api/enviar') {
-    if (req.method !== 'POST') { res.writeHead(405); return res.end(); }
-    let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 20000) req.destroy(); });
-    return req.on('end', async () => {
-      let out;
-      try {
-        const f = JSON.parse(raw || '{}');
-        out = await require('./presupuesto_charla').enviarDesdeCotizador(soloDigitos(f.tel), f, { store, enviarDoc: (to, link, fn, cap) => enviarDocumento(to, link, fn, cap), baseUrl: BASE_URL() });
-      } catch (e) { out = { error: String(e.message).slice(0, 160) }; }
-      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(out));
-    });
-  }
   if (rel === 'api/cotizar') {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
     return res.end(JSON.stringify(cotizarAMano(url.searchParams)));
@@ -568,7 +542,7 @@ function servidor() {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
       const aviso = url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
-      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, `/nomenclador/?t=${firma('nomenclador')}`));
+      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`));
     }
     // Prueba completa del bot (15/11): corre en segundo plano y avisa por ntfy con el link al informe.
     if (req.method === 'POST' && url.pathname === '/prueba-completa') {
@@ -667,7 +641,7 @@ function servidor() {
       return correrEscenarios().then((txt) => { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }); res.end(txt); })
         .catch((e) => { res.writeHead(500); res.end('Error: ' + e.message); });
     }
-    if ((req.method === 'GET' || (req.method === 'POST' && url.pathname === '/nomenclador/api/enviar')) && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) return servirNomenclador(req, res, url);
+    if (req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) return servirNomenclador(req, res, url);
     if (req.method === 'GET' || req.method === 'HEAD') {
       const pag = paginas.servir(url.pathname, url.searchParams);
       if (pag) { res.writeHead(200, { 'content-type': pag.tipo, 'cache-control': 'public, max-age=60, s-maxage=60' }); return res.end(req.method === 'HEAD' ? undefined : pag.cuerpo); }
