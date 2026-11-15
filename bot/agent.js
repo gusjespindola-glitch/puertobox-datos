@@ -94,9 +94,9 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
  * Empujón (seguimiento automático, pedido de Gustavo del 14/11): el cliente dejó de contestar y se le escribe
  * UN mensaje corto, dentro de las 24 h de WhatsApp, para retomar. La IA lo escribe con el contexto de la charla.
  */
-const INSTRUCCION_EMPUJON = (horas, cotizado) => `[Sistema, no lo escribió el cliente: el cliente no contesta hace unas ${horas} horas. Escribile UN solo mensaje corto (2 o 3 líneas) para retomar la charla, cordial y profesional, sin presionar. ${cotizado
+const INSTRUCCION_EMPUJON = (horas, cotizado) => `[Sistema, no lo escribió el cliente: el cliente no contesta hace unas ${horas} horas. Escribile UN solo mensaje corto (1 o 2 líneas) para retomar la charla, como lo haría un vendedor de verdad: natural, sin presionar y sin frases de plantilla ("te escribimos de PuertoBox para retomar tu consulta", "gratis y sin compromiso", "quedamos a disposición"). Si el cliente ya dijo que no le interesa, no escribas nada (respondé vacío). ${cotizado
   ? 'Ya tiene presupuesto: no lo repitas entero. Ayudalo a decidir: recordale en una línea lo que le conviene (precio cerrado, te decimos los impuestos antes de comprar, llega a su casa; si es para revender y sabés las unidades, el costo por unidad) y preguntale si le quedó alguna duda o si quiere avanzar.'
-  : 'Todavía no tiene presupuesto: retomá la última pregunta que le hiciste, de forma simple, y recordale que la cotización es gratis y sin compromiso.'} No digas que es un mensaje automático ni que pasaron horas. No uses herramientas.]`;
+  : 'Todavía no tiene presupuesto: retomá la última pregunta que le hiciste, simple y con otras palabras (por ejemplo: "¿Pudiste ver qué querés traer? Con eso te paso el número.").'} No digas que es un mensaje automático ni que pasaron horas. No uses herramientas.]`;
 
 async function empujon({ telefono, store, horas, cotizado, fetchImpl = fetch }) {
   const messages = [];
