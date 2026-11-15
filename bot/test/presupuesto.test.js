@@ -34,3 +34,14 @@ test('presupuesto formal: sin cotización no se arma', () => {
   store.guardarLead('5492', { nombre: 'Ana' });
   assert.strictEqual(store.crearPresupuesto('5492'), null);
 });
+
+test('charlas: botón al cotizador con los datos del cliente cargados (también en charlas viejas sin cotización)', () => {
+  const { paginaCharlas } = require('../recordatorios');
+  const store = crearStore(null);
+  store.agregar('5492364652566', 'user', 'hola');
+  store.guardarLead('5492364652566', { nombre: 'Cliente Nusse', producto: 'Mats y bolsos', posicion: '9506.91.00' });
+  const h = paginaCharlas(store, 'x', Date.now(), 3, () => '/r', null, '', () => '?t', '/nomenclador/?t=abc');
+  assert.match(h, /Armar presupuesto en el cotizador/);
+  assert.match(h, /#cot&pos=9506.91.00/);
+  assert.match(h, /prod=Mats\+y\+bolsos/);
+});
