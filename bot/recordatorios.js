@@ -123,8 +123,10 @@ function embudo(store, owner, ahora = Date.now()) {
     cotizados: chatsAnuncio.filter((c) => { const l = leadAnuncio(c.telefono); return ['cotizado', 'listo_para_cerrar'].includes(l.estado) || l.precio_usd; }).length,
     pagar: chatsAnuncio.filter((c) => leadAnuncio(c.telefono).estado === 'listo_para_cerrar').length,
   };
+  const del698 = (store.chats ? store.chats() : []).filter((c) => c.origen === '698' && !esGustavo(c.telefono, owner) && (c.origenEn || 0) >= desde).length;
+  const texto698 = del698 ? `\nDesde el 698 (link del automático): ${del698} llegaron al bot.` : '';
   const textoAnuncio = anuncio.chats ? `\nDel anuncio de Meta: ${anuncio.chats} escribieron · ${anuncio.cotizados} con presupuesto · ${anuncio.pagar} quieren pagar.` : '';
-  return { consultas: leads.length, cotizados, pagar, anuncio, texto: `Últimas 24 h: ${leads.length} consultas nuevas · ${cotizados} con presupuesto · ${pagar} quieren pagar.${textoAnuncio}` };
+  return { consultas: leads.length, cotizados, pagar, anuncio, del698, texto: `Últimas 24 h: ${leads.length} consultas nuevas · ${cotizados} con presupuesto · ${pagar} quieren pagar.${textoAnuncio}${texto698}` };
 }
 
 /**
@@ -229,7 +231,7 @@ function paginaCharlas(store, owner, ahora = Date.now(), dias = 3) {
     const l = (store.lead ? store.lead(c.telefono) : null) || {};
     const msgs = c.mensajes.map((m) => ({ quien: m.role === 'user' ? 'cliente' : 'bot', txt: textoMensaje(m.content).trim() })).filter((m) => m.txt);
     const ultimoCliente = [...msgs].reverse().find((m) => m.quien === 'cliente');
-    const cabecera = [c.origen === 'anuncio' ? '📣 Del anuncio' : '', l.estado ? ESTADO[l.estado] || l.estado : 'Sin datos todavía', hace(ahora - c.ultimo)].filter(Boolean).join(' · ');
+    const cabecera = [c.origen === 'anuncio' ? '📣 Del anuncio' : c.origen === '698' ? '📲 Del 698' : '', l.estado ? ESTADO[l.estado] || l.estado : 'Sin datos todavía', hace(ahora - c.ultimo)].filter(Boolean).join(' · ');
     return `<li><details><summary><b>+${esc(c.telefono)}${l.nombre ? ' · ' + esc(l.nombre) : ''}</b>${l.producto ? '<br>' + esc(l.producto) : ''}<br><small>${esc(cabecera)}</small>${ultimoCliente ? `<p>“${esc(ultimoCliente.txt.slice(0, 120))}”</p>` : ''}<span class="ver">Ver charla ▾</span></summary>
 <div class="chat">${msgs.map((m) => `<div class="m ${m.quien}">${esc(m.txt).replace(/\n/g, '<br>')}</div>`).join('')}</div></details></li>`;
   };

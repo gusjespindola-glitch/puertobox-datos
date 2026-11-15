@@ -197,10 +197,12 @@ const colas = new Map(); // tel -> Promise
 const avisoSaldo = { ultimo: 0 };
 
 const normalizarTexto = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
-function esMensajeAnuncio(texto) {
-  const m = require('../src/negocio').datos().mensaje_anuncio;
+function empiezaCon(texto, clave) {
+  const m = require('../src/negocio').datos()[clave];
   return !!m && normalizarTexto(texto).startsWith(normalizarTexto(m));
 }
+const esMensajeAnuncio = (texto) => empiezaCon(texto, 'mensaje_anuncio');
+const esMensaje698 = (texto) => empiezaCon(texto, 'mensaje_698');
 
 const NUMEROS_META = new Set(['447974905090', '447480784000', '16505434800', '13105850000']);
 
@@ -243,6 +245,9 @@ async function procesar(payload, deps = {}) {
     if (st.marcar && (e.referral || (e.type === 'text' && esMensajeAnuncio(e.text.body)))) {
       // Anuncio clic a WhatsApp: WhatsApp manda los datos del anuncio (referral) en el primer mensaje.
       st.marcar(tel, { origen: 'anuncio', origenEn: Date.now(), ...(e.referral ? { anuncioId: e.referral.sourceId || e.referral.source_id || null } : {}) });
+    } else if (st.marcar && e.type === 'text' && esMensaje698(e.text.body)) {
+      // Vino del link del mensaje automático del 698 (para medir si la gente pasa del 698 al bot).
+      st.marcar(tel, { origen: '698', origenEn: Date.now() });
     }
     const transcripto = e.transcripto !== undefined ? e.transcripto : (e.audio ? await transcribirAudio(e.audio, fetchImpl) : null); // no transcribir dos veces
     const texto = e.type === 'text' ? e.text.body
