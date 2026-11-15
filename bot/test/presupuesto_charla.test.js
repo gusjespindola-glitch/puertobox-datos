@@ -92,3 +92,49 @@ test('si la IA falla o no encuentra nada, el respaldo saca unidades, peso con ca
   assert.strictEqual(d2.input.unid, 5);
   assert.strictEqual(d2.input.kg, 10);
 });
+
+test('el bot anota el pedido mientras charla y el cotizador lo toma tal cual (16/11: "volcalo cuando lo interpreta el bot")', async () => {
+  const { ejecutar } = require('../tools');
+  const store = crearStore(null);
+  const tel = '5492983385141';
+  const ctx = { store, telefono: tel, derivaciones: [] };
+  store.agregar(tel, 'user', 'aprox 10 unidades, con caja 900 gramos');
+  await ejecutar('anotar_pedido', { producto: 'Arrancador 12V con compresor', unidades: 10, kg_por_unidad: 0.9, con_bateria_litio: true, link: 'https://alibaba.com/x' }, ctx);
+  assert.strictEqual(store.lead(tel).pedido.kg_total, 9);
+  store.agregar(tel, 'user', 'le pago 15 dolares cada uno, caja de 50x40x30');
+  await ejecutar('anotar_pedido', { valor_usd: 150, largo_cm: 50, ancho_cm: 40, alto_cm: 30, cantidad_cajas: 1 }, ctx);
+  const d = await datosDeCharla(tel, { store, fetchImpl: async () => { throw new Error('no hace falta leer la charla'); } });
+  assert.strictEqual(d.fuente, 'bot');
+  assert.deepStrictEqual([d.input.unid, d.input.kg, d.input.valor, d.input.largo, d.input.litio], [10, 9, 150, 50, true]);
+  assert.strictEqual(d.producto, 'Arrancador 12V con compresor');
+  assert.strictEqual(d.link, 'https://alibaba.com/x');
+  assert.deepStrictEqual(d.alertas, []);
+});
+
+test('lo más nuevo gana: si el cliente cambia el peso después de la cotización, vale lo que anotó el bot después', async () => {
+  const { ejecutar } = require('../tools');
+  const store = crearStore(null);
+  const tel = '5492983385142';
+  const ctx = { store, telefono: tel, derivaciones: [] };
+  store.agregar(tel, 'user', '10 unidades, 9 kilos, 150 dolares');
+  await ejecutar('cotizar', { kg: 9, valor_factura_usd: 150, die: 12.6, regimen: 'comercial', unidades: 10 }, ctx);
+  await new Promise((r) => setTimeout(r, 5));
+  store.agregar(tel, 'user', 'serian aprox el pedido 23 kg');
+  await ejecutar('anotar_pedido', { kg_total: 23 }, ctx);
+  const d = await datosDeCharla(tel, { store, fetchImpl: async () => { throw new Error('no'); } });
+  assert.strictEqual(d.input.kg, 23);
+  assert.strictEqual(d.input.valor, 150);
+});
+
+test('control: si lo cargado no cierra con la charla, avisa en rojo', async () => {
+  const { ejecutar } = require('../tools');
+  const store = crearStore(null);
+  const tel = '5492983385143';
+  const ctx = { store, telefono: tel, derivaciones: [] };
+  store.agregar(tel, 'user', 'son 100 unidades');
+  store.agregar(tel, 'user', 'mejor 300 unidades, tiene batería de litio');
+  await ejecutar('anotar_pedido', { unidades: 100, kg_total: 30, valor_usd: 220, largo_cm: 40, ancho_cm: 30, alto_cm: 30 }, ctx);
+  const d = await datosDeCharla(tel, { store, fetchImpl: async () => { throw new Error('no'); } });
+  assert.ok(d.alertas.some((a) => /300 unidades/.test(a)));
+  assert.ok(d.alertas.some((a) => /litio/.test(a)));
+});

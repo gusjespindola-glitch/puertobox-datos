@@ -44,11 +44,12 @@ function extraerSimple(mensajes) {
   const cli = mensajes.filter((m) => m.role === 'user').map((m) => texto(m.content)).join('\n').toLowerCase();
   const todo = mensajes.map((m) => texto(m.content)).join('\n').toLowerCase();
   const n = (x) => parseFloat(String(x).replace(',', '.'));
-  const u = cli.match(/(\d+[.,]?\d*)\s*(unidades|unid\.?|u\.|pares|piezas|pcs)\b/);
+  const ultimo = (re) => { const t = [...cli.matchAll(new RegExp(re.source, 'g'))]; return t.length ? t[t.length - 1] : null; };
+  const u = ultimo(/(\d+[.,]?\d*)\s*(unidades|unid\.?|u\.|pares|piezas|pcs)\b/);
   const unidades = u ? Math.round(n(u[1])) : null;
-  const pesoDe = (re) => { const m = cli.match(re); if (!m) return null; const v = n(m[1]); return /^g/.test(m[2]) ? v / 1000 : v; };
+  const pesoDe = (re) => { const m = ultimo(re); if (!m) return null; const v = n(m[1]); return /^g/.test(m[2]) ? v / 1000 : v; };
   const porUnidad = pesoDe(/con caja[^\d\n]{0,15}(\d+[.,]?\d*)\s*(gramos|grs?|g|kg|kilos?)\b/) || pesoDe(/(\d+[.,]?\d*)\s*(gramos|grs?|g|kg|kilos?)\b[^\n]{0,15}con caja/) || pesoDe(/(\d+[.,]?\d*)\s*(gramos|grs?|g|kg|kilos?)\b/);
-  const total = cli.match(/(\d+[.,]?\d*)\s*(kg|kilos?)\s*(en total|total)/);
+  const total = ultimo(/(\d+[.,]?\d*)\s*(kg|kilos?)\s*(en total|total)/) || ultimo(/(?:pedido|todo|total)[^\d\n]{0,15}(\d+[.,]?\d*)\s*(kg|kilos?)/);
   return {
     unidades, kg_total: total ? n(total[1]) : porUnidad && unidades ? Math.round(porUnidad * unidades * 100) / 100 : null,
     litio: /litio|lithium|li-?ion/.test(todo),
@@ -62,29 +63,42 @@ async function datosDeCharla(tel, { store, fetchImpl = fetch, nuevo = false }) {
   const c = store.chats().find((x) => x.telefono === tel);
   if (!c) return { error: 'No encuentro esa charla.' };
   const lead = store.lead(tel) || {};
-  let d;
-  let fuente;
-  if (lead.cotizacion && lead.cotizacion.input) {
-    const i = lead.cotizacion.input;
-    fuente = 'cotizacion';
-    d = { nombre: lead.nombre, producto: lead.producto, unidades: i.unidades, kg_total: i.kg, valor_usd: i.valor_factura_usd, cajas: i.cantidad_cajas, largo_cm: i.largo_cm, ancho_cm: i.ancho_cm, alto_cm: i.alto_cm, litio: i.con_bateria_litio, cuit_puertobox: i.con_cuit_puertobox, regimen: i.regimen, notas: '' };
-  } else if (!nuevo && lead.extraida && lead.extraida.hasta === c.ultimo && lead.extraida.v === VERSION) {
-    fuente = 'charla'; d = lead.extraida.datos;
-  } else {
-    fuente = 'charla';
-    let error = '';
-    try { d = await extraerConIA(c.mensajes, fetchImpl); } catch (e) { d = {}; error = e.message; }
-    // Lo que la IA no encontró, lo completa el respaldo simple.
-    const simple = extraerSimple(c.mensajes);
-    d.unidades = d.unidades || simple.unidades;
-    d.kg_total = d.kg_total || simple.kg_total;
-    d.litio = !!(d.litio || simple.litio);
-    d.nombre = d.nombre || lead.nombre || null;
-    d.producto = d.producto || lead.producto || null;
-    if (error) d.notas = `No pude leer bien la charla (${error}): revisá los datos.${d.notas ? ' ' + d.notas : ''}`;
-    // Solo se guarda si sacó algo: así la próxima vez lo vuelve a intentar.
-    if (!vacio(d)) store.guardarLead(tel, { extraida: { v: VERSION, hasta: c.ultimo, datos: d } });
+  // Fuentes, de la más confiable a la menos (16/11: "si ya interpretaste el peso, volcalo cuando lo interpreta el bot"):
+  //  1. lo que anotó o cotizó el bot (la más nueva de las dos primero), 2. la IA leyendo la charla, 3. el respaldo por texto.
+  const desdeCotizacion = lead.cotizacion && lead.cotizacion.input ? (() => { const i = lead.cotizacion.input; return { _en: lead.cotizacion.en, unidades: i.unidades, kg_total: i.kg, valor_usd: i.valor_factura_usd, cajas: i.cantidad_cajas, largo_cm: i.largo_cm, ancho_cm: i.ancho_cm, alto_cm: i.alto_cm, litio: i.con_bateria_litio, cuit_puertobox: i.con_cuit_puertobox, regimen: i.regimen }; })() : null;
+  const pe = lead.pedido || null;
+  const desdePedido = pe ? { _en: pe.actualizado, unidades: pe.unidades, kg_total: pe.kg_total, valor_usd: pe.valor_usd, cajas: pe.cantidad_cajas, largo_cm: pe.largo_cm, ancho_cm: pe.ancho_cm, alto_cm: pe.alto_cm, litio: pe.con_bateria_litio, cuit_puertobox: pe.con_cuit_puertobox, link: pe.link } : null;
+  const delBot = [desdeCotizacion, desdePedido].filter(Boolean).sort((a, b) => String(b._en || '').localeCompare(String(a._en || '')));
+  const CAMPOS = ['unidades', 'kg_total', 'valor_usd', 'cajas', 'largo_cm', 'ancho_cm', 'alto_cm', 'regimen', 'link'];
+  const completo = (d) => ['unidades', 'kg_total', 'valor_usd', 'largo_cm'].every((k) => d[k]);
+  let d = {};
+  const llenar = (src) => { if (!src) return; for (const k of CAMPOS) if (!d[k] && src[k]) d[k] = src[k]; d.litio = !!(d.litio || src.litio); d.cuit_puertobox = !!(d.cuit_puertobox || src.cuit_puertobox); if (!d.notas && src.notas) d.notas = src.notas; };
+  delBot.forEach(llenar);
+  let fuente = delBot.length ? (desdeCotizacion && delBot[0] === desdeCotizacion ? 'cotizacion' : 'bot') : 'charla';
+  // Lo que el bot no anotó lo busca en la charla (con caché para no gastar dos veces).
+  if (!completo(d)) {
+    let ia = null;
+    if (!nuevo && lead.extraida && lead.extraida.hasta === c.ultimo && lead.extraida.v === VERSION) ia = lead.extraida.datos;
+    else {
+      let error = '';
+      try { ia = await extraerConIA(c.mensajes, fetchImpl); } catch (e) { ia = {}; error = e.message; }
+      if (error) ia.notas = `No pude leer bien la charla (${error}): revisá los datos.${ia.notas ? ' ' + ia.notas : ''}`;
+      if (!vacio(ia)) store.guardarLead(tel, { extraida: { v: VERSION, hasta: c.ultimo, datos: ia } });
+    }
+    const antes = JSON.stringify(d);
+    llenar(ia);
+    llenar(extraerSimple(c.mensajes));
+    if (JSON.stringify(d) !== antes && fuente !== 'charla') fuente += '+charla';
+    d.nombre = ia.nombre; d.producto = ia.producto;
   }
+  d.nombre = lead.nombre || d.nombre || null;
+  d.producto = lead.producto || d.producto || null;
+  // Control: lo que cargó contra lo que dice la charla. Si no cierra, se avisa (no se corrige solo).
+  const alertas = [];
+  const simple = extraerSimple(c.mensajes);
+  if (simple.unidades && d.unidades && simple.unidades !== d.unidades) alertas.push(`En la charla aparecen ${simple.unidades} unidades y se cargaron ${d.unidades}: revisá cuál es la última.`);
+  if (d.unidades && d.kg_total && pe && pe.kg_por_unidad && Math.abs(pe.kg_por_unidad * d.unidades - d.kg_total) > d.kg_total * 0.25) alertas.push(`${d.unidades} unidades de ${pe.kg_por_unidad} kg son unos ${Math.round(pe.kg_por_unidad * d.unidades * 10) / 10} kg y se cargaron ${d.kg_total} kg.`);
+  if (simple.litio && !d.litio) alertas.push('En la charla se habla de batería de litio y no está tildado.');
   // Posición: la de la charla; si no hay, el clasificador con el producto completo.
   let pos = lead.posicion_fija || null;
   if (!pos && d.producto) {
@@ -97,12 +111,12 @@ async function datosDeCharla(tel, { store, fetchImpl = fetch, nuevo = false }) {
   if (!(d.largo_cm && d.ancho_cm && d.alto_cm)) faltan.push('medidas de la caja');
   if (!pos) faltan.push('posición arancelaria');
   return {
-    fuente, telefono: tel, nombre: d.nombre || '', producto: d.producto || '', notas: d.notas || '',
+    fuente, alertas, telefono: tel, nombre: d.nombre || '', producto: d.producto || '', notas: d.notas || '',
     posicion: pos ? pos.posicion : '', die: pos ? pos.die : null, internos: pos ? pos.internos || 0 : 0,
     posicion_a_confirmar: !!pos && pos.confianza !== 'alta' && !pos.confirmada,
     input: { valor: d.valor_usd || '', kg: d.kg_total || '', cajas: d.cajas || 1, largo: d.largo_cm || '', ancho: d.ancho_cm || '', alto: d.alto_cm || '', unid: d.unidades || '', reg: regimen, litio: !!d.litio, cuit: !!d.cuit_puertobox },
     faltan,
-    link: ((c.mensajes.filter((m) => m.role === 'user').map((m) => texto(m.content)).join(' ').match(/https?:\/\/[^\s]+/) || [])[0]) || '',
+    link: d.link || ((c.mensajes.filter((m) => m.role === 'user').map((m) => texto(m.content)).join(' ').match(/https?:\/\/[^\s]+/) || [])[0]) || '',
     ventana_horas: Math.max(0, Math.round(24 - (Date.now() - (c.ultimoClienteEn || 0)) / 3600e3)),
   };
 }

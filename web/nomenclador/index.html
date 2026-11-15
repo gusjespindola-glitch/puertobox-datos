@@ -255,7 +255,8 @@ async function desdeCharla(tel, nuevo) {
     + (d.faltan.includes('medidas de la caja') ? '<br>Sin medidas de la caja: se cotiza por peso real y el flete no queda cerrado.' : '')
     + (ficha ? `<br><b>Posición:</b> ${esc(ficha.posicion)} · DIE ${esc(ficha.die)}% — ${(() => { const t = ficha.jerarquia[ficha.jerarquia.length - 1]; return esc(t.length > 80 ? t.slice(0, 78) + '…' : t); })()}` : '')
     + (d.link ? `<br>🔗 <a href="${esc(d.link)}" target="_blank" rel="noopener">Ver el producto que mandó (precio)</a>` : '');
-  box.innerHTML = `<b>Cargado de la charla${d.nombre ? ' con ' + esc(d.nombre) : ''}</b> (${d.fuente === 'cotizacion' ? 'lo que cotizó el bot' : 'datos que dio el cliente'}).<br>${falta}`
+  box.innerHTML = `<b>Cargado de la charla${d.nombre ? ' con ' + esc(d.nombre) : ''}</b> (${({ cotizacion: 'lo que cotizó el bot', bot: 'lo que anotó el bot', charla: 'leído de la charla' })[d.fuente.split('+')[0]]}${d.fuente.includes('+') ? ', completado leyendo la charla' : ''}).<br>${falta}`
+    + (d.alertas || []).map((a) => `<br>🚩 <b>${esc(a)}</b>`).join('')
     + (d.posicion_a_confirmar ? '<br>⚠️ La posición no es segura: confirmala en la ficha de arriba (si cambiás de posición, se usa la que tengas abierta).' : '')
     + (d.notas ? `<br>📝 ${esc(d.notas)}` : '')
     + `<br><button type="button" class="ghost" id="c_releer" style="margin:8px 0">🔄 Leer la charla de nuevo</button>`

@@ -215,6 +215,13 @@ function avisoCorto(d, st) {
   if (!d.quiere && !d.para_vos) lineas.push(String(d.resumen || '').slice(0, 200));
   else if (d.resumen) lineas.push('', String(d.resumen).slice(0, 220));
   if (d.presupuesto) lineas.push('', `📄 Presupuesto formal N° ${d.presupuesto} listo: en «Ver y contestar» tocá «Enviar presupuesto».`);
+  // Control del presupuesto (16/11): qué datos ya anotó el bot y qué falta, para que Gustavo no tenga que revisarlo.
+  if (d.motivo !== 'duda' && d.motivo !== 'reclamo') {
+    const i = (lead.cotizacion && lead.cotizacion.input) || {};
+    const pe = lead.pedido || {};
+    const falta = [!(pe.valor_usd || i.valor_factura_usd) && 'valor', !(pe.kg_total || i.kg) && 'peso', !(pe.unidades || i.unidades) && 'unidades', !(lead.posicion_fija) && 'posición'].filter(Boolean);
+    lineas.push('', falta.length ? `📄 Para el presupuesto falta: ${falta.join(', ')}.` : '📄 Presupuesto: datos completos, solo revisar y mandar.');
+  }
   if (d.motivo !== 'duda') lineas.push('', 'El bot ya no le contesta: le escribís vos desde «Ver y contestar».');
   return lineas.join('\n');
 }
