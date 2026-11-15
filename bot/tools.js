@@ -160,7 +160,7 @@ function ejecutar(nombre, input, ctx) {
         unidades,
       } : {};
       // Ganancia por unidad (15/11, Gustavo aprobó "hablar de ganancia, no de costo"): precio de venta − costo puesto en su casa.
-      const dolar = NEG.dolar_referencia_ars;
+      const dolar = require('../src/dolar').valor(); // se actualiza solo (src/dolar.js); respaldo: negocio.json
       if (porUnidad.costo_por_unidad_usd && input.precio_venta_unidad > 0 && dolar > 0) {
         const ventaUsd = input.moneda_venta === 'USD' ? input.precio_venta_unidad : input.precio_venta_unidad / dolar;
         const gan = ventaUsd - porUnidad.costo_por_unidad_usd;

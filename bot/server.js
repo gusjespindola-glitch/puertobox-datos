@@ -554,8 +554,10 @@ function servidor() {
       if (!firmaOk('pendientes', t)) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       const html = require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`, Date.now(), (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&volver=${t}`, (tel) => `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}`);
+      const di = require('../src/dolar').info();
+      const lineaDolar = `<p style="color:#666;font-size:14px">Dólar que usa el bot para la ganancia en pesos: $${di.ars} ${di.automatico ? `(oficial, se actualiza solo; último: ${new Date(di.fecha).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })})` : '(fijo de negocio.json: todavía no se actualizó solo)'}</p>`;
       const botonPrueba = `<h2>Prueba completa del bot</h2><p>Prueba posiciones arancelarias y charlas reales con la IA. Tarda unos 10 minutos y gasta unos USD 2 a 3 del saldo de Anthropic. Cuando termina te llega un aviso con el informe.</p><form method="post" action="/prueba-completa?t=${firma('prueba')}"><button class="bot">${pruebaEnCurso ? 'Prueba en curso…' : 'Correr prueba completa'}</button></form>`;
-      return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`).replace('</body>', `${botonPrueba}</body>`));
+      return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`).replace('</body>', `${botonPrueba}${lineaDolar}</body>`));
     }
     if (url.pathname === '/difusion') {
       // Mensaje a clientes anteriores del 698 (plantilla de WhatsApp). Con ?key=ADMIN_KEY o link firmado.
@@ -584,8 +586,18 @@ function servidor() {
       if (!(firmaOk('charlas', url.searchParams.get('t')) || (clave && url.searchParams.get('key') === clave))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
-      const aviso = url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
-      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`));
+      const aviso = url.searchParams.get('corregido') === '1' ? 'Corrección guardada. El bot la aplica desde su próximo mensaje.' : url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
+      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`));
+    }
+    // Circuito de aprendizaje (15/11): Gustavo corrige al bot desde /charlas; no le llega nada al cliente.
+    if (req.method === 'POST' && url.pathname === '/corregir') {
+      const tel = soloDigitos(url.searchParams.get('tel') || '');
+      if (!tel || !firmaOk('corregir:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 20000) req.destroy(); });
+      return req.on('end', () => {
+        const ok = require('./aprendizaje').agregarCorreccion(store, tel, new URLSearchParams(raw).get('texto') || '');
+        res.writeHead(303, { location: `/charlas?t=${firma('charlas')}&abierto=${tel}${ok ? '&corregido=1' : '&error=' + encodeURIComponent('la corrección está vacía')}#c-${tel}` }); res.end();
+      });
     }
     // Prueba completa del bot (15/11): corre en segundo plano y avisa por ntfy con el link al informe.
     if (req.method === 'POST' && url.pathname === '/prueba-completa') {
@@ -719,6 +731,11 @@ if (require.main === module) {
   const { revisar } = require('./recordatorios');
   const tic = () => revisar({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), avisar: (t, titulo, prioridad, tel) => avisarNtfy(t, titulo, prioridad, fetch, tel), empujar: async (p) => { const txt = await require('./agent').empujon({ telefono: p.telefono, store, horas: p.horas, cotizado: p.cotizado }); if (txt) await enviar(p.telefono, txt); return !!txt; } }).catch((e) => console.error('Recordatorios:', e.message));
   const ticDifusion = () => require('./difusion').tick({ store, esGustavo: (tel) => require('./recordatorios').esGustavo(tel, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER)) }).catch((e) => console.error('Difusión:', e.message));
+  // Circuito de aprendizaje (15/11): a las 23 h revisa las charlas del día y sube el informe (sin datos personales) a la rama aprendizaje-bot.
+  const ticAprendizaje = () => require('./aprendizaje').tick({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), reglas: require('./agent').SYSTEM, dirLocal: path.join(path.dirname(process.env.DATA_FILE || DATA_FILE), 'aprendizaje'), avisar: (t, titulo, prioridad) => avisarNtfy(t, titulo, prioridad, fetch) }).catch((e) => console.error('Aprendizaje:', e.message));
+  setInterval(ticAprendizaje, 15 * 60e3).unref();
+  // Dólar de referencia automático (antes se cambiaba a mano cada semana).
+  const dol = require('../src/dolar'); dol.actualizar(); setInterval(() => dol.actualizar(), 12 * 3600e3).unref();
   setTimeout(() => { tic(); ticDifusion(); }, 60e3).unref(); setInterval(() => { tic(); ticDifusion(); }, 15 * 60e3).unref();
 }
 /** Chats con un mensaje del cliente guardado y sin respuesta (por un reinicio), dentro de la ventana de 24 h y sin pausa. */
