@@ -39,6 +39,11 @@ function datos() {
     tabla_html: filas.map((f) => `<tr><td>${f.rango}</td><td>${f.precio}</td></tr>`).join('\n    '),
     tabla_texto: filas.map((f) => `${f.rango}: ${f.precio}`).join(' · '),
   };
+  // Texto del anuncio vigente y precios de publicaciones viejas (15/11: un cliente citó un precio de un posteo viejo y el bot no lo sabía).
+  const subA = (t) => String(t).replace(/\{\{\s*([a-z0-9_]+)\s*\}\}/gi, (_, k) => { if (!(k in d)) throw new Error(`Falta {{${k}}} en anuncio_vigente`); return String(d[k]); });
+  d.anuncio_vigente = subA(n.anuncio_vigente || '');
+  d.anuncio_vigente_una_linea = d.anuncio_vigente.replace(/\s*\n+\s*/g, ' ');
+  d.precios_anteriores_texto = (n.precios_anteriores || []).map((x) => `- ${x}`).join('\n');
   const faq = leer('faq.json').preguntas;
   const sub = (t) => t.replace(/\{\{\s*([a-z0-9_]+)\s*\}\}/gi, (_, k) => { if (!(k in d)) throw new Error(`Falta {{${k}}} en faq.json`); return String(d[k]); });
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

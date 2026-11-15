@@ -4,7 +4,11 @@
   "dominio": "puertobox.com.ar",
   "whatsapp_bot": "5492216826773",
   "whatsapp_bot_visible": "+54 9 221 682-6773",
-  "numeros_gustavo": ["5492216982199", "5492213033034", "5492216829132"],
+  "numeros_gustavo": [
+    "5492216982199",
+    "5492213033034",
+    "5492216829132"
+  ],
   "_numeros_gustavo": "Números de Gustavo (698 WhatsApp Business, 3034 personal y 9132 del trabajo): sus pruebas no cuentan como clientes en el resumen ni en pendientes.",
   "mensaje_whatsapp": "Hola, vi la web y quiero cotizar un envío desde China",
   "mensaje_anuncio": "Hola, quiero cotizar un envío desde China",
@@ -25,5 +29,16 @@
   },
   "tope_por_envio_usd": 3000,
   "deposito_china": "Shenzhen",
-  "envio_interno_china": "El envío de la fábrica al depósito en Shenzhen lo paga el cliente. Lo ideal es que lo incluya el proveedor. Si lo paga PuertoBox, se le suma al cliente aparte, a lo que cueste."
+  "envio_interno_china": "El envío de la fábrica al depósito en Shenzhen lo paga el cliente. Lo ideal es que lo incluya el proveedor. Si lo paga PuertoBox, se le suma al cliente aparte, a lo que cueste.",
+  "anuncio_vigente": "Importá de China desde USD {{usd_kg_total_desde}} el kilo (flete + gestión, desde {{kg_desde}} kg). Envíos chicos desde USD {{envio_minimo_usd}}.\n\nAntes de que compres, te decimos la posición arancelaria y cuánto vas a pagar de impuestos.\n\nDespachante de aduana matriculado.",
+  "_anuncio_vigente": "Texto EXACTO de los anuncios de Meta activos (15/11/2026). Los números salen de precios_venta.json: si cambia un precio, cambia acá, en el bot y en las piezas (docs/marketing/piezas/precio_render.py). Si se cambia el texto del anuncio en Meta, cambiarlo acá. Test: test/negocio.test.js.",
+  "precios_anteriores": [
+    "USD 15 el kilo a partir de 10 kg (posteos de marzo 2026)",
+    "USD 19 de 1 a 9 kg, 17 de 10 a 29 kg y 15 de 30 a 100 kg (posteos de marzo 2026)",
+    "USD 19 de 10 a 24 kg, 17 de 25 a 49 kg y 15 de 50 a 100 kg (posteos de marzo 2026)",
+    "USD 35 el kilo todo incluido (anuncio viejo)",
+    "USD 55 el kilo todo incluido (anuncio de febrero 2026)",
+    "USD 450 el metro cúbico marítimo (consolidado, ya no se ofrece)"
+  ],
+  "_precios_anteriores": "Precios de publicaciones viejas que siguen visibles en Facebook/Instagram/TikTok. El bot los reconoce y explica que eran tarifas anteriores. Sacar de acá cuando se archiven los posteos."
 }

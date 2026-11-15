@@ -17,8 +17,20 @@ function getMotor() {
 
 const definiciones = [
   {
+    name: 'clasificar_producto',
+    description: 'Encuentra la posición arancelaria correcta como lo hace un despachante: busca el producto COMPLETO en internet, verifica el código en el arancel oficial de ARCA y devuelve la posición con su derecho de importación (die) e impuestos internos sacados de ARCA. Usala SIEMPRE antes del primer presupuesto de un producto. La posición queda fija en la charla: si la volvés a llamar con el mismo producto, devuelve la misma.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        producto_completo: { type: 'string', description: 'TODO lo que dijo el cliente del producto, tal cual: nombre, modelo, para qué sirve, materiales, si tiene batería/Bluetooth/WiFi, el link si lo mandó y el código HS si lo dio el proveedor.' },
+        cambiar_producto: { type: 'boolean', description: 'true solo si el cliente pasó a cotizar OTRO producto distinto en la misma charla.' },
+      },
+      required: ['producto_completo'],
+    },
+  },
+  {
     name: 'buscar_posicion',
-    description: 'Busca posiciones arancelarias SIM (Argentina, datos oficiales ARCA) para un producto. Devuelve hasta 5 candidatas con su derecho de importación (DIE %), impuestos internos e intervenciones posibles (orientativas: si aparece ANMAT, INAL, ANMAT/INAL envases, SENASA, ENACOM o SIDIP y es para revender, derivá a Gustavo).',
+    description: 'Solo para consultas rápidas o si clasificar_producto falla. Busca posiciones arancelarias SIM (Argentina, datos oficiales ARCA) por palabras o por código. Devuelve hasta 5 candidatas con su derecho de importación (DIE %), impuestos internos e intervenciones posibles (orientativas: si aparece ANMAT, INAL, ANMAT/INAL envases, SENASA, ENACOM o SIDIP y es para revender, derivá a Gustavo).',
     input_schema: { type: 'object', properties: { producto: { type: 'string', description: 'Descripción del producto o posición' } }, required: ['producto'] },
   },
   {
@@ -71,6 +83,8 @@ const definiciones = [
 
 function ejecutar(nombre, input, ctx) {
   switch (nombre) {
+    case 'clasificar_producto':
+      return require('./clasificador').clasificar(input, ctx); // async: busca en internet y en ARCA
     case 'buscar_posicion': {
       const m = getMotor();
       const res = m.buscar(input.producto, 15).filter((f) => !f.c.startsWith('00')).slice(0, 5).map((f) => ({
@@ -92,6 +106,10 @@ function ejecutar(nombre, input, ctx) {
           return { error: `No cierran unidades y peso: ${input.unidades} unidades de ${input.kg_por_unidad} kg son unos ${Math.round(esperado * 10) / 10} kg, no ${input.kg} kg. No cotices: preguntale al cliente (una sola pregunta) cuántas unidades entran en ${input.kg} kg, y después cuánto paga por ese pedido.` };
         }
       }
+      // La posición elegida en la charla manda: el derecho no puede cambiar de un presupuesto a otro (15/11: 35% y después 20%).
+      const leadPos = ctx.store.lead ? ctx.store.lead(ctx.telefono) : null;
+      const fija = leadPos && leadPos.posicion_fija;
+      if (fija) { input = { ...input, die: fija.die, internos: fija.internos || 0 }; }
       const cajas = input.cantidad_cajas || 1;
       const conMedidas = !!(input.largo_cm && input.ancho_cm && input.alto_cm);
       const cajaPesada = input.kg / cajas > NEG.caja_max_kg;
@@ -117,6 +135,7 @@ function ejecutar(nombre, input, ctx) {
         unidades,
       } : {};
       return {
+        ...(fija ? { posicion: fija.posicion, posicion_a_confirmar: fija.confianza !== 'alta' && !fija.confirmada } : { posicion: 'a confirmar' }),
         flete_firme: conMedidas && !cajaPesada,
         ...porUnidad,
         ...(avisos.length ? { aviso: avisos.join(' ') } : {}),

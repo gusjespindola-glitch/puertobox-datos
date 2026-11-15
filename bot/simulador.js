@@ -51,6 +51,8 @@ const ESCENARIOS = [
   { nombre: 'Confunde costo por unidad con el kilo', msgs: ['remeras sin marca para vender, 100 unidades, pago 500 dolares, 23 kilos, una caja', 'me estas cobrando 13 dolares el kilo? no tiene sentido'], espera: { ultima: { contiene: /unidad|remera/i, noContiene: /c[oó]digo postal/i } } },
   { nombre: 'Se enoja y pide una persona', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja', 'no entiendo nada, esto es un papelon, quiero hablar con una persona'], espera: { deriva: true, ultima: { noContiene: /c[oó]digo postal/i } } },
   // 15/11 (Gustavo: "la charla es muy bot"): que suene a persona y conteste lo que le preguntan.
+  { nombre: 'Cita un precio de un posteo viejo', msgs: ['vi que cobran 15 dolares el kilo desde 10 kg, es asi?'], espera: { ultima: { contiene: /anterior|hoy/i, noContiene: /no es nuestr|no puedo cotiz/i } } },
+  { nombre: 'Posición fija entre presupuestos', msgs: ['arrancador portatil 12V con compresor de aire y bateria de litio, sin marca, para vender, 10 unidades, 200 dolares, 9 kilos, una caja', '25 unidades, 500 dolares, 23 kilos'], espera: { presupuesto: true } },
   { nombre: 'Pide más información (anuncio)', msgs: ['¡Hola! Quiero más información'], espera: { ultima: { contiene: /China|casa|impuestos/i } } },
   { nombre: 'Pregunta aéreo o marítimo', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja', 'es aereo o es maritimo?'], espera: { ultima: { contiene: /^\s*(Es )?a[ée]reo/i, noContiene: /medidas|c[oó]digo postal/i } } },
   { nombre: 'Dice que no', msgs: ['quiero traer ropa replica de marcas para vender', 'no graciass igualmente'], espera: { ultima: { noContiene: /presupuesto|sin marca|\?/i } } },

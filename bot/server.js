@@ -326,7 +326,9 @@ async function atender(tel, texto, st, fetchImpl, owner) {
     if (resp) { await enviar(tel, resp, fetchImpl); salidas.push({ to: tel, body: resp }); }
     for (const d of derivaciones) {
       const esIG = String(d.telefono).startsWith('ig:');
-      const aviso = esIG
+      const aviso = d.motivo === 'confirmar_posicion'
+        ? `🔎 PuertoBox: confirmá la posición\nCliente: +${d.telefono}\n${d.resumen}\n(El bot sigue atendiendo con esta posición "a confirmar".)`
+        : esIG
         ? `🔔 PuertoBox (Instagram): ${d.motivo.replace(/_/g, ' ')}\n${d.resumen}\n(Respondele desde los mensajes de Instagram de PuertoBox. El bot quedó pausado en ese chat; para reactivarlo escribí #bot en ese mismo chat.)`
         : `🔔 PuertoBox: ${d.motivo.replace(/_/g, ' ')}\nCliente: +${d.telefono}\n${d.resumen}\n(El bot quedó pausado en ese chat. Para reactivarlo mandá: #bot ${d.telefono})`;
       await avisarGustavo(owner, aviso, fetchImpl, undefined, d.telefono);

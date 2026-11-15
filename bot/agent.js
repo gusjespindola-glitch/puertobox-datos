@@ -29,10 +29,15 @@ async function llamarUnaVez(messages, fetchImpl, sinHerramientas = false) {
 }
 
 // Saca las muletillas del arranque ("Perfecto, ...", "¡Genial! ...") que el modelo a veces agrega igual.
-const MULETILLA = /^\s*(¡?\s*(genial|perfecto|buen[íi]simo|excelente|anotado|joya|dale|b[áa]rbaro|tranqui|listo|entendido|ok|okey|gracias)[!.,]*\s*)+/i;
+// 15/11: antes se borraba solo la palabra "Gracias" de "Gracias por el dato." y al cliente le llegaba "Por el dato." (frase mocha).
+// Ahora: la muletilla se saca solo si viene seguida de puntuación, y la frase de agradecimiento se saca entera.
+const MULETILLA = /^\s*(¡?\s*(genial|perfecto|buen[íi]simo|excelente|anotado|joya|dale|b[áa]rbaro|tranqui|listo|entendido|comprendido|correcto|ok|okey|claro|de acuerdo)\s*[!.,]+\s*)+/i;
+const AGRADECIMIENTO = /^\s*¡?\s*(muchas\s+)?gracias(\s+por\s+[^.!?\n]{0,40})?\s*[.!]+\s*/i;
+const RESTO_CORTADO = /^\s*por (el|la|los|las|tu|tus|escribirnos|escribir)\b[^.!?\n,]{0,30}[.!]\s*/i;
 function limpiar(t) {
   if (!t) return t;
-  const s = t.replace(MULETILLA, '');
+  let s = t;
+  for (let i = 0; i < 3; i++) s = s.replace(MULETILLA, '').replace(AGRADECIMIENTO, '').replace(RESTO_CORTADO, '');
   if (!s.trim()) return t;
   return s.replace(/^([¿¡"'(\s]*)(\p{L})/u, (_, p, l) => p + l.toUpperCase())
     .replace(/([?!])\.(?=\s|$)/g, '$1'); // "¿...logo?." → "¿...logo?"
@@ -53,7 +58,7 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
     if (last && last.role === m.role) last.content += `\n${m.content}`;
     else messages.push({ role: m.role, content: m.content });
   }
-  const ctx = { telefono, store, derivaciones };
+  const ctx = { telefono, store, derivaciones, fetchImpl };
 
   let pedidoTexto = false;
   for (let vuelta = 0; vuelta < 7; vuelta++) {
@@ -63,11 +68,12 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
     if (usos.length) {
       // Toda herramienta pedida se ejecuta y se responde en el mensaje siguiente, pase lo que pase con stop_reason.
       messages.push({ role: 'assistant', content: contenido });
-      const resultados = usos.map((b) => {
+      const resultados = [];
+      for (const b of usos) {
         let out;
-        try { out = ejecutar(b.name, b.input || {}, ctx); } catch (e) { out = { error: e.message }; }
-        return { type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(out) };
-      });
+        try { out = await ejecutar(b.name, b.input || {}, ctx); } catch (e) { out = { error: e.message }; }
+        resultados.push({ type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(out) });
+      }
       messages.push({ role: 'user', content: resultados });
       continue;
     }
