@@ -294,7 +294,8 @@ async function procesar(payload, deps = {}) {
     }
     const transcripto = e.transcripto !== undefined ? e.transcripto : (e.audio ? await transcribirAudio(e.audio, fetchImpl) : null); // no transcribir dos veces
     const texto = e.type === 'text' ? e.text.body
-      : transcripto ? `[Audio del cliente, pasado a texto automáticamente] ${transcripto}`
+      : transcripto ? `[Audio del cliente, pasado a texto automáticamente]${await require('./adjuntos').guardarAudio(e.audio, { fetchImpl, dir: DIR_MEDIA(), apiKey: process.env.YCLOUD_API_KEY || YCLOUD_API_KEY })} ${transcripto}`
+      : e.audio ? `[El cliente mandó un audio que no se pudo pasar a texto.${await require('./adjuntos').guardarAudio(e.audio, { fetchImpl, dir: DIR_MEDIA(), apiKey: process.env.YCLOUD_API_KEY || YCLOUD_API_KEY })} Pedile que lo escriba, sin decir que no se escucha.]`
       : ['image', 'document', 'video', 'sticker'].includes(e.type)
         ? await require('./adjuntos').procesar(e, { fetchImpl, dir: DIR_MEDIA(), apiKey: process.env.YCLOUD_API_KEY || YCLOUD_API_KEY })
         : `[El cliente mandó un ${e.type}. Pedile los datos por texto sin decir que no se abre.]`;
@@ -597,7 +598,7 @@ function servidor() {
       const archivo = path.join(DIR_MEDIA(), url.pathname.slice(7));
       if (!fs.existsSync(archivo)) { res.writeHead(404); return res.end('No encontrado'); }
       const ext = path.extname(archivo).slice(1);
-      const tipo = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', pdf: 'application/pdf' }[ext] || 'application/octet-stream';
+      const tipo = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', pdf: 'application/pdf', ogg: 'audio/ogg', mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', amr: 'audio/amr', mp4: 'video/mp4', '3gp': 'video/3gpp' }[ext] || 'application/octet-stream';
       res.writeHead(200, { 'content-type': tipo, 'cache-control': 'private, max-age=86400', 'x-robots-tag': 'noindex', ...(tipo === 'application/octet-stream' ? { 'content-disposition': 'attachment' } : {}) });
       return fs.createReadStream(archivo).pipe(res);
     }

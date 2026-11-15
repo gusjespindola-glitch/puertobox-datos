@@ -219,7 +219,12 @@ function paginaPendientes(store, owner, linkAtendido, ahora = Date.now(), linkBo
 function conArchivos(html) {
   return html.replace(/\s?\[archivo:(\/media\/[0-9a-f]{32}\.([a-z0-9]{1,5}))\]/g, (_, ruta, ext) => /^(jpg|png|webp|gif)$/.test(ext)
     ? `<a href="${ruta}" target="_blank"><img src="${ruta}" alt="Imagen del cliente" style="display:block;max-width:100%;border-radius:10px;margin:6px 0"></a>`
-    : `<a href="${ruta}" target="_blank" style="display:block;margin:6px 0;font-weight:600">📎 Abrir el archivo (${ext.toUpperCase()})</a>`);
+    : /^(ogg|mp3|m4a|aac|amr)$/.test(ext)
+      ? `<audio controls preload="none" src="${ruta}" style="display:block;width:100%;margin:6px 0"></audio><a href="${ruta}" target="_blank">🎧 Abrir el audio</a>`
+      : /^(mp4|3gp)$/.test(ext)
+        ? `<video controls preload="none" src="${ruta}" style="display:block;max-width:100%;border-radius:10px;margin:6px 0"></video>`
+        : `<a href="${ruta}" target="_blank" style="display:block;margin:6px 0;font-weight:600">📎 Abrir el archivo (${ext.toUpperCase()})</a>`)
+    .replace(/\[no se pudo bajar el archivo: pedíselo de nuevo\]/g, '<b style="color:#c8102e">⚠️ No se pudo bajar el archivo: pedíselo de nuevo.</b>');
 }
 
 function textoMensaje(content) {
