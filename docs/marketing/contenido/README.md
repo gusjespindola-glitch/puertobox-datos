@@ -9,3 +9,4 @@
 
 ## Videos
 1. `reel01` — 100 remeras, USD 300, 5 kg → USD 7,38 por unidad (14/11/2026). Script: `reel01_dibujar.py`. **Programado en TikTok: domingo 15/11 10:00.**
+2. `reel02` — voz de Gustavo + escenas animadas (15/11/2026, después de la revisión: reel01 tuvo 6 reproducciones). Kit de 3 bandas elásticas: USD 2 en China, ~$25.000 en Mercado Libre, USD 9,16 (≈ $14.400) puesto en tu casa (motor del bot: 100 kits, USD 200, 25 kg en 2 cajas, DIE 35% 9506.91; dólar BNA $1.570). Script: `reel02_bandas.py`. **Pendiente: Gustavo confirma el precio de ML y el de China antes de programarlo.**
