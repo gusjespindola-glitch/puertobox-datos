@@ -169,15 +169,28 @@ async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fe
   const PRIORIDAD = { min: 1, low: 2, default: 3, high: 4, urgent: 5, max: 5 };
   const base = { topic, title: titulo, message: texto, priority: PRIORIDAD[prioridad] || 3 };
   const acciones = accionesNtfy(tel, tipo);
-  const intentar = async (cuerpo) => {
-    const r = await fetchImpl('https://ntfy.sh/', { method: 'POST', headers: { 'content-type': 'application/json; charset=utf-8' }, body: JSON.stringify(cuerpo) });
+  // 16/11 (Gustavo: "contesto y sigue la notificación"): los avisos de un cliente van con el mismo número de serie,
+  // así el nuevo reemplaza al anterior y, cuando Gustavo contesta o lo marca atendido, se borran (borrarAvisosNtfy).
+  const seq = tel ? seqNtfy(tel) : null;
+  const intentar = async (cuerpo, conSeq) => {
+    const r = await fetchImpl('https://ntfy.sh/', { method: 'POST', headers: { 'content-type': 'application/json; charset=utf-8', ...(conSeq ? { 'X-Sequence-ID': seq } : {}) }, body: JSON.stringify(conSeq ? { ...cuerpo, sequence_id: seq } : cuerpo) });
     if (r && r.ok === false) throw new Error(`ntfy ${r.status}: ${r.text ? (await r.text()).slice(0, 200) : ''}`);
     return true;
   };
-  try { return await intentar(acciones ? { ...base, actions: acciones } : base); } catch (e) {
+  const conBotones = acciones ? { ...base, actions: acciones } : base;
+  try { return await intentar(conBotones, !!seq); } catch (e) {
     console.error('ntfy error', e.message);
-    try { return await intentar(base); } catch (e2) { console.error('ntfy error (sin botones)', e2.message); return false; }
+    // Si ntfy no acepta el número de serie, que el aviso llegue igual con sus botones; si tampoco, sin botones.
+    if (seq) { try { return await intentar(conBotones, false); } catch (e1) { console.error('ntfy error (sin serie)', e1.message); } }
+    try { return await intentar(base, false); } catch (e2) { console.error('ntfy error (sin botones)', e2.message); return false; }
   }
+}
+const seqNtfy = (tel) => `cli-${String(tel).replace(/[^0-9A-Za-z_-]/g, '').slice(0, 60)}`;
+/** Saca del celular los avisos de ese cliente (Gustavo ya contestó, lo marcó atendido o abrió la charla). */
+async function borrarAvisosNtfy(tel, fetchImpl = fetch) {
+  const topic = process.env.NTFY_TOPIC;
+  if (!topic || !tel) return false;
+  try { const r = await fetchImpl(`https://ntfy.sh/${encodeURIComponent(topic)}/${seqNtfy(tel)}`, { method: 'DELETE' }); return !!(r && r.ok !== false); } catch (e) { console.error('ntfy borrar', e.message); return false; }
 }
 
 /**
@@ -652,6 +665,7 @@ function servidor() {
       const tel = soloDigitos(url.searchParams.get('tel'));
       if (!tel || !firmaOk('atendido:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/html; charset=utf-8' }); return res.end(paginaSimple('Link vencido', '<p>Abrí la lista de pendientes desde un aviso nuevo.</p>')); }
       store.marcar(tel, { gustavoRespondioEn: Date.now(), recordatorios: 0 });
+      borrarAvisosNtfy(tel);
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
       return res.end(paginaSimple('✅ Listo', `<p>+${escH(tel)} quedó como atendido. No te lo vuelvo a recordar, salvo que el cliente escriba de nuevo.</p><p><a href="/pendientes?t=${firma('pendientes')}">Ver pendientes →</a></p>`));
     }
@@ -680,6 +694,7 @@ function servidor() {
       const tel = soloDigitos(url.searchParams.get('tel'));
       if (!tel || !firmaOk('atendido:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
       store.marcar(tel, { gustavoRespondioEn: Date.now(), recordatorios: 0 });
+      borrarAvisosNtfy(tel);
       const volver = url.searchParams.get('volver');
       if (volver && firmaOk('pendientes', volver)) { res.writeHead(303, { location: `/pendientes?t=${volver}` }); return res.end(); }
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }); return res.end(`Listo: +${tel} marcado como atendido.`);
@@ -726,6 +741,7 @@ function servidor() {
       const aviso = url.searchParams.get('corregido') === '1' ? 'Corrección guardada. El bot la aplica desde su próximo mensaje.' : url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
       const htmlCharlas = require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`, (tel) => `/visto?tel=${tel}&t=${firma('visto:' + tel)}`);
       if (abierto && store.marcarVisto) store.marcarVisto(abierto); // la abrió desde un aviso: ya la ve
+      if (abierto) borrarAvisosNtfy(abierto);
       return res.end(htmlCharlas);
     }
     // Gustavo abrió una charla en /charlas: sus mensajes dejan de figurar como nuevos (15/11).
@@ -733,6 +749,7 @@ function servidor() {
       const tel = soloDigitos(url.searchParams.get('tel') || '');
       if (!tel || !firmaOk('visto:' + tel, url.searchParams.get('t'))) { res.writeHead(401); return res.end(); }
       if (store.marcarVisto) store.marcarVisto(tel);
+      borrarAvisosNtfy(tel);
       res.writeHead(204); return res.end();
     }
     // Circuito de aprendizaje (15/11): Gustavo corrige al bot desde /charlas; no le llega nada al cliente.
@@ -844,6 +861,7 @@ function servidor() {
         store.agregar(tel, 'assistant', `[Gustavo] ${texto || (archivo ? `Te mando ${archivo.nombre}` : '')}${marca}`);
         store.pausar(tel, 'gustavo_respondio');
         if (store.marcarVisto) store.marcarVisto(tel);
+        borrarAvisosNtfy(tel);
         // Si el cliente le contesta a Gustavo, que aparezca en pendientes y le llegue el aviso (el bot ya no lo atiende).
         const ahora = Date.now();
         if (store.marcar) store.marcar(tel, { gustavoRespondioEn: ahora, recordatorios: 0, ...(c.derivadoEn ? {} : { derivadoEn: ahora - 1, derivadoMotivo: 'pide_humano', derivadoResumen: 'Le escribiste desde la página de charlas.' }) });
@@ -910,4 +928,4 @@ function pendientesSinResponder(st, ahora = Date.now()) {
     && (c.mensajes || []).length && c.mensajes[c.mensajes.length - 1].role === 'user');
 }
 
-module.exports = { avisoMensajeNuevo, leerMultipart, firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo, ticArancel };
+module.exports = { borrarAvisosNtfy, avisarNtfy, avisoMensajeNuevo, leerMultipart, firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo, ticArancel };
