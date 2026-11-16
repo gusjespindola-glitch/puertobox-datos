@@ -14,6 +14,11 @@ Informe: `docs/auditoria/2026-11-16-revision-general.md`. Arreglado y con prueba
 - Revisión nocturna (repo público): saca el nombre que sigue a "Hola …"; solo manda la charla actual.
 - Simulador y prueba completa: escenarios viejos (sin unidades/medidas, "contenedor → derivar", formato "Presupuesto PuertoBox") actualizados.
 - `precio_render.py` usaba "desde 20 kg": ahora toma `kg_desde_total`.
+
+## Que el bot lleve las charlas (16/11 14:43, Gustavo: "que la mayoría las lleves vos y que intervenga yo solo cuando no puedas; si intervengo, una opción para que la sigas vos")
+- **"🤖 Que lo siga el bot"** en cada charla de /charlas donde el bot está callado (porque contestó Gustavo o porque derivó). La tarjeta dice "🙋 Lo atendés vos". Al tocarlo, el bot retoma, y si el último mensaje es del cliente (dentro de las 24 h), le contesta enseguida. El prompt le dice cómo seguir después de Gustavo: respetar lo que él dijo, no repetir y no saludar de nuevo.
+- **¿Podía el bot?** (`bot/intervenciones.js`): el servidor junta las charlas de los últimos 7 días en las que escribió Gustavo o el bot derivó, las anonimiza, la IA dice en cada una si el bot podía solo, con un cambio o si necesitaba a Gustavo, y lo sube a la rama `aprendizaje-bot` (`docs/aprendizaje/intervenciones-AAAA-MM-DD.md`). Corre una vez por versión (`VERSION`), 4 min después del deploy, con hasta 4 intentos. Avisa por ntfy cuando está. Para volver a correrlo: cambiar `VERSION`. Ojo: las charlas que se cortaron antes del 16/11 (límite de 30 mensajes) llegan incompletas.
+
 **⚠️ El reel que corre en Meta tiene el precio en la imagen: "USD 19/kg desde 20 kg"** (el texto del anuncio ya dice 40 kg; lo cambió Gustavo, verificado 16/11). El bot respeta USD 19/kg desde 20 kg a los del anuncio hasta el 23/11 (`anuncio_anterior`). Antes del 23/11: reemplazar el video por uno con "desde 40 kg" o extender esa fecha.
 
 ## Bot de WhatsApp (andando)

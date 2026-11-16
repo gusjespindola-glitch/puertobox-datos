@@ -663,8 +663,15 @@ function servidor() {
       store.reanudar(tel); store.marcar(tel, { gustavoRespondioEn: Date.now(), recordatorios: 0 });
       const lead = store.lead && store.lead(tel);
       if (lead && ['derivado', 'listo_para_cerrar'].includes(lead.estado)) store.guardarLead(tel, { estado: lead.precio_usd ? 'cotizado' : 'nuevo' });
+      // 16/11 (Gustavo: "si intervengo, quiero una opción para que la sigas vos"): si el último mensaje es del cliente
+      // y está dentro de las 24 h, el bot le contesta enseguida (no espera a que vuelva a escribir).
+      const cs = store.chats().find((x) => x.telefono === tel);
+      const ult = cs && (cs.mensajes || []).slice(-1)[0];
+      const contesta = !!(ult && ult.role === 'user' && Date.now() - (cs.ultimoClienteEn || 0) < 24 * 3600e3);
+      if (contesta) atender(tel, '', store, fetch, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), true).catch((e) => console.error('Seguir bot:', e.message));
       const volver = url.searchParams.get('volver');
       if (volver && firmaOk('pendientes', volver)) { res.writeHead(303, { location: `/pendientes?t=${volver}` }); return res.end(); }
+      if (url.searchParams.get('a') === 'charlas') { res.writeHead(303, { location: `/charlas?t=${firma('charlas')}&abierto=${tel}&siguebot=${contesta ? 2 : 1}#c-${tel}` }); return res.end(); }
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }); return res.end(`Listo: el bot sigue con +${tel}.`);
     }
     // Páginas que abren los botones del aviso (15/11): hacen la acción y lo dicen claro.
@@ -747,8 +754,8 @@ function servidor() {
       if (!(firmaOk('charlas', url.searchParams.get('t')) || panelOk(req) || (clave && url.searchParams.get('key') === clave))) { res.writeHead(401, { 'content-type': 'text/html; charset=utf-8' }); return res.end(SIN_ACCESO); }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'set-cookie': cookiePanel() });
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
-      const aviso = url.searchParams.get('corregido') === '1' ? 'Corrección guardada. El bot la aplica desde su próximo mensaje.' : url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
-      const htmlCharlas = require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`, (tel) => `/visto?tel=${tel}&t=${firma('visto:' + tel)}`, (tel, v) => `/marcar-presu?tel=${tel}&v=${v}&t=${firma('marcarpresu:' + tel)}`);
+      const aviso = url.searchParams.get('siguebot') ? (url.searchParams.get('siguebot') === '2' ? 'Listo: el bot sigue con este cliente y ya le está contestando su último mensaje.' : 'Listo: el bot sigue con este cliente. Contesta apenas el cliente escriba.') : url.searchParams.get('corregido') === '1' ? 'Corrección guardada. El bot la aplica desde su próximo mensaje.' : url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
+      const htmlCharlas = require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`, (tel) => `/visto?tel=${tel}&t=${firma('visto:' + tel)}`, (tel, v) => `/marcar-presu?tel=${tel}&v=${v}&t=${firma('marcarpresu:' + tel)}`, (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&a=charlas`);
       if (abierto && store.marcarVisto) store.marcarVisto(abierto); // la abrió desde un aviso: ya la ve
       if (abierto) borrarAvisosNtfy(abierto);
       return res.end(htmlCharlas);
@@ -958,6 +965,9 @@ if (require.main === module) {
   // Circuito de aprendizaje (15/11): a las 23 h revisa las charlas del día y sube el informe (sin datos personales) a la rama aprendizaje-bot.
   const ticAprendizaje = () => require('./aprendizaje').tick({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), reglas: require('./agent').SYSTEM, dirLocal: path.join(path.dirname(process.env.DATA_FILE || DATA_FILE), 'aprendizaje'), avisar: (t, titulo, prioridad) => avisarNtfy(t, titulo, prioridad, fetch) }).catch((e) => console.error('Aprendizaje:', e.message));
   setInterval(ticAprendizaje, 15 * 60e3).unref();
+  // ¿Podía el bot? (16/11, Gustavo: "revisá los chats en los que intervine yo"): una vez por versión, con reintentos.
+  const ticIntervenciones = () => require('./intervenciones').tick({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), reglas: require('./agent').SYSTEM, avisar: (t, titulo, prioridad) => avisarNtfy(t, titulo, prioridad, fetch) }).catch((e) => console.error('Intervenciones:', e.message));
+  setTimeout(ticIntervenciones, 4 * 60e3).unref(); setInterval(ticIntervenciones, 15 * 60e3).unref();
   setTimeout(ticAprendizaje, 2 * 60e3).unref(); // 16/11: si el servidor reinició y quedó pendiente la revisión, la hace al arrancar
   // Dólar de referencia automático (antes se cambiaba a mano cada semana).
   const dol = require('../src/dolar'); dol.actualizar(); setInterval(() => dol.actualizar(), 12 * 3600e3).unref();
