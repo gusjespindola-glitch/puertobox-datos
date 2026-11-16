@@ -213,3 +213,4 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - 16/11/2026 17:23 (Gustavo): descartó la reunión diaria del equipo de control: "con esas que hay está bien". No volver a proponer más tareas programadas sin que él lo pida.
 
 - 16/11/2026: Gustavo pidió darle prioridad a Meta ("es lo que trae clientes") y autorizó agregar las skills que falten (se sumaron conversion-tracking, ab-testing y video). Error a no repetir: editar el texto de un anuncio prendido reinicia el aprendizaje (16/11 la charla pasó de ARS 365 a 1.670): siempre anuncio nuevo y pausar el viejo.
+- 16/11/2026: Gustavo habilitó el dominio uploads.extuitive.com: Claude sube solo las piezas a Lena (no pedirle que las suba). Meta exige mínimo ARS 1.553/día por conjunto de WhatsApp.
