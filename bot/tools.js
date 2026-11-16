@@ -53,11 +53,16 @@ const definiciones = [
         con_cuit_puertobox: { type: 'boolean', description: 'true si el cliente no tiene CUIT y lo traemos con el CUIT de PuertoBox: gestión más alta, envío en Argentina aparte e impuestos que se le pagan a PuertoBox.' },
         con_bateria_litio: { type: 'boolean', description: 'true si el producto trae batería de litio incorporada (carga peligrosa: la aerolínea cobra un recargo sobre el flete).' },
         kg_por_unidad: { type: 'number', description: 'Peso de UNA unidad (con su caja) si el cliente lo dijo. Sirve para controlar que unidades y peso total cierren.' },
-        largo_cm: { type: 'number' }, ancho_cm: { type: 'number' }, alto_cm: { type: 'number' },
+        largo_cm: { type: 'number', description: 'Largo de UNA caja (cajas iguales). Si son cajas de distintos tamaños, usá bultos.' }, ancho_cm: { type: 'number' }, alto_cm: { type: 'number' },
+        bultos: {
+          type: 'array',
+          description: 'Solo si vienen cajas de DISTINTOS tamaños: un renglón por cada tipo de caja (cuántas hay de ese tamaño, sus medidas y, si se sabe, cuánto pesa cada una). Con bultos no hace falta cantidad_cajas ni largo/ancho/alto. kg sigue siendo el peso total de todo.',
+          items: { type: 'object', properties: { cantidad: { type: 'number' }, largo_cm: { type: 'number' }, ancho_cm: { type: 'number' }, alto_cm: { type: 'number' }, kg_por_caja: { type: 'number' } }, required: ['cantidad', 'largo_cm', 'ancho_cm', 'alto_cm'] },
+        },
         precio_venta_unidad: { type: 'number', description: 'A cuánto vende (o piensa vender) el cliente CADA unidad en Argentina, si lo dijo. Con esto se calcula cuánto le queda de ganancia por unidad.' },
         moneda_venta: { type: 'string', enum: ['ARS', 'USD'], description: 'Moneda de precio_venta_unidad: ARS si lo dijo en pesos (lo normal), USD si lo dijo en dólares.' },
       },
-      required: ['kg', 'cantidad_cajas', 'largo_cm', 'ancho_cm', 'alto_cm', 'valor_factura_usd', 'die', 'regimen'],
+      required: ['kg', 'valor_factura_usd', 'die', 'regimen'], // + cantidad_cajas y medidas, o bultos (se controla abajo)
     },
   },
   {
@@ -115,6 +120,12 @@ function ejecutar(nombre, input, ctx) {
       if (input.valor_factura_usd > NEG.tope_por_envio_usd) return { aviso: `Supera el tope de USD ${NEG.tope_por_envio_usd} por envío: dividilo en ${Math.ceil(input.valor_factura_usd / NEG.tope_por_envio_usd)} envíos de hasta USD ${NEG.tope_por_envio_usd} (repartí el valor, los kilos y las cajas enteras lo más parejo posible) y llamá cotizar una vez por cada envío. Mostrá cada envío y el total.` };
       // Sin todos los parámetros no hay presupuesto (Gustavo 15/11 17:59: "no podemos pasar presupuestos sin todos los parámetros";
       // un cliente de difusores recibió un presupuesto sin medidas de la caja).
+      // Cajas de distintos tamaños (16/11): se normalizan los renglones y se reemplazan cantidad y medidas.
+      const bultosOk = Array.isArray(input.bultos) ? input.bultos.filter((b) => b && b.cantidad > 0) : [];
+      if (bultosOk.length) {
+        if (bultosOk.some((b) => !(b.largo_cm > 0 && b.ancho_cm > 0 && b.alto_cm > 0))) return { error: 'Falta medir alguna caja: cada tipo de caja necesita largo, ancho y alto en cm. No cotices ni des ningún número: pedile al cliente las medidas que faltan.' };
+        input = { ...input, cantidad_cajas: bultosOk.reduce((t, b) => t + Math.round(b.cantidad), 0), largo_cm: bultosOk[0].largo_cm, ancho_cm: bultosOk[0].ancho_cm, alto_cm: bultosOk[0].alto_cm, bultos: bultosOk.map((b) => ({ cantidad: Math.round(b.cantidad), largo_cm: b.largo_cm, ancho_cm: b.ancho_cm, alto_cm: b.alto_cm, ...(b.kg_por_caja > 0 ? { kg_por_caja: b.kg_por_caja } : {}) })) };
+      } else if (input.bultos) { input = { ...input, bultos: undefined }; }
       if (!(input.cantidad_cajas > 0)) return { error: 'Falta cuántas cajas son. No cotices ni des ningún número: preguntale al cliente si viene en una caja o en varias.' };
       if (!(input.largo_cm > 0 && input.ancho_cm > 0 && input.alto_cm > 0)) return { error: 'Faltan las medidas de la caja (largo, ancho y alto en cm). No cotices ni des ningún número, ni aproximado: pedíselas al cliente; si no las sabe, pasale el mensaje en inglés para el proveedor.' };
       // Unidades y peso tienen que cerrar (15/11: 10 arrancadores de 0,9 kg cotizados como 23 kg → el costo por unidad salió inflado).
@@ -132,9 +143,12 @@ function ejecutar(nombre, input, ctx) {
       const conMedidas = !!(input.largo_cm && input.ancho_cm && input.alto_cm);
       // Sin cantidad de cajas no se sabe cuánto pesa cada una: no se cobra recargo ni se pide dividir (15/11, auditoría de charlas: 30 kg sin cajas sumaba USD 45).
       const cajasDadas = input.cantidad_cajas > 0 || !!(input.largo_cm && input.ancho_cm && input.alto_cm); // con medidas de una caja, se sabe que es una
-      const cajaPesada = cajasDadas && input.kg / cajas > NEG.caja_max_kg;
+      // Con cajas distintas y el peso de cada una, se controla caja por caja; si no, con el promedio.
+      const pesosPorCaja = input.bultos && input.bultos.every((b) => b.kg_por_caja > 0) ? input.bultos.map((b) => ({ kg: b.kg_por_caja, n: b.cantidad })) : [{ kg: input.kg / cajas, n: cajas }];
+      const cajaPesada = cajasDadas && pesosPorCaja.some((x) => x.kg > NEG.caja_max_kg);
       const r = presupuesto({
         kg: input.kg, cajas: input.cantidad_cajas || 1, largo: input.largo_cm, ancho: input.ancho_cm, alto: input.alto_cm,
+        bultos: input.bultos ? input.bultos.map((b) => ({ cantidad: b.cantidad, largo: b.largo_cm, ancho: b.ancho_cm, alto: b.alto_cm })) : null,
         valorFactura: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen,
         conFranquicia: !input.sin_franquicia,
       });
@@ -144,7 +158,7 @@ function ejecutar(nombre, input, ctx) {
         ctx.store.guardarLead(ctx.telefono, { estado: 'cotizado', kg: input.kg, valor_usd: input.valor_factura_usd, precio_usd: r.flete_puertobox_usd + r.handling_puertobox_usd });
       }
       // Última cotización completa en el lead: con esto se arma solo el presupuesto formal en PDF (15/11).
-      if (ctx.store.guardarLead) ctx.store.guardarLead(ctx.telefono, { cotizacion: { en: new Date().toISOString(), input: { kg: input.kg, cantidad_cajas: cajas, largo_cm: input.largo_cm, ancho_cm: input.ancho_cm, alto_cm: input.alto_cm, valor_factura_usd: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen, unidades: input.unidades, con_cuit_puertobox: !!input.con_cuit_puertobox, con_bateria_litio: !!input.con_bateria_litio, ...(input.precio_venta_unidad > 0 ? { precio_venta_unidad: input.precio_venta_unidad, moneda_venta: input.moneda_venta || 'ARS' } : {}) }, r: null } });
+      if (ctx.store.guardarLead) ctx.store.guardarLead(ctx.telefono, { cotizacion: { en: new Date().toISOString(), input: { kg: input.kg, cantidad_cajas: cajas, largo_cm: input.largo_cm, ancho_cm: input.ancho_cm, alto_cm: input.alto_cm, ...(input.bultos ? { bultos: input.bultos } : {}), valor_factura_usd: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen, unidades: input.unidades, con_cuit_puertobox: !!input.con_cuit_puertobox, con_bateria_litio: !!input.con_bateria_litio, ...(input.precio_venta_unidad > 0 ? { precio_venta_unidad: input.precio_venta_unidad, moneda_venta: input.moneda_venta || 'ARS' } : {}) }, r: null } });
       const avisos = [];
       // 15/11 (prueba completa): 18 kg en 2 cajas de 60x40x40 se cobran como 39 kg y el cliente no se enteraba por qué le salía el doble.
       if (conMedidas && r.kg_presupuestado > input.kg * 1.3) avisos.push(`Las cajas son grandes para lo que pesan: se cobran como ${String(r.kg_presupuestado).replace('.', ',')} kg en vez de ${String(input.kg).replace('.', ',')} kg. Decíselo al cliente en una línea, simple ("las cajas son grandes para lo que pesan, por eso el flete se cobra por tamaño") y sugerile pedirle al proveedor cajas más chicas o más llenas: así baja el flete.`);
@@ -152,8 +166,7 @@ function ejecutar(nombre, input, ctx) {
       // Cajas de más de 23 kg: la aerolínea cobra un recargo por caja (data/forwarder.json → sobrepeso_bulto). Se le cobra al cliente (Gustavo 15/11: "cobramos lo que corresponda").
       const sob = require('../data/forwarder.json').recargos?.sobrepeso_bulto || require('../data/forwarder.json').sobrepeso_bulto;
       const tc = require('../data/forwarder.json').tipo_cambio.rmb_a_usd;
-      const kgPorCaja = input.kg / cajas;
-      const recargoCajas = sob && cajasDadas && kgPorCaja > sob.umbral_kg && kgPorCaja <= NEG.caja_max_kg ? Math.ceil(sob.monto_rmb * sob.factor * tc) * cajas : 0;
+      const recargoCajas = sob && cajasDadas ? pesosPorCaja.reduce((t, x) => t + (x.kg > sob.umbral_kg && x.kg <= NEG.caja_max_kg ? Math.ceil(sob.monto_rmb * sob.factor * tc) * x.n : 0), 0) : 0;
       if (recargoCajas) avisos.push(`Cajas de más de ${sob.umbral_kg} kg: la aerolínea cobra un recargo por caja, ya sumado (recargo_cajas_usd). Mostralo en una línea aparte en el presupuesto ("Recargo por cajas de más de ${sob.umbral_kg} kg: USD X") y decile que si el proveedor arma cajas de hasta ${sob.umbral_kg} kg, se ahorra ese recargo.`);
       // Batería de litio: carga peligrosa, recargo sobre el flete (data/forwarder.json → recargos.bateria_litio).
       const lit = require('../data/forwarder.json').recargos?.bateria_litio;

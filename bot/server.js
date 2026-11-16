@@ -498,10 +498,16 @@ function cotizarAMano(q) {
     cantidad_cajas: n('cajas') || 1, largo_cm: n('largo'), ancho_cm: n('ancho'), alto_cm: n('alto'), unidades: n('unidades'),
     con_bateria_litio: q.get('litio') === '1', con_cuit_puertobox: q.get('cuit_pb') === '1',
   };
+  // Cajas de distintos tamaños (16/11): bultos=1x26x20x11.5;2x34x34x20 (cantidad x largo x ancho x alto, separados por ;)
+  const bultos = String(q.get('bultos') || '').split(';').map((t) => t.split(/[x×*]/i).map((v) => parseFloat(String(v).replace(',', '.'))))
+    .filter((v) => v.length === 4 && v.every((x) => x > 0)).map(([cantidad, largo_cm, ancho_cm, alto_cm]) => ({ cantidad, largo_cm, ancho_cm, alto_cm }));
+  if (bultos.length > 1) input.bultos = bultos;
   const { crearStore } = require('./store');
   const r = require('./tools').ejecutar('cotizar', input, { telefono: 'cotizador', store: crearStore(null), derivaciones: [] });
   const div = require('../data/precios_venta.json').flete_directo.divisor_volumetrico;
-  const vol = input.largo_cm && input.ancho_cm && input.alto_cm ? Math.round((input.largo_cm * input.ancho_cm * input.alto_cm / div) * input.cantidad_cajas * 100) / 100 : null;
+  const vol = input.bultos ? Math.round(input.bultos.reduce((t, b) => t + (b.largo_cm * b.ancho_cm * b.alto_cm / div) * b.cantidad, 0) * 100) / 100
+    : input.largo_cm && input.ancho_cm && input.alto_cm ? Math.round((input.largo_cm * input.ancho_cm * input.alto_cm / div) * input.cantidad_cajas * 100) / 100 : null;
+  if (input.bultos) input.cantidad_cajas = input.bultos.reduce((t, b) => t + b.cantidad, 0);
   if (r.error) return r;
   const NEG = require('../src/negocio').datos();
   const avisos = [];
