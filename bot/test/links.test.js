@@ -70,3 +70,10 @@ test('el bot tiene la herramienta leer_link y el prompt le dice que la use', () 
   assert.ok(require('../tools').definiciones.some((d) => d.name === 'leer_link'));
   assert.match(require('../agent').SYSTEM, /usá `leer_link`/);
 });
+
+test('control del paquete: frena solo lo imposible (polea de 25 kg), no lo grande pero posible (arrancador 24x12x45)', () => {
+  const { INSTRUCCION } = require('../links');
+  assert.match(INSTRUCCION, /SOLO si es imposible/);
+  assert.match(INSTRUCCION, /24x12x45 cm para un arrancador/);
+  assert.match(require('../agent').SYSTEM, /la aerolínea cobra lo real/);
+});
