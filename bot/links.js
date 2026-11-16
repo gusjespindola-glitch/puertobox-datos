@@ -38,7 +38,7 @@ const tieneDatos = (t) => t.length > 1500 && /(US\s?\$|\$\s?\d|€)/.test(t) && 
 
 const INSTRUCCION = `Te paso el texto de la publicación de un producto (Alibaba, 1688, etc.). Devolvé SOLO un JSON, sin texto alrededor, con lo que DICE la página (no inventes nada; si un dato no está, null):
 {"titulo":"...","precios":[{"desde":6,"hasta":499,"usd":26.33}],"pedido_minimo":6,"unidades_de_venta":"Artículo individual","tamano_paquete_cm":"24x12x45","peso_bruto_kg":2.0,"bateria":"si/no/no dice","material":"...","paquete_coherente":true,"nota":"..."}
-"paquete_coherente": false si el tamaño o el peso del paquete no tienen sentido para UNA unidad de venta (por ejemplo, 25 kg o 30x30x30 cm para una polea chica): en "nota" decí por qué en una línea.`;
+"paquete_coherente": false SOLO si es imposible para UNA unidad de venta (5 veces o más de lo razonable; por ejemplo, 25 kg o 30x30x30 cm para una polea chica). Si solo parece grande o generoso (por ejemplo, 24x12x45 cm para un arrancador con accesorios), es true, y en "nota" decí en una línea que puede estar exagerado y conviene confirmarlo con el proveedor. (16/11: Gustavo cotizó el arrancador con 24x12x45 cm.)`;
 
 async function llamarIA(body, fetchImpl, beta) {
   const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
@@ -100,7 +100,7 @@ async function leer(url, ctx = {}) {
 
 // Prueba al arrancar (una vez por versión): lee el link real del arrancador y sube el resultado a la rama del
 // aprendizaje (es una publicación pública, sin datos de clientes). Así Claude sabe si desde Railway se lee.
-const VERSION_PRUEBA = 'v1-16-11';
+const VERSION_PRUEBA = 'v2-16-11'; // v2: el control ya no frena un paquete grande pero posible
 const LINK_PRUEBA = 'https://www.alibaba.com/product-detail/12V-Car-Jump-Starter-With-Air_1601952873179.html';
 async function autoprueba({ store, fetchImpl = fetch }) {
   if (!store.meta || store.meta('pruebaLink') === VERSION_PRUEBA) return null;
