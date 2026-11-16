@@ -129,3 +129,18 @@ test('links de la tienda del proveedor (proveedor.en.alibaba.com/product/<númer
   assert.strictEqual(candidatas('https://holyindustries.en.alibaba.com/product/60769949049-213989284/4PCS_knife_set.html')[0], 'https://www.alibaba.fr/product-detail/subject-60769949049.html');
   assert.strictEqual(candidatas('https://anma.m.en.alibaba.com/product/1601006813235-212796826/x.html')[0], 'https://www.alibaba.fr/product-detail/subject-1601006813235.html');
 });
+
+test('precios en formato francés ("42,78 $US") y datos lejos del principio de la página se leen (16/11, v5)', () => {
+  const relleno = '<div>menu</div>'.repeat(3000);
+  const html = `<h1>Garwin 5-piece knife set</h1>${relleno}<div>42,78 $US</div><div>1 - 499 sets</div><div>Poids brut unique: 1.2 kg</div><div>Taille d'emballage unique: 40X20X8 cm</div>`;
+  const t = textoDeHtml(html);
+  assert.ok(t.length <= 20000);
+  assert.match(t, /Garwin/);
+  assert.match(t, /42,78 \$US/);
+  assert.match(t, /Poids brut unique: 1\.2 kg/);
+  assert.ok(tieneDatos(t));
+});
+
+test('el aviso de "precio publicado" va una vez por charla', () => {
+  assert.match(require('../agent').SYSTEM, /una vez por charla/);
+});
