@@ -504,7 +504,8 @@ function servirNomenclador(req, res, url) {
   // Desde la página de charlas se entra con un link firmado (sin la clave a la vista) y queda la cookie.
   const conFirma = !!url.searchParams.get('t') && firmaOk('nomenclador', url.searchParams.get('t'));
   const dada = conFirma ? clave : url.searchParams.get('key');
-  if (!clave || (dada !== clave && !(cookie && decodeURIComponent(cookie[1]) === clave))) {
+  // 16/11 (Gustavo: "no abre"): con la cookie de /charlas y /pendientes también entra, así no hace falta la clave aparte.
+  if (!clave || (dada !== clave && !(cookie && decodeURIComponent(cookie[1]) === clave) && !panelOk(req))) {
     res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' });
     return res.end('Acceso restringido. Entrá con el link que tiene la clave.');
   }
