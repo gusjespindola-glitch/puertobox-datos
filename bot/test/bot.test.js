@@ -478,3 +478,14 @@ test('avisos del celular: en el iPhone ntfy no borra, así que no se manda núme
     assert.strictEqual(llam.length, 1);
   } finally { delete process.env.NTFY_TOPIC; }
 });
+
+test('si WhatsApp avisa que un mensaje no se entregó, queda marcado en la charla (16/11)', async () => {
+  const store = crearStore(null);
+  store.agregar('5491100000777', 'user', 'hola');
+  store.agregar('5491100000777', 'assistant', '[Gustavo] Te mando IMG_1156.jpeg [archivo:/media/0123456789abcdef0123456789abcdef.jpg]');
+  const { fetchImpl } = mock([]);
+  await procesar({ type: 'whatsapp.message.updated', whatsappMessage: { to: '+5491100000777', status: 'failed', errorCode: '131053', errorMessage: 'Media upload error' } }, { fetchImpl, store, debounceMs: 0 });
+  const ult = store.historial('5491100000777').slice(-1)[0];
+  assert.ok(store.chats().find((c) => c.telefono === '5491100000777').mensajes.slice(-1)[0].noEntregado);
+  assert.ok(ult);
+});

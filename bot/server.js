@@ -103,6 +103,12 @@ function normalizar(payload) {
     const m = payload.whatsappInboundMessage;
     ev.push({ tipo: 'mensaje', id: m.wamid || m.id, from: soloDigitos(m.from), type: m.type, text: m.text, image: m.image, document: m.document, video: m.video, sticker: m.sticker, audio: m.audio || m.voice, referral: m.referral || (m.context && m.context.referral) || null });
   }
+  // 16/11 ("Te mando IMG_1156.jpeg" → cliente: "No llegó nada"): si el webhook de YCloud manda también los estados
+  // (evento whatsapp.message.updated), un mensaje que WhatsApp no pudo entregar queda marcado y Gustavo recibe el aviso.
+  if (payload.type === 'whatsapp.message.updated' && payload.whatsappMessage && payload.whatsappMessage.status === 'failed') {
+    const m = payload.whatsappMessage;
+    ev.push({ tipo: 'fallo', to: soloDigitos(m.to), detalle: `${m.errorCode || ''} ${m.errorMessage || ''}`.trim() });
+  }
   if ((payload.type === 'whatsapp.echo_message.created') && payload.whatsappMessage) {
     const m = payload.whatsappMessage;
     ev.push({ tipo: 'eco', to: soloDigitos(m.to), text: m.text });
@@ -363,6 +369,7 @@ async function procesar(payload, deps = {}) {
   const owner = soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER);
   const salidas = [];
   for (let e of normalizar(payload)) {
+    if (e.tipo === 'fallo') { await falloEnvio(e.to, 'failed', e.detalle || 'WhatsApp no lo entregó', fetchImpl, st); continue; }
     if (e.tipo === 'eco') {
       // Gustavo respondió desde la app o la bandeja → pausar el bot en ese chat
       const txt = e.text?.body?.trim().toLowerCase();
@@ -864,7 +871,8 @@ function servidor() {
         try {
           if (archivo) {
             const ruta = require('./adjuntos').guardar(archivo.buf, archivo.tipo, DIR_MEDIA(), archivo.nombre);
-            const esFoto = /^image\/(jpeg|png|webp)$/.test(archivo.tipo);
+            // WhatsApp solo muestra como foto JPG o PNG de hasta 5 MB; lo demás (fotos grandes del celular, webp) va como archivo, que llega siempre.
+            const esFoto = /^image\/(jpeg|png)$/.test(archivo.tipo) && archivo.buf.length <= 4.5 * 1024 * 1024;
             await enviarDocumento(tel, `${BASE_URL()}${ruta}`, archivo.nombre, texto, fetch, esFoto ? 'image' : 'document');
             marca = ` [archivo:${ruta}]`;
           } else await enviar(tel, texto, fetch, { lanzar: true });
