@@ -70,12 +70,20 @@ const INSTRUCCION = `Te paso el texto de la publicación de un producto (Alibaba
 "unidades_por_paquete": cuántas unidades de venta vienen en el paquete de "Empaque y entrega" (1 si es "Artículo individual"; si dice "caja de 2 unidades", 2). "precios": cada escalón con "hasta" null en el último.
 "paquete_coherente": false SOLO si es imposible para UNA unidad de venta (5 veces o más de lo razonable; por ejemplo, 25 kg o 30x30x30 cm para una polea chica). Si solo parece grande o generoso (por ejemplo, 24x12x45 cm para un arrancador con accesorios), es true, y en "nota" decí en una línea que puede estar exagerado y conviene confirmarlo con el proveedor. (16/11: Gustavo cotizó el arrancador con 24x12x45 cm.)`;
 
+// 16/11 (prueba v7): la IA se gastaba el lugar "pensando" (stop=max_tokens, sin texto). Se pide sin pensar; si el modelo
+// no acepta ese parámetro, se repite sin él.
 async function llamarIA(body, fetchImpl, beta) {
-  const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
+  const pedir = (b) => fetchImpl('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', ...(beta ? { 'anthropic-beta': beta } : {}) },
-    body: JSON.stringify(body),
+    body: JSON.stringify(b),
   });
+  let r = await pedir({ ...body, thinking: { type: 'disabled' } });
+  if (!r.ok && r.status === 400) {
+    const t = await r.text();
+    if (!/thinking/i.test(t)) throw new Error(`Anthropic 400: ${t.slice(0, 150)}`);
+    r = await pedir(body);
+  }
   if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text()).slice(0, 150)}`);
   return r.json();
 }
@@ -113,7 +121,7 @@ async function leer(url, ctx = {}) {
   let datos = null;
   try {
     if (texto) {
-      const j0 = await llamarIA({ model: MODELO, max_tokens: 1500, system: INSTRUCCION, messages: [{ role: 'user', content: `Publicación (${fuente}):\n${texto}` }] }, fetchImpl);
+      const j0 = await llamarIA({ model: MODELO, max_tokens: 4000, system: INSTRUCCION, messages: [{ role: 'user', content: `Publicación (${fuente}):\n${texto}` }] }, fetchImpl);
       datos = jsonDe(j0);
       if (!datos || (!datos.titulo && !datos.precios)) {
         const dijo = (j0.content || []).filter((b) => b.type === 'text').map((b) => b.text).join(' ').replace(/\s+/g, ' ').slice(0, 120);
@@ -124,7 +132,7 @@ async function leer(url, ctx = {}) {
     if (!texto) {
       // 2) La IA la lee con su propia herramienta (web_fetch de Anthropic: desde ahí alibaba.fr sí se lee).
       const j = await llamarIA({
-        model: MODELO, max_tokens: 3000, system: INSTRUCCION,
+        model: MODELO, max_tokens: 8000, system: INSTRUCCION,
         tools: [{ type: 'web_fetch_20250910', name: 'web_fetch', max_uses: 3 }],
         messages: [{ role: 'user', content: `Leé esta publicación con web_fetch (probá en este orden hasta que traiga datos): ${urls.join(' , ')}` }],
       }, fetchImpl, 'web-fetch-2025-09-10');
@@ -186,7 +194,7 @@ function conPedido(res, unidades) {
 // Prueba al arrancar (una vez por versión): lee links reales de Alibaba de distintos rubros y formatos y sube una tabla
 // a la rama del aprendizaje (son publicaciones públicas, sin datos de clientes). Así Claude sabe si desde Railway se leen.
 // 16/11 16:15, Gustavo: "¿podemos hacer pruebas con enlaces aleatorios de Alibaba, a ver si funciona?"
-const VERSION_PRUEBA = 'v7-16-11'; // v7: si la IA no entiende la página bajada, prueba con web_fetch // v6: precios en formato francés, texto largo y motivo de cada falla // v5: 16 links nuevos + 4 charlas completas con la IA
+const VERSION_PRUEBA = 'v8-16-11'; // v8: sin pensar y con más lugar // v7: si la IA no entiende la página bajada, prueba con web_fetch // v6: precios en formato francés, texto largo y motivo de cada falla // v5: 16 links nuevos + 4 charlas completas con la IA
 const LINKS_PRUEBA = [
   'https://www.alibaba.com/x/B2iQFj?ck=pdp', // control: andaba
   'https://www.alibaba.co.uk/product-detail/5Pcs-Damascus-Chef-Knife-Set-Stainless_1601596679880.html', // activa, falló en v5
