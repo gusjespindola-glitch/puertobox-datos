@@ -47,7 +47,7 @@ async function leerConIA(buf, mime, fetchImpl) {
   const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: MODELO, max_tokens: 700, system: INSTRUCCIONES, messages: [{ role: 'user', content: [bloque, { type: 'text', text: 'Leé este archivo del cliente.' }] }] }),
+    body: JSON.stringify({ model: MODELO, max_tokens: 2000, system: INSTRUCCIONES, messages: [{ role: 'user', content: [bloque, { type: 'text', text: 'Leé este archivo del cliente.' }] }] }),
   });
   if (!r.ok) throw new Error(`IA ${r.status}`);
   const j = await r.json();
