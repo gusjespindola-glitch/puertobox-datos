@@ -1,7 +1,8 @@
 {
   "_meta": {
-    "actualizado": "2026-11-12",
-    "aviso": "Tarifas públicas de terceros, de referencia. Cambian seguido."
+    "actualizado": "2026-11-16",
+    "aviso": "Tarifas públicas de terceros, de referencia. Cambian seguido.",
+    "revision_2026_11_16": "Webs leídas: ImportarDeMiami, Aerobox, Del Mundo (sin cambios). MiamiGO bloquea la lectura (robots) e Instagram no se puede leer desde acá: quedan los datos anteriores. Nuevos: Argencargo, MBComex, Blue Mail (sin precio por kilo general publicado: no entran en la mediana)."
   },
   "competencia": [
     {
@@ -10,14 +11,16 @@
       "china_promo_usd_kg": 21.99,
       "usa_usd_kg": "19,99-29",
       "plazo_china": "12-20 días",
-      "fuente": "https://importardemiami.com/tarifas/"
+      "fuente": "https://importardemiami.com/tarifas/",
+      "verificado": "2026-11-16: sin cambios (30 normal, 21,99 promo cliente nuevo hasta 3 kg, 12-20 días)"
     },
     {
       "nombre": "MiamiGO (Rosario)",
       "china_usd_kg": 36,
       "usa_usd_kg": 26,
       "nota": "Mínimo 0,5 kg, fracción 100 g, domicilio aparte",
-      "fuente": "https://www.miamigo.com.ar/tarifas/"
+      "fuente": "https://www.miamigo.com.ar/tarifas/",
+      "verificado": "2026-11-16: no se pudo leer la web (bloquea robots); dato del 12/11"
     },
     {
       "nombre": "Casilla Mía",
@@ -36,7 +39,8 @@
         "desde_300kg": 5.5
       },
       "aereo_desde_usd_kg": 17,
-      "fuente": "https://aerobox.com.ar/"
+      "fuente": "https://aerobox.com.ar/",
+      "verificado": "2026-11-16: web solo muestra barco (9,99 desde 5 kg; 5,50 desde 300 kg); aéreo sin precio publicado; dato aéreo del 12/11"
     },
     {
       "nombre": "Del Mundo Courier",
@@ -44,7 +48,8 @@
         "desde_5kg": 9.99,
         "desde_300kg": 5.5
       },
-      "fuente": "https://delmundocourier.com/"
+      "fuente": "https://delmundocourier.com/",
+      "verificado": "2026-11-16: sin cambios (barco 9,99/kg desde 5 kg, 5,50 desde 300 kg, sin volumétrico)"
     },
     {
       "nombre": "IEY Logistics (IG @ieylogistics)",
@@ -54,7 +59,8 @@
         "100kg+": 13
       },
       "plazo_china": "7 días hábiles",
-      "fuente": "Instagram, captura 2026-11-12"
+      "fuente": "Instagram, captura 2026-11-12",
+      "verificado": "2026-11-16: Instagram no se puede leer desde acá; dato del 12/11"
     },
     {
       "nombre": "ImportBox Argentina (IG @importboxargentina, FedEx)",
@@ -65,14 +71,16 @@
       },
       "plazo_china": "7 días hábiles",
       "nota": "mayorista",
-      "fuente": "Instagram, captura 2026-11-12"
+      "fuente": "Instagram, captura 2026-11-12",
+      "verificado": "2026-11-16: Instagram no se puede leer desde acá; dato del 12/11"
     },
     {
       "nombre": "Magforce (IG @magforce_argentina)",
       "china_usd_kg": 40,
       "usa_usd_kg": 32,
       "nota": "puerta a puerta",
-      "fuente": "Instagram, captura 2026-11-12"
+      "fuente": "Instagram, captura 2026-11-12",
+      "verificado": "2026-11-16: Instagram no se puede leer desde acá; dato del 12/11"
     },
     {
       "nombre": "AeroEnvíos (IG @aeroenvios.ok)",
@@ -81,7 +89,36 @@
         "comercial": 23
       },
       "plazo_china": "12 días",
-      "fuente": "Instagram, captura 2026-11-12"
+      "fuente": "Instagram, captura 2026-11-12",
+      "verificado": "2026-11-16: Instagram no se puede leer desde acá; dato del 12/11"
+    },
+    {
+      "nombre": "Argencargo",
+      "china_ejemplo": {
+        "kg": 48,
+        "flete_aereo_usd": 912,
+        "usd_kg": 19,
+        "despacho_y_gestion_usd": 120
+      },
+      "nota": "Sin tarifa por kilo publicada: es el ejemplo de su calculadora (200 auriculares, 48 kg, aéreo). No entra en la mediana.",
+      "fuente": "https://www.argencargo.com.ar/",
+      "verificado": "2026-11-16"
+    },
+    {
+      "nombre": "MBComex (courier comercial)",
+      "usd_kg_mayorista": 20,
+      "interior_usd": 50,
+      "plazo": "15 días hábiles",
+      "nota": "USD 20/kg válido desde 500 kg mensuales; no aclara origen ni si es aéreo. No entra en la mediana.",
+      "fuente": "https://courier.mbcomex.com.ar/",
+      "verificado": "2026-11-16"
+    },
+    {
+      "nombre": "Blue Mail",
+      "plazo": "7-12 días hábiles",
+      "nota": "Depósito propio en Guangzhou, vuelos semanales; no publica precio por kilo (cotiza por calculadora/formulario).",
+      "fuente": "https://bluemail.com.ar/courier-internacional",
+      "verificado": "2026-11-16"
     }
   ],
   "recargos_express_referencia": {

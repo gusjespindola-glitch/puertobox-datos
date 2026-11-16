@@ -1,4 +1,4 @@
-# PuertoBox — estado al 15/11/2026
+# PuertoBox — estado al 16/11/2026
 
 Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (material del curso).
 
@@ -74,6 +74,7 @@ Páginas públicas que sirve el servidor de Railway (`src/paginas.js`): `/` (web
 
 ## Actualizaciones normativas
 - Tarea programada **"Novedades aduaneras PuertoBox"**: todos los lunes a las 6:59 (hora argentina). Revisa Boletín Oficial, ARCA y organismos; guarda `docs/novedades/AAAA-MM-DD.md`, abre un PR si hay que cambiar algo y avisa a Gustavo al celular. Aprobación automática de acciones. Sus PR los revisa y mergea Claude en la siguiente sesión (cambios normativos: revisar antes de mergear).
+- **Revisión semanal 16/11** (`docs/novedades/2026-11-16.md`, `docs/precios/2026-11-16.md`): regla nueva de intervención para ropa usada 6309 (Res. 461/2026). **Gustavo:** (1) validar antidumping de anteojos de sol chinos (Res. 588/2012 sigue vigente según Res. 455/2026; el sistema no maneja antidumping); (2) decidir las 3 propuestas de precio (3-5 kg a USD 30, +USD 2/kg desde 10 kg, tope de tramo). Alertas: 3 kg y 7 kg dejan menos de USD 10 en el peor caso.
 - Los archivos del Arancel Integrado de ARCA no se pueden bajar desde acá: si hay nuevos, Gustavo los sube y se corre `ncm/build_nomenclador.py`.
 
 ## Precios y pruebas
