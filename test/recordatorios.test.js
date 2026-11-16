@@ -517,3 +517,32 @@ test('charlas: Gustavo marca que ya pasó presupuesto y la tarjeta queda en verd
     assert.doesNotMatch(await (await fetch(`${base}/charlas?t=${srv.firma('charlas')}`)).text(), /Le pasaste presupuesto/);
   } finally { s.close(); }
 });
+
+test('charlas como app del celular: manifiesto sin accesos, entrar con la clave, y el título cuenta las sin leer (16/11)', async () => {
+  const fs = require('fs'); const os = require('os'); const path = require('path');
+  const archivo = path.join(os.tmpdir(), `pb-app-${process.pid}.json`);
+  const ahora = Date.now();
+  fs.writeFileSync(archivo, JSON.stringify({ meta: { vistoBase: ahora - 7200e3 }, vistos: [], leads: {}, chats: { '5491100000951': { mensajes: [{ role: 'user', content: 'hola', en: ahora - 60e3 }], ultimo: ahora - 60e3, ultimoClienteEn: ahora - 60e3, pausadoHasta: 0, vistoEn: ahora - 3600e3 } } }));
+  process.env.ADMIN_KEY = 'clave-secreta'; process.env.OWNER_NUMBER = OWNER; process.env.DATA_FILE = archivo;
+  delete require.cache[require.resolve('../bot/server')];
+  const srv = require('../bot/server');
+  const s = srv.servidor().listen(0); await new Promise((r) => s.once('listening', r));
+  const base = `http://127.0.0.1:${s.address().port}`;
+  try {
+    const man = await (await fetch(`${base}/app/manifest.json`)).json();
+    assert.strictEqual(man.start_url, '/charlas');
+    assert.ok(!JSON.stringify(man).includes('t='), 'el manifiesto es público: no lleva ningún acceso');
+    assert.strictEqual((await fetch(`${base}/app/icono-192.png`)).headers.get('content-type'), 'image/png');
+    const sin = await fetch(`${base}/charlas`);
+    assert.strictEqual(sin.status, 401);
+    assert.match(await sin.text(), /action="\/entrar"/);
+    assert.strictEqual((await fetch(`${base}/entrar`, { method: 'POST', body: 'clave=mala', headers: { 'content-type': 'application/x-www-form-urlencoded' }, redirect: 'manual' })).status, 401);
+    const ok = await fetch(`${base}/entrar`, { method: 'POST', body: 'clave=clave-secreta', headers: { 'content-type': 'application/x-www-form-urlencoded' }, redirect: 'manual' });
+    assert.strictEqual(ok.status, 303);
+    const cookie = ok.headers.get('set-cookie').split(';')[0];
+    const pag = await (await fetch(`${base}/charlas`, { headers: { cookie } })).text();
+    assert.match(pag, /<title>\(1\) Charlas PuertoBox<\/title>/);
+    assert.match(pag, /rel="manifest"/);
+    assert.match(pag, /setInterval/);
+  } finally { s.close(); }
+});
