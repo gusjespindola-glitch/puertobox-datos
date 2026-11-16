@@ -2,8 +2,8 @@
 
 Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (material del curso).
 
-## Equipo de control (16/11 17:18, Gustavo: "quiero que seas el jefe de un ejército de bots controladores")
-Reunión diaria a las 5:37: el jefe manda 8 controladores (web, Instagram, TikTok, Meta, competencia, precios, regulaciones, cotizador), arma el acta, arregla lo que puede y le manda a Gustavo semáforo + "Hice" + "Para vos". Detalle en `docs/equipo/README.md`; actas en la rama `equipo`. **Falta crear la tarea programada:** el sistema pidió permiso de Gustavo (16/11 17:20).
+## Equipo de control: descartado (16/11 17:23, Gustavo: "con esas que hay está bien, dejémoslo")
+No se crea la reunión diaria. Siguen las tareas que ya estaban: Mejora diaria del bot, Criterios ARCA, Novedades y precios (lunes) y Revisión de publicidad (martes). El diseño queda en `docs/equipo/README.md` por si algún día se retoma.
 
 ## Revisión general (16/11 14:30, Gustavo: "revisión general de todo el sistema, bien profunda")
 Informe: `docs/auditoria/2026-11-16-revision-general.md`. Arreglado y con prueba fija (`bot/test/revision-16-11.test.js`):
