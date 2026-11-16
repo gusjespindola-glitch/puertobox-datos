@@ -141,7 +141,8 @@ async function revisarDia({ store, owner, fetchImpl = fetch, ahora = Date.now(),
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
       signal: AbortSignal.timeout(240e3), // que no quede colgado si la IA no contesta
-      body: JSON.stringify({ model, max_tokens: 8000, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }),
+      // 16/11: con stop_reason=max_tokens y sin texto, la IA se gastaba todo el espacio pensando. Sin pensar y con más lugar.
+      body: JSON.stringify({ model, max_tokens: 16000, thinking: { type: 'disabled' }, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }),
     });
     if (!r.ok) { fallas.push(`${model}: Anthropic ${r.status} ${(await r.text()).slice(0, 150)}`); continue; }
     const j = await r.json();

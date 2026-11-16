@@ -17,7 +17,7 @@ const MODELO_RESPALDO = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 const DIAS = 7;
 const MAX_CHARLAS = 40;
 const MAX_INTENTOS = 4;
-const VERSION = 'v2-16-11'; // cambiar para que el servidor la vuelva a correr después de un deploy
+const VERSION = 'v3-16-11'; // v3: sin "pensar" (v1 y v2: la IA llegaba a max_tokens sin escribir nada) // cambiar para que el servidor la vuelva a correr después de un deploy
 
 const textoDe = (content) => (typeof content === 'string' ? content : Array.isArray(content) ? content.filter((b) => b && b.type === 'text').map((b) => b.text).join('\n') : '');
 
@@ -85,7 +85,8 @@ async function revisar({ store, owner, reglas, fetchImpl = fetch, ahora = Date.n
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
       signal: AbortSignal.timeout(480e3),
-      body: JSON.stringify({ model, max_tokens: 10000, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }),
+      // 16/11: con stop_reason=max_tokens y sin texto, la IA se gastaba todo el espacio pensando. Sin pensar y con más lugar.
+      body: JSON.stringify({ model, max_tokens: 16000, thinking: { type: 'disabled' }, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }),
     });
     if (!r.ok) { fallas.push(`${model}: Anthropic ${r.status} ${(await r.text()).slice(0, 150)}`); continue; }
     const j = await r.json();
