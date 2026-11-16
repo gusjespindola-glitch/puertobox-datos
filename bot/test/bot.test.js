@@ -465,3 +465,22 @@ test('respeta el anuncio que corre (USD 19/kg con gestión desde 20 kg) a los qu
   assert.strictEqual(delAnuncio.handling_puertobox_usd, vigente ? 20 : 40);
   if (vigente) assert.ok(delAnuncio.total_puertobox_usd / delAnuncio.kg_presupuestado <= 19);
 });
+
+test('avisos del celular: los de un cliente van con su número de serie y se borran cuando Gustavo contesta (16/11)', async () => {
+  process.env.NTFY_TOPIC = 'pb-prueba';
+  try {
+    const { avisarNtfy, borrarAvisosNtfy } = require('../server');
+    const llam = [];
+    const f = async (url, opt) => { llam.push({ url, opt }); return { ok: true, text: async () => '' }; };
+    await avisarNtfy('💬 +5491100000123: hola', 'PuertoBox: mensaje nuevo', 'high', f, '5491100000123');
+    const cuerpo = JSON.parse(llam[0].opt.body);
+    assert.strictEqual(cuerpo.sequence_id, 'cli-5491100000123');
+    assert.strictEqual(llam[0].opt.headers['X-Sequence-ID'], 'cli-5491100000123');
+    await borrarAvisosNtfy('5491100000123', f);
+    assert.strictEqual(llam[1].url, 'https://ntfy.sh/pb-prueba/cli-5491100000123');
+    assert.strictEqual(llam[1].opt.method, 'DELETE');
+    // Un aviso general (sin cliente) no lleva número de serie.
+    await avisarNtfy('Resumen', 'PuertoBox', 'default', f);
+    assert.strictEqual(JSON.parse(llam[2].opt.body).sequence_id, undefined);
+  } finally { delete process.env.NTFY_TOPIC; }
+});
