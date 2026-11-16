@@ -31,7 +31,7 @@ test('cotiza con el modelo flete directo y responde al cliente', async () => {
   let r;
   const { fetchImpl, llamadas } = mock([
     tool('buscar_posicion', { producto: 'remeras' }),
-    tool('cotizar', { kg: 10, largo_cm: 50, ancho_cm: 40, alto_cm: 30, valor_factura_usd: 500, die: 16, regimen: 'comercial' , cantidad_cajas: 1 }),
+    tool('cotizar', { kg: 10, largo_cm: 50, ancho_cm: 40, alto_cm: 30, valor_factura_usd: 500, die: 16, regimen: 'comercial', unidades: 10 , cantidad_cajas: 1 }),
     (body) => { r = JSON.parse(body.messages.at(-1).content[0].content); return txt(`Flete USD ${r.flete_puertobox_usd}`); },
   ]);
   const out = await procesar(msg('5491111111111', 'Quiero traer remeras, 10 kg, factura USD 500'), { fetchImpl, store, debounceMs: 0 });
@@ -46,7 +46,7 @@ test('cotiza con el modelo flete directo y responde al cliente', async () => {
 test('régimen personal con franquicia: sin derechos hasta USD 400', async () => {
   const store = crearStore(null);
   let r;
-  const { fetchImpl } = mock([tool('cotizar', { kg: 1, valor_factura_usd: 100, die: 20, regimen: 'personal' , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }), (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('ok'); }]);
+  const { fetchImpl } = mock([tool('cotizar', { kg: 1, valor_factura_usd: 100, die: 20, regimen: 'personal', unidades: 10 , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }), (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('ok'); }]);
   await procesar(msg('5492', 'auriculares'), { fetchImpl, store, debounceMs: 0 });
   assert.strictEqual(r.flete_puertobox_usd, 45); // 1 kg -> USD 45 total
   assert.strictEqual(r.detalle_impuestos.derechos_y_tasa, 0);
@@ -340,20 +340,20 @@ test('decisiones de Gustavo 15/11: régimen por unidades, CUIT, litio y 50 kg po
 test('cotizar sin cantidad de cajas: no da ningún número, pide las cajas (Gustavo 15/11 17:59)', async () => {
   const { ejecutar } = require('../tools');
   for (const kg of [30, 90]) {
-    const r = await ejecutar('cotizar', { kg, valor_factura_usd: 220, die: 16, regimen: 'comercial', largo_cm: 50, ancho_cm: 40, alto_cm: 40 }, { store: crearStore(null), telefono: 'x', derivaciones: [] });
+    const r = await ejecutar('cotizar', { kg, valor_factura_usd: 220, die: 16, regimen: 'comercial', unidades: 10, largo_cm: 50, ancho_cm: 40, alto_cm: 40 }, { store: crearStore(null), telefono: 'x', derivaciones: [] });
     assert.match(r.error, /cajas/);
     assert.strictEqual(r.total_puertobox_usd, undefined);
   }
-  const conCajas = await ejecutar('cotizar', { kg: 30, cantidad_cajas: 1, valor_factura_usd: 220, die: 16, regimen: 'comercial' , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, { store: crearStore(null), telefono: 'x', derivaciones: [] });
+  const conCajas = await ejecutar('cotizar', { kg: 30, cantidad_cajas: 1, valor_factura_usd: 220, die: 16, regimen: 'comercial', unidades: 10 , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, { store: crearStore(null), telefono: 'x', derivaciones: [] });
   assert.ok(conCajas.recargo_cajas_usd > 0);
 });
 
 test('pedido de más de USD 3.000: se divide en envíos de hasta USD 3.000 y cada uno se cotiza (Gustavo 15/11)', async () => {
   const { ejecutar } = require('../tools');
   const ctx = () => ({ store: crearStore(null), telefono: 'x', derivaciones: [] });
-  const todo = await ejecutar('cotizar', { kg: 307, cantidad_cajas: 27, valor_factura_usd: 4160, die: 12.6, regimen: 'comercial' , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx());
+  const todo = await ejecutar('cotizar', { kg: 307, cantidad_cajas: 27, valor_factura_usd: 4160, die: 12.6, regimen: 'comercial', unidades: 10 , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx());
   assert.match(todo.aviso, /dividilo en 2 envíos de hasta USD 3000/);
-  const uno = await ejecutar('cotizar', { kg: 153.5, cantidad_cajas: 13, valor_factura_usd: 2080, die: 12.6, regimen: 'comercial' , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx());
+  const uno = await ejecutar('cotizar', { kg: 153.5, cantidad_cajas: 13, valor_factura_usd: 2080, die: 12.6, regimen: 'comercial', unidades: 10 , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx());
   assert.ok(uno.total_puertobox_usd > 0 && !uno.aviso?.includes('tope'));
   const p = require('fs').readFileSync(require('path').join(__dirname, '..', 'prompt.md'), 'utf8');
   assert.match(p, /Se dividen en varios envíos comerciales/);
@@ -431,10 +431,10 @@ test('cajas de distintos tamaños: cada tamaño suma su volumétrico (caso Gian,
   const sin = ejecutar('cotizar', { ...base, bultos: [{ cantidad: 1, largo_cm: 26, ancho_cm: 20, alto_cm: 11.5 }, { cantidad: 2 }] }, ctx);
   assert.match(sin.error, /Falta medir alguna caja/);
   // Una caja de más de 23 kg entre varias livianas: recargo solo para esa.
-  const pes = ejecutar('cotizar', { kg: 34, valor_factura_usd: 500, die: 16, regimen: 'comercial', bultos: [
+  const pes = ejecutar('cotizar', { kg: 34, valor_factura_usd: 500, die: 16, regimen: 'comercial', unidades: 10, bultos: [
     { cantidad: 1, largo_cm: 50, ancho_cm: 40, alto_cm: 40, kg_por_caja: 26 }, { cantidad: 2, largo_cm: 30, ancho_cm: 30, alto_cm: 30, kg_por_caja: 4 },
   ] }, ctx);
-  const una = ejecutar('cotizar', { kg: 26, valor_factura_usd: 500, die: 16, regimen: 'comercial', cantidad_cajas: 1, largo_cm: 50, ancho_cm: 40, alto_cm: 40 }, ctx);
+  const una = ejecutar('cotizar', { kg: 26, valor_factura_usd: 500, die: 16, regimen: 'comercial', unidades: 10, cantidad_cajas: 1, largo_cm: 50, ancho_cm: 40, alto_cm: 40 }, ctx);
   assert.ok(pes.recargo_cajas_usd > 0);
   assert.strictEqual(pes.recargo_cajas_usd, una.recargo_cajas_usd);
 });
@@ -457,7 +457,7 @@ test('respeta el anuncio que corre (USD 19/kg con gestión desde 20 kg) a los qu
   const st = crearStore(null);
   st.agregar('5491100000555', 'user', 'Hola, quiero traer de China: ropa');
   st.marcar('5491100000555', { origen: 'anuncio', origenEn: Date.now() });
-  const datos = { kg: 25, valor_factura_usd: 800, die: 35, regimen: 'comercial', cantidad_cajas: 2, largo_cm: 40, ancho_cm: 30, alto_cm: 30 }; // 2 cajas: sin recargo de más de 23 kg
+  const datos = { kg: 25, valor_factura_usd: 800, die: 35, regimen: 'comercial', unidades: 10, cantidad_cajas: 2, largo_cm: 40, ancho_cm: 30, alto_cm: 30 }; // 2 cajas: sin recargo de más de 23 kg
   const delAnuncio = ejecutar('cotizar', datos, { telefono: '5491100000555', store: st });
   const otro = ejecutar('cotizar', datos, { telefono: '5491100000556', store: st });
   assert.strictEqual(otro.handling_puertobox_usd, 40);

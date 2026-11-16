@@ -49,7 +49,7 @@ const definiciones = [
         internos: { type: 'number', description: 'Impuestos internos (%) si la posición los tiene, si no 0' },
         regimen: { type: 'string', enum: ['personal', 'comercial'], description: 'Por cantidad, nunca por el uso: personal = pequeño envío, hasta 3 unidades iguales; comercial = más de 3 unidades iguales (o si no se sabe).' },
         sin_franquicia: { type: 'boolean', description: 'true si el cliente de uso propio ya usó sus envíos con beneficio del año' },
-        unidades: { type: 'number', description: 'Cantidad TOTAL de unidades que trae (por ejemplo 100 remeras). Para revender, siempre que se sepa: con esto se calcula cuánto le queda cada unidad puesta en su casa. Si el cliente cambió el peso o el pedido, tiene que ser la cantidad NUEVA (preguntala), nunca la vieja.' },
+        unidades: { type: 'number', description: 'Obligatorio: cantidad TOTAL de unidades que trae (por ejemplo 100 remeras). Sin esto no se cotiza: con esto se calcula cuánto le queda cada unidad puesta en su casa. Si el cliente cambió el peso o el pedido, tiene que ser la cantidad NUEVA (preguntala), nunca la vieja.' },
         con_cuit_puertobox: { type: 'boolean', description: 'true si el cliente no tiene CUIT y lo traemos con el CUIT de PuertoBox: gestión más alta, envío en Argentina aparte e impuestos que se le pagan a PuertoBox.' },
         con_bateria_litio: { type: 'boolean', description: 'true si el producto trae batería de litio incorporada (carga peligrosa: la aerolínea cobra un recargo sobre el flete).' },
         kg_por_unidad: { type: 'number', description: 'Peso de UNA unidad (con su caja) si el cliente lo dijo. Sirve para controlar que unidades y peso total cierren.' },
@@ -128,6 +128,9 @@ function ejecutar(nombre, input, ctx) {
       } else if (input.bultos) { input = { ...input, bultos: undefined }; }
       if (!(input.cantidad_cajas > 0)) return { error: 'Falta cuántas cajas son. No cotices ni des ningún número: preguntale al cliente si viene en una caja o en varias.' };
       if (!(input.largo_cm > 0 && input.ancho_cm > 0 && input.alto_cm > 0)) return { error: 'Faltan las medidas de la caja (largo, ancho y alto en cm). No cotices ni des ningún número, ni aproximado: pedíselas al cliente; si no las sabe, pasale el mensaje en inglés para el proveedor.' };
+      // 16/11 (revisión general): la regla de Gustavo del 15/11 17:59 incluye las unidades ("todos los parámetros"),
+      // pero solo estaba en el texto. Sin unidades no se sabe el régimen ni el costo por unidad. El cotizador a mano de Gustavo no la exige.
+      if (!ctx.manual && !(input.unidades > 0)) return { error: 'Falta cuántas unidades son en total. No cotices ni des ningún número: preguntáselo al cliente (si son productos distintos, cuántas de cada uno).' };
       // Unidades y peso tienen que cerrar (15/11: 10 arrancadores de 0,9 kg cotizados como 23 kg → el costo por unidad salió inflado).
       if (input.unidades > 0 && input.kg_por_unidad > 0) {
         const esperado = input.unidades * input.kg_por_unidad;
@@ -155,7 +158,7 @@ function ejecutar(nombre, input, ctx) {
       // Lead cotizado (si todavía no avanzó a otro estado): así aparece en el seguimiento si el cliente no vuelve.
       const previo = ctx.store.lead ? ctx.store.lead(ctx.telefono) : null;
       if (!previo || !previo.estado || previo.estado === 'nuevo' || previo.estado === 'cotizado') {
-        ctx.store.guardarLead(ctx.telefono, { estado: 'cotizado', kg: input.kg, valor_usd: input.valor_factura_usd, precio_usd: r.flete_puertobox_usd + r.handling_puertobox_usd });
+        ctx.store.guardarLead(ctx.telefono, { estado: 'cotizado', kg: input.kg, valor_usd: input.valor_factura_usd });
       }
       // Última cotización completa en el lead: con esto se arma solo el presupuesto formal en PDF (15/11).
       if (ctx.store.guardarLead) ctx.store.guardarLead(ctx.telefono, { cotizacion: { en: new Date().toISOString(), input: { kg: input.kg, cantidad_cajas: cajas, largo_cm: input.largo_cm, ancho_cm: input.ancho_cm, alto_cm: input.alto_cm, ...(input.bultos ? { bultos: input.bultos } : {}), valor_factura_usd: input.valor_factura_usd, die: input.die, internos: input.internos || 0, regimen: input.regimen, unidades: input.unidades, con_cuit_puertobox: !!input.con_cuit_puertobox, con_bateria_litio: !!input.con_bateria_litio, ...(input.precio_venta_unidad > 0 ? { precio_venta_unidad: input.precio_venta_unidad, moneda_venta: input.moneda_venta || 'ARS' } : {}) }, r: null } });
@@ -216,7 +219,8 @@ function ejecutar(nombre, input, ctx) {
         usd_por_kilo_con_gestion: Math.round((totalPB / r.kg_presupuestado) * 100) / 100,
         reglas: `El flete es PRECIO CERRADO: se respeta aunque la caja llegue hasta ${NEG.precio_cerrado_hasta_pct}% más pesada o grande; si supera eso, se ajusta con foto de la balanza. Se suma la gestión por envío (${NEG.gestion_texto}), ya incluida en total_puertobox_usd. El cliente le paga a PuertoBox SOLO total_puertobox_usd (flete + gestión); los impuestos son un estimado aparte que cobra el courier: nunca los sumes al total de PuertoBox. Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. El envío de la fábrica al depósito en ${NEG.deposito_china} NO está incluido: lo paga el cliente (ideal: que lo incluya el proveedor; si lo paga PuertoBox, se suma aparte a lo que cueste). Impuestos y gasto administrativo son ESTIMADOS y se pagan directo a la empresa de transporte cuando entrega el paquete (decí "la empresa de transporte"; puede ser DHL, UPS o FedEx, no nombres una salvo que pregunten).`,
       };
-      if (ctx.store.guardarLead && ctx.store.lead) { const l = ctx.store.lead(ctx.telefono) || {}; if (l.cotizacion) ctx.store.guardarLead(ctx.telefono, { cotizacion: { ...l.cotizacion, r: { ...resultado, reglas: undefined, aviso: undefined } } }); }
+      // precio_usd = lo que de verdad se le cobra (antes no sumaba recargos, gestión con CUIT de PuertoBox ni la del anuncio).
+      if (ctx.store.guardarLead && ctx.store.lead) { const l = ctx.store.lead(ctx.telefono) || {}; if (l.cotizacion) ctx.store.guardarLead(ctx.telefono, { precio_usd: totalPB, cotizacion: { ...l.cotizacion, r: { ...resultado, reglas: undefined, aviso: undefined } } }); }
       return resultado;
     }
     case 'registrar_lead':

@@ -1,7 +1,7 @@
 import pathlib, json, subprocess
 # Números desde la base única (data/): nunca escritos a mano (15/11/2026).
 REPO=pathlib.Path(__file__).resolve().parents[3]
-D=json.loads(subprocess.check_output(['node','-e',"const d=require('./src/negocio').datos();console.log(JSON.stringify({kg:d.usd_kg_total_desde,desde:d.kg_desde,min:d.envio_minimo_usd}))"],cwd=REPO))
+D=json.loads(subprocess.check_output(['node','-e',"const d=require('./src/negocio').datos();console.log(JSON.stringify({kg:d.usd_kg_total_desde,desde:d.kg_desde_total,min:d.envio_minimo_usd}))"],cwd=REPO))
 from playwright.sync_api import sync_playwright
 F='/home/claude/render/node_modules/@fontsource/montserrat/files'
 faces=''.join(f"@font-face{{font-family:'M';font-weight:{w};src:url('file://{F}/montserrat-latin-{w}-normal.woff2')}}" for w in (500,600,700,800,900))

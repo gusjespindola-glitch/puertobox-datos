@@ -359,7 +359,7 @@ function empiezaCon(texto, clave) {
   const m = require('../src/negocio').datos()[clave];
   return !!m && normalizarTexto(texto).startsWith(normalizarTexto(m));
 }
-const esMensajeAnuncio = (texto) => empiezaCon(texto, 'mensaje_anuncio');
+const esMensajeAnuncio = (texto) => empiezaCon(texto, 'mensaje_anuncio') || empiezaCon(texto, 'mensaje_anuncio_whatsapp'); // 16/11: el precargado nuevo de los anuncios
 const esMensaje698 = (texto) => empiezaCon(texto, 'mensaje_698');
 
 const NUMEROS_META = new Set(['447974905090', '447480784000', '16505434800', '13105850000']);
@@ -554,7 +554,7 @@ function cotizarAMano(q) {
     .filter((v) => v.length === 4 && v.every((x) => x > 0)).map(([cantidad, largo_cm, ancho_cm, alto_cm]) => ({ cantidad, largo_cm, ancho_cm, alto_cm }));
   if (bultos.length > 1) input.bultos = bultos;
   const { crearStore } = require('./store');
-  const r = require('./tools').ejecutar('cotizar', input, { telefono: 'cotizador', store: crearStore(null), derivaciones: [] });
+  const r = require('./tools').ejecutar('cotizar', input, { telefono: 'cotizador', store: crearStore(null), derivaciones: [], manual: true });
   const div = require('../data/precios_venta.json').flete_directo.divisor_volumetrico;
   const vol = input.bultos ? Math.round(input.bultos.reduce((t, b) => t + (b.largo_cm * b.ancho_cm * b.alto_cm / div) * b.cantidad, 0) * 100) / 100
     : input.largo_cm && input.ancho_cm && input.alto_cm ? Math.round((input.largo_cm * input.ancho_cm * input.alto_cm / div) * input.cantidad_cajas * 100) / 100 : null;
@@ -971,4 +971,4 @@ function pendientesSinResponder(st, ahora = Date.now()) {
     && (c.mensajes || []).length && c.mensajes[c.mensajes.length - 1].role === 'user');
 }
 
-module.exports = { borrarAvisosNtfy, avisarNtfy, avisoMensajeNuevo, leerMultipart, firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo, ticArancel };
+module.exports = { cotizarAMano, esMensajeAnuncio, borrarAvisosNtfy, avisarNtfy, avisoMensajeNuevo, leerMultipart, firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo, ticArancel };

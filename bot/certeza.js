@@ -56,7 +56,7 @@ function aplicar(store, tel, texto, ejecutar) {
   }
   // Recalcula el presupuesto con el derecho nuevo (misma cotización, otro derecho).
   if (lead.cotizacion && lead.cotizacion.input && ejecutar) {
-    ejecutar('cotizar', { ...lead.cotizacion.input }, { telefono: tel, store, derivaciones: [] });
+    ejecutar('cotizar', { ...lead.cotizacion.input }, { telefono: tel, store, derivaciones: [], manual: true }); // recálculo de una cotización ya dada
   }
   return { cambio: true, de: actual, a: f.posicion };
 }

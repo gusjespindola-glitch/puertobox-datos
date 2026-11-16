@@ -147,10 +147,16 @@ async function clasificar(input, ctx) {
     let ia;
     try { ia = await clasificarConIA(producto, ctx.fetchImpl || fetch, conWeb); } catch (e) { ia = { error: e.message }; }
     if (ctx.store.contarClasificacion && conWeb) ctx.store.contarClasificacion(hoy, 1);
-    if (!ia || ia.error) return { error: 'No pude clasificar ahora. Cotizá con "posición a confirmar" y derecho del 20%, y avisá que nuestro despachante la confirma.', detalle: ia && ia.error };
+    // 16/11 (revisión general): antes, si fallaba, el bot cotizaba con un 20% "a ojo" y Gustavo no se enteraba.
+    // Ahora: el bot busca en el arancel con buscar_posicion, marca "(a confirmar)" y a Gustavo le llega el aviso.
+    const sinClasificar = (motivo) => {
+      if (ctx.derivaciones) ctx.derivaciones.push({ telefono: ctx.telefono, motivo: 'confirmar_posicion', resumen: `Producto: ${producto.slice(0, 200)}\nEl clasificador no pudo elegir la posición (${String(motivo || '').slice(0, 120)}). El bot cotiza con la que encuentre en el arancel, marcada "(a confirmar)".` });
+      return { error: 'No pude clasificar ahora. Usá buscar_posicion con el producto, elegí la posición que corresponda y su derecho (die) de ARCA, y en el presupuesto poné la posición con "(a confirmar)". Nuestro despachante ya recibió el aviso para confirmarla.', detalle: motivo };
+    };
+    if (!ia || ia.error) return sinClasificar(ia && ia.error);
     // 4. El derecho sale de la base de ARCA, nunca de la IA. Si la posición no existe, no se usa.
     const fila = exacta(ia.posicion);
-    if (!fila) return { error: `La posición ${ia.posicion} no existe en el arancel de ARCA. Cotizá con "posición a confirmar" y derecho del 20%.` };
+    if (!fila) return sinClasificar(`la posición ${ia.posicion} no existe en el arancel de ARCA`);
     r = {
       posicion: fila.posicion, die: fila.die, internos: fila.impuestos_internos, descripcion_arancel: fila.descripcion,
       intervenciones_posibles: fila.intervenciones_posibles, nombre_tecnico: ia.nombre_tecnico, por_que: ia.por_que,

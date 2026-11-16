@@ -114,11 +114,14 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
       else messages.push({ role: 'user', content: [aviso] });
       continue;
     }
-    const resp = derivaciones.length ? 'Ya le pasé tu consulta a nuestro despachante de aduana. Te va a escribir a la brevedad.' : 'Disculpá, no llegué a entender tu mensaje. ¿Me lo podés repetir?';
+    const resp = derivaciones.length ? 'Ya le pasé tu consulta a nuestro despachante de aduana. Te escribe enseguida por acá.' : 'Disculpá, no llegué a entender tu mensaje. ¿Me lo podés repetir?';
     store.agregar(telefono, 'assistant', resp);
     return resp;
   }
-  return 'Dame un segundo que lo reviso con nuestro despachante y te escribimos.';
+  // 16/11: también se guarda, así queda en /charlas lo que se le dijo al cliente.
+  const espera = 'Dame un segundo que lo reviso con nuestro despachante y te escribimos.';
+  store.agregar(telefono, 'assistant', espera);
+  return espera;
 }
 
 /**

@@ -45,7 +45,7 @@
     "bateria_litio": {
       "tipo": "multiplicador_flete",
       "valor": 1.3,
-      "nota": "+30% carga peligrosa. Gustavo 15/11: la aerolínea siempre cobra un extra con litio, \"creo que 30%\". Confirmar el número exacto con Howard."
+      "nota": "+30% carga peligrosa. Gustavo 15/11: la aerolínea siempre cobra un extra con litio, \"creo que 30%\". 16/11 Gustavo: el courier SÍ acepta baterías de litio incorporadas. Falta confirmar con Howard si el recargo es 30%."
     },
     "sobrepeso_bulto": {
       "tipo": "fijo_por_bulto",
