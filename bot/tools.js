@@ -54,6 +54,9 @@ const definiciones = [
         internos: { type: 'number', description: 'Impuestos internos (%) si la posición los tiene, si no 0' },
         regimen: { type: 'string', enum: ['personal', 'comercial'], description: 'Por cantidad, nunca por el uso: personal = pequeño envío, hasta 3 unidades iguales; comercial = más de 3 unidades iguales (o si no se sabe).' },
         sin_franquicia: { type: 'boolean', description: 'true si el cliente de uso propio ya usó sus envíos con beneficio del año' },
+        producto_corto: { type: 'string', description: 'El producto en pocas palabras y en plural, para el título del presupuesto (ej.: "arrancadores 12V con compresor", "remeras de algodón").' },
+        producto_singular: { type: 'string', description: 'El producto en singular y corto (ej.: "arrancador", "remera"), para "Cada X te queda en…".' },
+        precio_publicado: { type: 'boolean', description: 'true si el valor salió del precio publicado de leer_link (no se lo confirmó el proveedor).' },
         unidades: { type: 'number', description: 'Obligatorio: cantidad TOTAL de unidades que trae (por ejemplo 100 remeras). Sin esto no se cotiza: con esto se calcula cuánto le queda cada unidad puesta en su casa. Si el cliente cambió el peso o el pedido, tiene que ser la cantidad NUEVA (preguntala), nunca la vieja.' },
         con_cuit_puertobox: { type: 'boolean', description: 'true si el cliente no tiene CUIT y lo traemos con el CUIT de PuertoBox: gestión más alta, envío en Argentina aparte e impuestos que se le pagan a PuertoBox.' },
         con_bateria_litio: { type: 'boolean', description: 'true si el producto trae batería de litio incorporada (carga peligrosa: la aerolínea cobra un recargo sobre el flete).' },
@@ -230,7 +233,31 @@ function ejecutar(nombre, input, ctx) {
         ...(recargoLitio ? { recargo_litio: usd(recargoLitio) } : {}), ...(recargoCajas ? { recargo_cajas: usd(recargoCajas) } : {}),
         ...(porUnidad.costo_por_unidad_usd ? { por_unidad: usd(porUnidad.costo_por_unidad_usd) } : {}),
       };
+      // Presupuesto armado por el programa (16/11: la IA no respetaba el formato aprobado por Gustavo; ahora lo manda tal cual).
+      const pos8 = fija ? String(fija.posicion).slice(0, 10) : null;
+      const avisoUnico = cajaPesada ? `Hay cajas de más de ${NEG.caja_max_kg} kg: el proveedor tiene que dividirlas.`
+        : input.con_cuit_puertobox ? 'Con nuestro CUIT, el envío dentro de Argentina va aparte y los impuestos nos los pagás antes del despacho.'
+        : recargoLitio ? 'Pedile al proveedor la hoja de seguridad de la batería (MSDS y UN38.3).'
+        : conMedidas && r.kg_presupuestado > input.kg * 1.3 ? 'Si el proveedor arma cajas más chicas o más llenas, el flete baja.'
+        : 'El envío del proveedor al depósito no está incluido: pedile que lo incluya.';
+      const nCajas = input.bultos ? input.bultos.reduce((t, b) => t + b.cantidad, 0) : cajas;
+      const cajasLinea = input.bultos ? `${fmt(input.kg)} kg en ${nCajas} cajas (${input.bultos.map((b) => `${b.cantidad} de ${dims(b)}`).join(', ')} cm)` : `${fmt(input.kg)} kg en ${cajas} ${cajas > 1 ? 'cajas' : 'caja'} de ${dims(input)} cm`;
+      const texto = [
+        `*Presupuesto${unidades ? ` · ${unidades} ${input.producto_corto || 'unidades'}` : ''}*`, '',
+        `Flete China → tu casa: USD ${montos.flete}`,
+        ...(recargoLitio ? [`Recargo por batería de litio: USD ${montos.recargo_litio}`] : []),
+        ...(recargoCajas ? [`Recargo por cajas de más de ${sob.umbral_kg} kg: USD ${montos.recargo_cajas}`] : []),
+        `Gestión: USD ${montos.gestion}`,
+        `*Total: USD ${montos.total}* · ${conMedidas && !cajaPesada ? 'precio cerrado' : 'se ajusta con la balanza'}`, '',
+        `Impuestos estimados, aparte: USD ${montos.impuestos} (se pagan a la empresa de transporte)`,
+        ...(montos.por_unidad ? [`*Cada ${input.producto_singular || 'unidad'} te queda en USD ${montos.por_unidad} en tu casa*`] : []), '',
+        lineaVol || cajasLinea,
+        `Posición ${pos8 || 'a confirmar'}${pos8 && fija.confianza !== 'alta' && !fija.confirmada ? ' (a confirmar)' : ''} · USD ${montos.valor} al proveedor${input.precio_publicado ? ' (precio publicado)' : ''}`, '',
+        `Se paga cuando la caja llega al depósito en ${NEG.deposito_china}. ${avisoUnico}`,
+        '¿Te sirve? Pasame tu código postal y lo avanzamos.',
+      ].join('\n');
       const resultado = {
+        texto_presupuesto: texto,
         montos,
         aplica_volumetrico: aplicaVol,
         peso_real_kg: input.kg,

@@ -194,7 +194,7 @@ function conPedido(res, unidades) {
 // Prueba al arrancar (una vez por versión): lee links reales de Alibaba de distintos rubros y formatos y sube una tabla
 // a la rama del aprendizaje (son publicaciones públicas, sin datos de clientes). Así Claude sabe si desde Railway se leen.
 // 16/11 16:15, Gustavo: "¿podemos hacer pruebas con enlaces aleatorios de Alibaba, a ver si funciona?"
-const VERSION_PRUEBA = 'v9-16-11'; // v9: formato nuevo del presupuesto con charlas reales // v8: sin pensar y con más lugar // v7: si la IA no entiende la página bajada, prueba con web_fetch // v6: precios en formato francés, texto largo y motivo de cada falla // v5: 16 links nuevos + 4 charlas completas con la IA
+const VERSION_PRUEBA = 'v10-16-11'; // v10: presupuesto armado por el programa
 const LINKS_PRUEBA = [
   'https://www.alibaba.com/x/B2iQFj?ck=pdp',
 ];

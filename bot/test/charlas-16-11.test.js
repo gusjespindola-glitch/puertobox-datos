@@ -86,7 +86,7 @@ test('presupuesto: cuando se cobra por volumen, lo dice y explica por qué (Gust
   const real = ejecutar('cotizar', { kg: 30, valor_factura_usd: 300, die: 18, regimen: 'comercial', unidades: 10, cantidad_cajas: 1, largo_cm: 40, ancho_cm: 30, alto_cm: 30 }, ctx('v2'));
   assert.strictEqual(real.aplica_volumetrico, false);
   assert.strictEqual(real.linea_volumetrico, undefined);
-  assert.match(require('../agent').SYSTEM, /linea_volumetrico`?, tal cual/);
+  assert.match(r.texto_presupuesto, /Se cobran 26 kg y no 20, por \*peso volumétrico\*/);
 });
 
 test('formato del presupuesto (Gustavo 16/11 16:49): montos con punto de miles, primero la plata y un solo aviso', () => {
@@ -98,8 +98,27 @@ test('formato del presupuesto (Gustavo 16/11 16:49): montos con punto de miles, 
   assert.strictEqual(r.montos.valor, '526,60');
   assert.match(r.montos.por_unidad, /^\d+,\d{2}$/);
   assert.strictEqual(r.linea_volumetrico, 'Se cobran 52 kg y no 40, por *peso volumétrico*: las 20 cajas de 24×12×45 cm ocupan más de lo que pesan.');
-  const p = require('../agent').SYSTEM;
-  assert.match(p, /\*Presupuesto · \[unidades\]/);
-  assert.match(p, /un solo aviso/);
-  assert.match(p, /¿Te sirve\? Pasame tu código postal y lo avanzamos\./);
+  assert.match(require('../agent').SYSTEM, /mandá `texto_presupuesto` tal cual/);
+});
+
+test('el presupuesto lo arma el programa con el formato aprobado (16/11): igual siempre, un solo aviso', () => {
+  const { ejecutar } = require('../tools');
+  const r = ejecutar('cotizar', { kg: 40, valor_factura_usd: 526.6, die: 18, regimen: 'comercial', unidades: 20, cantidad_cajas: 20, largo_cm: 24, ancho_cm: 12, alto_cm: 45, con_bateria_litio: true, producto_corto: 'arrancadores 12V con compresor', producto_singular: 'arrancador', precio_publicado: true }, { telefono: 'f2', store: crearStore(null), derivaciones: [] });
+  assert.strictEqual(r.texto_presupuesto, [
+    '*Presupuesto · 20 arrancadores 12V con compresor*', '',
+    'Flete China → tu casa: USD 936',
+    'Recargo por batería de litio: USD 281',
+    'Gestión: USD 40',
+    '*Total: USD 1.257* · precio cerrado', '',
+    `Impuestos estimados, aparte: USD ${r.montos.impuestos} (se pagan a la empresa de transporte)`,
+    `*Cada arrancador te queda en USD ${r.montos.por_unidad} en tu casa*`, '',
+    'Se cobran 52 kg y no 40, por *peso volumétrico*: las 20 cajas de 24×12×45 cm ocupan más de lo que pesan.',
+    'Posición a confirmar · USD 526,60 al proveedor (precio publicado)', '',
+    'Se paga cuando la caja llega al depósito en Shenzhen. Pedile al proveedor la hoja de seguridad de la batería (MSDS y UN38.3).',
+    '¿Te sirve? Pasame tu código postal y lo avanzamos.',
+  ].join('\n'));
+  const rem = ejecutar('cotizar', { kg: 30, valor_factura_usd: 700, die: 35, regimen: 'comercial', unidades: 200, cantidad_cajas: 2, largo_cm: 50, ancho_cm: 40, alto_cm: 50, producto_corto: 'remeras de algodón', producto_singular: 'remera' }, { telefono: 'f3', store: crearStore(null), derivaciones: [] });
+  assert.match(rem.texto_presupuesto, /Se cobran 40 kg y no 30, por \*peso volumétrico\*: las 2 cajas de 50×40×50 cm/);
+  assert.match(rem.texto_presupuesto, /Shenzhen\. Si el proveedor arma cajas más chicas o más llenas, el flete baja\.\n/);
+  assert.strictEqual(rem.texto_presupuesto.split('\n').length, 14);
 });
