@@ -67,3 +67,7 @@ test('prompt: links de Alibaba, no volver a saludar, rango del proveedor y cajó
   assert.match(p, /Si el proveedor da un rango/);
   assert.match(p, /wooden crate/);
 });
+
+test('link de Alibaba: como la página no se puede leer, pide la captura del precio y de "Packaging & delivery"', () => {
+  assert.match(require('../agent').SYSTEM, /Packaging & delivery/);
+});
