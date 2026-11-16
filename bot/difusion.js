@@ -62,7 +62,7 @@ async function yc(path, opciones, fetchImpl) {
 }
 
 /** Busca el WABA del número del bot, crea la plantilla si falta y devuelve su estado (APPROVED, PENDING, REJECTED...). */
-async function asegurarPlantilla(store, fetchImpl = fetch, numeroBot = process.env.BUSINESS_NUMBER) {
+async function asegurarPlantilla(store, fetchImpl = fetch, numeroBot = process.env.BUSINESS_NUMBER, ahora = Date.now()) {
   const s = estado(store);
   if (!s.wabaId) {
     const r = await yc('/whatsapp/phoneNumbers?limit=100', { method: 'GET' }, fetchImpl);
@@ -77,7 +77,7 @@ async function asegurarPlantilla(store, fetchImpl = fetch, numeroBot = process.e
     r = await yc('/whatsapp/templates', { method: 'POST', body: JSON.stringify({ wabaId: s.wabaId, name: PLANTILLA.name, language: PLANTILLA.language, category: PLANTILLA.category, components: [{ type: 'BODY', text: PLANTILLA.text }] }) }, fetchImpl);
     if (!r.ok) throw new Error('YCloud no aceptó la plantilla: ' + r.txt.slice(0, 300));
   } else if (!r.ok) throw new Error('No pude leer la plantilla en YCloud: ' + r.txt.slice(0, 300));
-  s.plantilla = { estado: (r.json && r.json.status) || 'PENDING', motivo: r.json && (r.json.reason || r.json.rejectedReason) || null, revisada: Date.now() };
+  s.plantilla = { estado: (r.json && r.json.status) || 'PENDING', motivo: r.json && (r.json.reason || r.json.rejectedReason) || null, revisada: ahora };
   guardar(store, s);
   return s.plantilla;
 }
@@ -93,7 +93,7 @@ async function tick({ store, ahora = Date.now(), fetchImpl = fetch, esGustavo = 
   const s = estado(store);
   if (!s.cola.length) return [];
   if (revisarPlantilla && (!s.plantilla || (s.plantilla.estado !== 'APPROVED' && ahora - (s.plantilla.revisada || 0) > 14 * 60e3))) {
-    try { await asegurarPlantilla(store, fetchImpl); } catch (e) { console.error('Difusión:', e.message); return []; }
+    try { await asegurarPlantilla(store, fetchImpl, undefined, ahora); } catch (e) { console.error('Difusión:', e.message); return []; }
   }
   const s2 = estado(store);
   if (!s2.plantilla || s2.plantilla.estado !== 'APPROVED') return [];

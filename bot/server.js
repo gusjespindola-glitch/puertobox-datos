@@ -739,10 +739,20 @@ function servidor() {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'set-cookie': cookiePanel() });
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
       const aviso = url.searchParams.get('corregido') === '1' ? 'Corrección guardada. El bot la aplica desde su próximo mensaje.' : url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
-      const htmlCharlas = require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`, (tel) => `/visto?tel=${tel}&t=${firma('visto:' + tel)}`);
+      const htmlCharlas = require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`, (tel) => `/visto?tel=${tel}&t=${firma('visto:' + tel)}`, (tel, v) => `/marcar-presu?tel=${tel}&v=${v}&t=${firma('marcarpresu:' + tel)}`);
       if (abierto && store.marcarVisto) store.marcarVisto(abierto); // la abrió desde un aviso: ya la ve
       if (abierto) borrarAvisosNtfy(abierto);
       return res.end(htmlCharlas);
+    }
+    // Gustavo marca que ya le pasó presupuesto (16/11): la tarjeta queda en verde.
+    if (req.method === 'POST' && url.pathname === '/marcar-presu') {
+      const tel = soloDigitos(url.searchParams.get('tel') || '');
+      if (!tel || !firmaOk('marcarpresu:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      const si = url.searchParams.get('v') === '1';
+      store.marcar(tel, si ? { presupuestoPasadoEn: Date.now() } : { presupuestoPasadoEn: null, presupuestoEnviadoEn: null });
+      if (si && store.guardarLead) { const l = store.lead(tel) || {}; if (!l.estado || l.estado === 'nuevo') store.guardarLead(tel, { estado: 'cotizado' }); }
+      if (store.marcarVisto) store.marcarVisto(tel);
+      res.writeHead(303, { location: `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}` }); return res.end();
     }
     // Gustavo abrió una charla en /charlas: sus mensajes dejan de figurar como nuevos (15/11).
     if (req.method === 'POST' && url.pathname === '/visto') {
