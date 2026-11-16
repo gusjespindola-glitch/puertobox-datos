@@ -143,3 +143,23 @@ test('con el CUIT de PuertoBox: gestión USD 50 y aviso de envío en Argentina e
   assert.strictEqual(normal.handling_puertobox_usd, 20);
   assert.match(require('../../src/negocio').datos().faq_texto, /CUIT de PuertoBox: la gestión es USD 50/);
 });
+
+test('reclasifica una vez si el cliente aclara el material (bombachas sintéticas, 16/11)', async () => {
+  const store = crearStore(null);
+  const json = (pos, conf) => () => respuesta([{ type: 'text', text: JSON.stringify({ posicion: pos, nombre_tecnico: 'x', por_que: 'y', confianza: conf, alternativas: [] }) }]);
+  const { fetchImpl } = mockIA([json('6108.21.00.000X', 'baja'), json('6108.22.00.000J', 'media')]);
+  const ctx = { telefono: '549222', store, derivaciones: [], fetchImpl };
+  const a = await clasificar({ producto_completo: 'ropa interior de dama' }, ctx);
+  assert.strictEqual(a.posicion, '6108.21.00.000X');
+  const igual = await clasificar({ producto_completo: 'ropa interior de dama sintética' }, ctx);
+  assert.strictEqual(igual.posicion, '6108.21.00.000X', 'sin dato_nuevo queda fija');
+  const b = await clasificar({ producto_completo: 'bombachas de dama de fibra sintética, sin marca', dato_nuevo: true }, ctx);
+  assert.strictEqual(b.posicion, '6108.22.00.000J');
+  assert.strictEqual(store.lead('549222').posicion_fija.antes, '6108.21.00.000X');
+  const otra = await clasificar({ producto_completo: 'bombachas de algodón', dato_nuevo: true }, ctx);
+  assert.strictEqual(otra.posicion, '6108.22.00.000J', 'una sola vez');
+});
+
+test('WhatsApp: negrita con un asterisco (llegaba "**USD 478,14**")', () => {
+  assert.strictEqual(limpiar('Los impuestos estimados son **USD 478,14**.'), 'Los impuestos estimados son *USD 478,14*.');
+});

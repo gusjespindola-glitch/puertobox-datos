@@ -128,7 +128,11 @@ async function clasificar(input, ctx) {
   if (producto.length < 3) return { error: 'Pasá el producto completo como lo escribió el cliente (descripción, modelo, materiales, link).' };
   const lead = ctx.store.lead ? ctx.store.lead(ctx.telefono) : null;
   // 1. Misma charla: la posición ya elegida no cambia (salvo que el cliente cambie de producto).
-  if (lead && lead.posicion_fija && !input.cambiar_producto) return { ...lead.posicion_fija, ya_fijada: true, instruccion: 'Es la misma posición que ya usaste en esta charla. Usala igual en todos los presupuestos.' };
+  // 16/11 (charla de bombachas): clasificó "ropa interior de dama" antes de saber el material, quedó 6108.21 (algodón)
+  // y el cliente después dijo "sintético". Si la posición no la confirmó Gustavo y no es de confianza alta, el bot puede
+  // reclasificar UNA vez con el dato nuevo del cliente.
+  const reclasifica = input.dato_nuevo && lead && lead.posicion_fija && !lead.posicion_fija.confirmada && lead.posicion_fija.confianza !== 'alta' && !lead.posicion_fija.reclasificada;
+  if (lead && lead.posicion_fija && !input.cambiar_producto && !reclasifica) return { ...lead.posicion_fija, ya_fijada: true, instruccion: 'Es la misma posición que ya usaste en esta charla. Usala igual en todos los presupuestos.' };
   // 2. Caché por producto (posiciones ya clasificadas o confirmadas por Gustavo).
   const cache = ctx.store.cacheClasificacion ? ctx.store.cacheClasificacion() : {};
   const k = clave(producto);
@@ -155,7 +159,7 @@ async function clasificar(input, ctx) {
     };
     if (ctx.store.guardarClasificacion) ctx.store.guardarClasificacion(k, r);
   }
-  const fija = { ...r, producto };
+  const fija = { ...r, producto, ...(reclasifica ? { reclasificada: true, antes: lead.posicion_fija.posicion } : {}) };
   if (ctx.store.guardarLead) ctx.store.guardarLead(ctx.telefono, { posicion_fija: fija, posicion: r.posicion });
   // 5. Si no está segura, Gustavo confirma (aviso sin pausar el chat).
   if (r.confianza !== 'alta' && ctx.derivaciones && !r.confirmada) {

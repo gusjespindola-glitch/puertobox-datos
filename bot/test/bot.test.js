@@ -377,3 +377,15 @@ test('chat en manos de Gustavo: el cliente escribe y el aviso sale al instante, 
     assert.strictEqual(llamadas.whatsapp.filter((b) => b.topic === 'prueba-avisos').length, 1, 'no repite el aviso en 10 min');
   } finally { delete process.env.NTFY_TOPIC; }
 });
+
+test('si la IA se queda sin espacio a mitad del mensaje, lo termina en vez de mandarlo cortado (16/11)', async () => {
+  const store = crearStore(null);
+  const { fetchImpl, llamadas } = mock([
+    { stop_reason: 'max_tokens', content: [{ type: 'text', text: '*Total a PuertoBox: USD 560*\nPrecio cerrado. Se paga c' }] },
+    (body) => { assert.strictEqual(body.messages.at(-1).role, 'assistant'); return txt('uando la caja llega al depósito.'); },
+  ]);
+  await procesar(msg('5491177700000', 'pasame el presupuesto'), { fetchImpl, store, debounceMs: 0 });
+  const enviado = llamadas.whatsapp.map((b) => (b.text && b.text.body) || '').join('\n');
+  assert.match(enviado, /Se paga cuando la caja llega al depósito\./);
+  assert.strictEqual(llamadas.claude.length, 2);
+});
