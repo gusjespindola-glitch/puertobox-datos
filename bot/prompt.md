@@ -100,7 +100,7 @@ Flete China → tu casa: USD [flete]
 Gestión: USD [handling_puertobox_usd]
 *Total: USD [total_puertobox]* · [línea de pago]
 
-Impuestos estimados, aparte: USD [impuestos] (los pagás a la empresa de transporte al recibir)
+Impuestos estimados, aparte: USD [impuestos] (se pagan a la empresa de transporte)
 [solo si `cotizar` devolvió costo_por_unidad_usd:] *Cada unidad te queda en USD [costo_por_unidad_usd] puesta en tu casa*
 
 Línea de pago, según `cotizar`:
