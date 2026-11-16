@@ -137,6 +137,9 @@ test('botones: "Ya lo atendí" y la página de pendientes funcionan solo con fir
   assert.strictEqual((await fetch(`${base}/charlas`, { headers: { cookie } })).status, 200);
   assert.strictEqual((await fetch(`${base}/pendientes`, { headers: { cookie } })).status, 200);
   assert.strictEqual((await fetch(`${base}/charlas`, { headers: { cookie: 'pbp=' + '0'.repeat(32) } })).status, 401);
+  // 16/11 ("no abre"): el cotizador del nomenclador también abre con esa cookie.
+  assert.strictEqual((await fetch(`${base}/nomenclador/`)).status, 401);
+  assert.strictEqual((await fetch(`${base}/nomenclador/`, { headers: { cookie } })).status, 200);
   s.close();
 });
 
