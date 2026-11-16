@@ -18,7 +18,7 @@ const cache = new Map();
 /** URLs a probar para un link. Alibaba: primero los espejos que sí se leen. Sin parámetros de seguimiento. */
 function candidatas(url) {
   const u = String(url || '').trim();
-  const m = u.match(/alibaba\.[a-z.]+\/product-detail\/([^?#\s]+?\.html)/i) || u.match(/m\.alibaba\.com\/product\/(\d+)\/([^?#\s]+?\.html)/i);
+  const m = u.match(/alibaba\.[a-z.]+\/product-(?:detail|introduction)\/([^?#\s]+?\.html)/i) || u.match(/m\.alibaba\.com\/product\/(\d+)\/([^?#\s]+?\.html)/i);
   if (m) {
     const ruta = m[2] ? `${m[2].replace(/\.html$/, '')}_${m[1]}.html` : m[1];
     const id = (ruta.match(/[_-](\d{8,})\.html$/) || [])[1];
@@ -116,19 +116,45 @@ async function leer(url, ctx = {}) {
   return res;
 }
 
-// Prueba al arrancar (una vez por versión): lee el link real del arrancador y sube el resultado a la rama del
-// aprendizaje (es una publicación pública, sin datos de clientes). Así Claude sabe si desde Railway se lee.
-const VERSION_PRUEBA = 'v3-16-11'; // v3: link corto del Compartir de la app // v2: el control ya no frena un paquete grande pero posible
-const LINK_PRUEBA = 'https://www.alibaba.com/x/B2iQFj?ck=pdp'; // el que mandó Gustavo desde la app (16/11 16:04): es el arrancador
-async function autoprueba({ store, fetchImpl = fetch }) {
+// Prueba al arrancar (una vez por versión): lee links reales de Alibaba de distintos rubros y formatos y sube una tabla
+// a la rama del aprendizaje (son publicaciones públicas, sin datos de clientes). Así Claude sabe si desde Railway se leen.
+// 16/11 16:15, Gustavo: "¿podemos hacer pruebas con enlaces aleatorios de Alibaba, a ver si funciona?"
+const VERSION_PRUEBA = 'v4-16-11';
+const LINKS_PRUEBA = [
+  'https://www.alibaba.com/x/B2iQFj?ck=pdp', // link corto del Compartir (arrancador, el de Gustavo)
+  'https://www.alibaba.com/product-detail/DIY-Sport-Gym-Fitness-Equipment-Wheel_1600958949996.html?spm=a2700.prosearch',
+  'https://www.alibaba.com/product-detail/Fitness-Cable-Gym-Equipment-Steel-Wire_60734807345.html?spm=a2706',
+  'https://www.alibaba.com/product-introduction/Non-Slip-Custom-logo-print-Double_60747406011.html',
+  'https://www.alibaba.com/product-introduction/TOPKO-Exercise-Anti-Slip-Eco-Friendly_1600156426710.html',
+  'https://www.alibaba.co.uk/product-detail/Portable-Car-Jump-Starter-12v-with_1601273281314.html',
+  'https://www.alibaba.co.uk/product-detail/Newest-Multi-function-12V-Jump-Starter_1601726016174.html',
+  'https://www.alibaba.fr/product-detail/12V-Portable-6000mAh-Car-Battery-Booster_1601608136622.html',
+  'https://www.alibaba.com/product-detail/Car-Jump-Starter-1000A-3-in_1601148563519.html',
+  'https://www.alibaba.com/product-detail/_62020798193.html',
+  'https://www.alibaba.co.uk/product-detail/200LM-W-Flexible-SMD-2835-72_1601386148326.html',
+  'https://www.alibaba.com/product-detail/Smart-wifi-leds-5050-rgb-light_1600997656793.html',
+  'https://www.alibaba.com/product-introduction/China-Factory-Directly-Offer-Liquid-Silicon_1601323439529.html',
+];
+const celda = (x) => String(x == null ? '—' : x).replace(/\|/g, '/').replace(/\s+/g, ' ').slice(0, 70);
+async function autoprueba({ store, fetchImpl = fetch, links = LINKS_PRUEBA, subirFn = null }) {
   if (!store.meta || store.meta('pruebaLink') === VERSION_PRUEBA) return null;
   store.meta('pruebaLink', VERSION_PRUEBA);
-  cache.delete(idDe(LINK_PRUEBA));
-  const r = await leer(LINK_PRUEBA, { fetchImpl });
+  const filas = [];
+  let ok = 0;
+  for (const l of links) {
+    cache.delete(idDe(candidatas(l)[0] || l));
+    let r;
+    try { r = await leer(l, { fetchImpl }); } catch (e) { r = { error: e.message }; }
+    const bien = !r.error && !!r.titulo;
+    if (bien) ok += 1;
+    const p0 = (r.precios || [])[0];
+    filas.push(`| ${bien ? '✅' : '❌'} | ${celda(l.replace(/^https:\/\/(www\.)?/, '').slice(0, 60))} | ${celda(r.fuente && r.fuente.replace(/^https:\/\/(www\.)?/, '').split('/')[0])} | ${celda(r.titulo)} | ${p0 ? `USD ${p0.usd} desde ${p0.desde}` : '—'} | ${celda(r.unidades_de_venta)} | ${celda(r.tamano_paquete_cm)} | ${celda(r.peso_bruto_kg)} | ${r.paquete_coherente === false ? '⚠️ no' : r.paquete_coherente ? 'sí' : '—'} | ${celda(r.error ? `${r.error} ${r.detalle || ''}` : r.nota)} |`);
+  }
   const fecha = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
-  const contenido = `# Prueba de lectura de links — ${fecha}\n\nLink: ${LINK_PRUEBA}\nEsperado (captura de Gustavo): USD 26,33 desde 6, artículo individual, 24x12x45 cm, 2,0 kg.\n\n\`\`\`json\n${JSON.stringify({ ...r, instruccion: undefined }, null, 1)}\n\`\`\`\n`;
-  await require('./aprendizaje').subir({ fecha: `prueba-link-${fecha}`, contenido, fetchImpl }).catch((e) => console.error('Prueba link (subir):', e.message));
-  return r;
+  const contenido = `# Prueba de lectura de links — ${fecha}\n\nLeídos: ${ok} de ${links.length} (desde el servidor de Railway).\n\n| | Link | Leído de | Producto | Precio | Unidad de venta | Paquete (cm) | Peso (kg) | ¿Coherente? | Nota |\n|---|---|---|---|---|---|---|---|---|---|\n${filas.join('\n')}\n`;
+  const subir = subirFn || ((x) => require('./aprendizaje').subir(x));
+  await subir({ fecha: `prueba-link-${fecha}`, contenido, fetchImpl }).catch((e) => console.error('Prueba link (subir):', e.message));
+  return { ok, total: links.length, contenido };
 }
 
 module.exports = { autoprueba, leer, candidatas, textoDeHtml, tieneDatos, INSTRUCCION };

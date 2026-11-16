@@ -92,3 +92,21 @@ test('link corto del Compartir de la app (alibaba.com/x/...): sigue la redirecci
   const { candidatas } = require('../links');
   assert.strictEqual(candidatas('https://spanish.alibaba.com/product-detail/subject-1601952873179.html?ckvia=x')[0], 'https://www.alibaba.fr/product-detail/subject-1601952873179.html');
 });
+
+test('formato product-introduction de Alibaba también se lee', () => {
+  assert.strictEqual(candidatas('https://www.alibaba.com/product-introduction/Non-Slip-Custom-logo-print-Double_60747406011.html')[0], 'https://www.alibaba.fr/product-detail/Non-Slip-Custom-logo-print-Double_60747406011.html');
+});
+
+test('prueba de varios links: arma la tabla con leídos y no leídos', async () => {
+  const { autoprueba } = require('../links');
+  const { crearStore } = require('../store');
+  const fetchImpl = async (url) => {
+    if (url.includes('anthropic')) return { ok: true, json: async () => ({ content: [{ type: 'text', text: JSON.stringify(JSON_IA) }] }) };
+    return { ok: true, status: 200, text: async () => (url.includes('alibaba.fr') && url.includes('1700000000001') ? HTML_FR : VACIA) };
+  };
+  let subido = null;
+  const r = await autoprueba({ store: crearStore(null), fetchImpl, links: ['https://www.alibaba.com/product-detail/A_1700000000001.html', 'https://www.ejemplo.com/nada'], subirFn: async (x) => { subido = x; return { ok: true }; } });
+  assert.strictEqual(r.total, 2);
+  assert.match(subido.contenido, /Leídos: \d de 2/);
+  assert.match(subido.contenido, /\| ✅ \|/);
+});
