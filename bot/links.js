@@ -194,23 +194,14 @@ function conPedido(res, unidades) {
 // Prueba al arrancar (una vez por versión): lee links reales de Alibaba de distintos rubros y formatos y sube una tabla
 // a la rama del aprendizaje (son publicaciones públicas, sin datos de clientes). Así Claude sabe si desde Railway se leen.
 // 16/11 16:15, Gustavo: "¿podemos hacer pruebas con enlaces aleatorios de Alibaba, a ver si funciona?"
-const VERSION_PRUEBA = 'v8-16-11'; // v8: sin pensar y con más lugar // v7: si la IA no entiende la página bajada, prueba con web_fetch // v6: precios en formato francés, texto largo y motivo de cada falla // v5: 16 links nuevos + 4 charlas completas con la IA
+const VERSION_PRUEBA = 'v9-16-11'; // v9: formato nuevo del presupuesto con charlas reales // v8: sin pensar y con más lugar // v7: si la IA no entiende la página bajada, prueba con web_fetch // v6: precios en formato francés, texto largo y motivo de cada falla // v5: 16 links nuevos + 4 charlas completas con la IA
 const LINKS_PRUEBA = [
-  'https://www.alibaba.com/x/B2iQFj?ck=pdp', // control: andaba
-  'https://www.alibaba.co.uk/product-detail/5Pcs-Damascus-Chef-Knife-Set-Stainless_1601596679880.html', // activa, falló en v5
-  'https://www.alibaba.fr/product-detail/Mini-Car-Jump-Starter-With-Air_1601270449501.html', // activa, falló en v5
-  'https://www.alibaba.fr/product-detail/RGBW-RGBCCT-RGB-COB-LED-Strip_1601028895170.html', // falló en v5
-  'https://www.alibaba.com/product-introduction/Silicone-Phone-case-Microfiber-Inside-Custom_1601070339036.html', // falló en v5
-  'https://www.alibaba.com/product-detail/Smart-wifi-leds-5050-rgb-light_1600997656793.html', // dada de baja (control)
-  'https://www.alibaba.co.uk/product-detail/Sharp-Damascus-Steel-Kitchen-Chef-Utility_60824052177.html', // control: andaba
-  'https://www.alibaba.co.uk/product-detail/KBW759-15-6-Inch-Waterproof-Durable_1601056565477.html', // control: andaba
+  'https://www.alibaba.com/x/B2iQFj?ck=pdp',
 ];
 // Charlas completas con la IA de verdad (16/11, "hacé más pruebas"): el cliente manda el link y contesta lo que le piden.
-const CHARLAS_PRUEBA = !process.env.PRUEBA_CHARLAS_LINK ? [] : [
-  { nombre: 'Link corto del Compartir (arrancador)', msgs: ['Hola quiero traer esto https://www.alibaba.com/x/B2iQFj?ck=pdp', '20 unidades', 'sin marca'] },
-  { nombre: 'Mat de yoga (product-introduction)', msgs: ['Hola, cuánto me sale traer esto? https://www.alibaba.com/product-introduction/Non-Slip-Custom-logo-print-Double_60747406011.html', '100 unidades, sin marca'] },
-  { nombre: 'Poleas (paquete imposible en la publicación)', msgs: ['quiero traer estas poleas https://www.alibaba.com/product-detail/DIY-Sport-Gym-Fitness-Equipment-Wheel_1600958949996.html', '200 unidades'] },
-  { nombre: 'Publicación dada de baja', msgs: ['me cotizás esto? https://www.alibaba.com/product-detail/Car-Jump-Starter-1000A-3-in_1601148563519.html'] },
+const CHARLAS_PRUEBA = [
+  { nombre: 'Link corto del Compartir (arrancador)', msgs: ['Hola quiero traer esto https://www.alibaba.com/x/B2iQFj?ck=pdp', '20 unidades, sin marca'] },
+  { nombre: 'Remeras con todos los datos (sin link)', msgs: ['Hola, quiero traer 200 remeras de algodón sin marca, le pago 700 dólares al proveedor, son 30 kilos en 2 cajas de 50x40x50'] },
 ];
 async function charlasDePrueba(fetchImpl) {
   const { responder } = require('./agent');

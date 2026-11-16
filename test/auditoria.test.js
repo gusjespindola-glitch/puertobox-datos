@@ -121,7 +121,7 @@ test('presupuesto: lo de PuertoBox separado de los impuestos del courier (sin to
   assert.strictEqual(r.total_puertobox_usd, r.flete_puertobox_usd + r.handling_puertobox_usd);
   assert.strictEqual(r.total_estimado_usd, undefined);
   const prompt = negocio.render(fs.readFileSync(path.join(__dirname, '..', 'bot', 'prompt.md'), 'utf8'));
-  assert.match(prompt, /\*Total: USD \[total_puertobox\]\*/); // 16/11: presupuesto corto, sin repetir PuertoBox
+  assert.match(prompt, /\*Total: USD \[montos\.total\]\*/); // 16/11: presupuesto corto, sin repetir PuertoBox
   assert.match(prompt, /Impuestos estimados, aparte/);
   assert.ok(!/Total estimado: USD/.test(prompt));
 });

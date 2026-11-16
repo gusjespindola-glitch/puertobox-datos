@@ -82,9 +82,24 @@ test('presupuesto: cuando se cobra por volumen, lo dice y explica por qué (Gust
   const r = ejecutar('cotizar', { kg: 20, valor_factura_usd: 263.3, die: 18, regimen: 'comercial', unidades: 10, cantidad_cajas: 10, largo_cm: 24, ancho_cm: 12, alto_cm: 45, con_bateria_litio: true }, ctx('v1'));
   assert.strictEqual(r.aplica_volumetrico, true);
   assert.strictEqual(r.kg_cobrable, 26);
-  assert.match(r.linea_volumetrico, /Peso cobrable: 26 kg por \*peso volumétrico\*: pesa 20 kg, pero las cajas ocupan como 25,9 kg \(10 × 24×12×45 cm ÷ 5000\)/);
+  assert.strictEqual(r.linea_volumetrico, 'Se cobran 26 kg y no 20, por *peso volumétrico*: las 10 cajas de 24×12×45 cm ocupan más de lo que pesan.');
   const real = ejecutar('cotizar', { kg: 30, valor_factura_usd: 300, die: 18, regimen: 'comercial', unidades: 10, cantidad_cajas: 1, largo_cm: 40, ancho_cm: 30, alto_cm: 30 }, ctx('v2'));
   assert.strictEqual(real.aplica_volumetrico, false);
   assert.strictEqual(real.linea_volumetrico, undefined);
-  assert.match(require('../agent').SYSTEM, /linea_volumetrico, tal cual/);
+  assert.match(require('../agent').SYSTEM, /linea_volumetrico`?, tal cual/);
+});
+
+test('formato del presupuesto (Gustavo 16/11 16:49): montos con punto de miles, primero la plata y un solo aviso', () => {
+  const { ejecutar } = require('../tools');
+  const r = ejecutar('cotizar', { kg: 40, valor_factura_usd: 526.6, die: 18, regimen: 'comercial', unidades: 20, cantidad_cajas: 20, largo_cm: 24, ancho_cm: 12, alto_cm: 45, con_bateria_litio: true }, { telefono: 'f1', store: crearStore(null), derivaciones: [] });
+  assert.strictEqual(r.montos.total, '1.257');
+  assert.strictEqual(r.montos.flete, '936');
+  assert.strictEqual(r.montos.recargo_litio, '281');
+  assert.strictEqual(r.montos.valor, '526,60');
+  assert.match(r.montos.por_unidad, /^\d+,\d{2}$/);
+  assert.strictEqual(r.linea_volumetrico, 'Se cobran 52 kg y no 40, por *peso volumétrico*: las 20 cajas de 24×12×45 cm ocupan más de lo que pesan.');
+  const p = require('../agent').SYSTEM;
+  assert.match(p, /\*Presupuesto · \[unidades\]/);
+  assert.match(p, /un solo aviso/);
+  assert.match(p, /¿Te sirve\? Pasame tu código postal y lo avanzamos\./);
 });
