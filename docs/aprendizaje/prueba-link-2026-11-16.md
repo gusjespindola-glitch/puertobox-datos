@@ -1,6 +1,6 @@
 # Prueba de lectura de links — 2026-11-16
 
-Link: https://www.alibaba.com/product-detail/12V-Car-Jump-Starter-With-Air_1601952873179.html
+Link: https://www.alibaba.com/x/B2iQFj?ck=pdp
 Esperado (captura de Gustavo): USD 26,33 desde 6, artículo individual, 24x12x45 cm, 2,0 kg.
 
 ```json
@@ -35,8 +35,8 @@ Esperado (captura de Gustavo): USD 26,33 desde 6, artículo individual, 24x12x45
  "bateria": "si",
  "material": null,
  "paquete_coherente": true,
- "nota": "Las medidas 24x12x45 cm pueden estar exageradas para un arrancador con compresor; conviene confirmarlo con el proveedor.",
- "fuente": "https://www.alibaba.fr/product-detail/12V-Car-Jump-Starter-With-Air_1601952873179.html",
- "link": "https://www.alibaba.fr/product-detail/12V-Car-Jump-Starter-With-Air_1601952873179.html"
+ "nota": "Dimensiones de paquete generosas para un arrancador con compresor; puede estar exagerado, conviene confirmarlo con el proveedor.",
+ "fuente": "https://www.alibaba.fr/product-detail/subject-1601952873179.html",
+ "link": "https://www.alibaba.fr/product-detail/subject-1601952873179.html"
 }
 ```
