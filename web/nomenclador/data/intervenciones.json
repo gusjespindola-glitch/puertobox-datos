@@ -2,7 +2,7 @@
   "_meta": {
     "aviso": "Intervenciones ORIENTATIVAS curadas por PuertoBox (no vienen en los archivos de ARCA). Confirmar siempre en VUCE por posición. Gustavo valida y corrige esta tabla.",
     "fuentes": "Curso de despachante (Courier 2025 y SIDIP/Intervenciones, Lic. Padilla); criterios generales de organismos.",
-    "actualizado": "2026-11-13 (SIDIP verificado: solo celulares)"
+    "actualizado": "2026-11-16 (ropa usada Res. 461/2026; SIDIP verificado 13/11: solo celulares)"
   },
   "organismos": {
     "SENASA": "Sanidad animal y vegetal. Productos de origen animal o vegetal, alimentos para animales, fitosanitarios.",
@@ -15,6 +15,7 @@
     "Etiquetado textil y calzado": "Reglamento técnico de etiquetado (Res. SCI 549/2021). Ingresa por courier; control en plaza.",
     "ANMAC": "Armas, municiones, explosivos y materiales controlados.",
     "SEDRONAR": "Precursores químicos.",
+    "Ropa usada (Res. 461/2026)": "Secretaría de Industria y Comercio, Res. 461/2026 (BO 11/11/2026): antes del envío, trámite TAD \"Solicitud para la importación de ropa usada\" con certificado de lavado/desinfección en origen (ISO/IEC 17065). Prohibidos calzado y ropa interior usados. Si no cumple: reembarco a origen. No aplica a ropa nueva.",
     "SIDIP": "Sistema Digital de Identificación de Productos (RG 5581/2024, reemplazó al estampillado). Hoy solo alcanza celulares (IMEI). Courier general no admite mercadería alcanzada. Verificado 13/11/2026."
   },
   "reglas": [
@@ -36,6 +37,7 @@
     {"prefijos": ["9503", "9504", "9505"], "organismos": ["Seguridad de juguetes"]},
     {"prefijos": ["8516", "8509", "8508", "8510", "8513", "8504.40", "8536", "8544", "9405", "8414.51", "8418", "8450", "8467", "8471.60", "8528"], "organismos": ["Seguridad eléctrica"]},
     {"prefijos": ["8517.13", "8517.14", "8517.62", "8517.69", "8518.30", "8525", "8526", "8527", "8529"], "organismos": ["ENACOM"], "nota": "Si transmite por radio (celular, WiFi, Bluetooth)."},
+    {"prefijos": ["6309"], "organismos": ["Ropa usada (Res. 461/2026)"], "nota": "Ropa usada: trámite previo al envío; calzado y ropa interior usados prohibidos."},
     {"prefijos": ["8517.13", "8517.14"], "organismos": ["SIDIP"], "nota": "Celulares: identificación por IMEI."},
     {"prefijos": ["9018", "9019", "9020", "9021", "9022", "9001.30", "9004"], "organismos": ["ANMAT"], "nota": "Productos médicos (anteojos y lentes de contacto según el caso)."},
     {"prefijos": ["93"], "organismos": ["ANMAC"]},

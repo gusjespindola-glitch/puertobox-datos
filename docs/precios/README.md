@@ -4,6 +4,9 @@
 - La competencia se carga en `data/referencias_mercado.json` (la tarea de los lunes la revisa y actualiza).
 - Informes por fecha en esta carpeta. Lo más nuevo, arriba.
 
+## Revisión del 16/11/2026 ([informe](2026-11-16.md))
+Con el kilo entero (15/11), el peor caso bajó en pesos chicos: 3 kg deja USD 9,24 y 7 kg USD 9,60 si la caja llega 15% más pesada. Ninguno da pérdida. Siguen los saltos 9→10 kg y 19→20 kg. Competidores comerciales nuevos (Argencargo, MBComex) en USD 19-20/kg + gestión: en 40-50 kg estamos parejos. Propuestas: 3-5 kg a USD 30; +USD 2/kg desde 10 kg; tope de tramo.
+
 ## Decisión del 13/11/2026 (noche): opción C
 Sin el 15% sobre el peso y gestión de USD 20. Comparación de opciones (cobrás / ganás): 1 kg 65/26 · 2 kg 84/30 · 5 kg 145/42 · 10 kg 220/66 · 20 kg 380/102 · 30 kg 560/143. Peor caso (caja 15% más pesada) siempre positivo, mínimo USD 17.
 
