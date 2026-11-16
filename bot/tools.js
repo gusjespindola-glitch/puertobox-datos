@@ -216,9 +216,22 @@ function ejecutar(nombre, input, ctx) {
       const volKg = input.bultos ? input.bultos.reduce((t, b) => t + (b.largo_cm * b.ancho_cm * b.alto_cm / divVol) * b.cantidad, 0)
         : conMedidas ? (input.largo_cm * input.ancho_cm * input.alto_cm / divVol) * cajas : 0;
       const aplicaVol = volKg > 0 && r.kg_presupuestado > Math.max(Math.ceil(input.kg - 1e-9), 1);
-      const medidasTxt = input.bultos ? input.bultos.map((b) => `${b.cantidad} × ${fmt(b.largo_cm)}×${fmt(b.ancho_cm)}×${fmt(b.alto_cm)}`).join(' + ') : `${cajas > 1 ? `${cajas} × ` : ''}${fmt(input.largo_cm)}×${fmt(input.ancho_cm)}×${fmt(input.alto_cm)}`;
-      const lineaVol = aplicaVol ? `Peso cobrable: ${r.kg_presupuestado} kg por *peso volumétrico*: pesa ${fmt(input.kg)} kg, pero las cajas ocupan como ${fmt(volKg)} kg (${medidasTxt} cm ÷ ${divVol}). La aerolínea cobra el mayor entre el peso real y el volumen.` : null;
+      // 16/11 16:49 (Gustavo aprobó el formato corto): una línea, "Se cobran 52 kg y no 40, por peso volumétrico: …".
+      const dims = (b) => `${fmt(b.largo_cm)}×${fmt(b.ancho_cm)}×${fmt(b.alto_cm)}`;
+      const cajasTxt = input.bultos
+        ? `las cajas (${input.bultos.map((b) => `${b.cantidad} de ${dims(b)}`).join(', ')} cm) ocupan`
+        : cajas > 1 ? `las ${cajas} cajas de ${dims(input)} cm ocupan` : `la caja de ${dims(input)} cm ocupa`;
+      const lineaVol = aplicaVol ? `Se cobran ${r.kg_presupuestado} kg y no ${fmt(input.kg)}, por *peso volumétrico*: ${cajasTxt} más de lo que ${cajas > 1 || input.bultos ? 'pesan' : 'pesa'}.` : null;
+      // Montos listos para el cliente, con punto de miles y coma decimal (16/11: salía "USD 1257").
+      const usd = (n) => (n == null ? null : Number(n).toLocaleString('es-AR', { minimumFractionDigits: Number.isInteger(Math.round(n * 100) / 100) ? 0 : 2, maximumFractionDigits: 2 }));
+      const montos = {
+        flete: usd(r.flete_puertobox_usd), gestion: usd(handling), total: usd(totalPB),
+        impuestos: usd(Math.round(r.impuestos_estimados_usd.total)), valor: usd(input.valor_factura_usd),
+        ...(recargoLitio ? { recargo_litio: usd(recargoLitio) } : {}), ...(recargoCajas ? { recargo_cajas: usd(recargoCajas) } : {}),
+        ...(porUnidad.costo_por_unidad_usd ? { por_unidad: usd(porUnidad.costo_por_unidad_usd) } : {}),
+      };
       const resultado = {
+        montos,
         aplica_volumetrico: aplicaVol,
         peso_real_kg: input.kg,
         peso_volumetrico_kg: Math.round(volKg * 100) / 100,

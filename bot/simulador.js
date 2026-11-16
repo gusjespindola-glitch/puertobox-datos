@@ -66,7 +66,7 @@ function revisar(resp, ctx) {
   const prob = [];
   if (!resp || !resp.trim()) prob.push('respuesta vacía');
   const t = resp || '';
-  const esPresupuesto = /\*Presupuesto(?: PuertoBox)?\*/i.test(t);
+  const esPresupuesto = /\*Presupuesto(?: PuertoBox| · [^*\n]+)?\*/i.test(t);
   const sinSaludo = t.replace(/¿c[oó]mo (va|est[aá]s|and[aá]s)\?/gi, '');
   if (!esPresupuesto && (sinSaludo.match(/\?/g) || []).length > 1) prob.push('más de una pregunta');
   if (/^\[ERROR/.test(t)) prob.push('error técnico');
@@ -116,8 +116,8 @@ async function correrEscenarios() {
     const junto = todas.join('\n');
     const e = esc.espera;
     const finales = [];
-    if (e.presupuesto && !/\*Presupuesto(?: PuertoBox)?\*/i.test(junto)) finales.push('no dio presupuesto');
-    if (e.sinPresupuesto && /\*Presupuesto(?: PuertoBox)?\*/i.test(junto)) finales.push('cotizó cuando no debía');
+    if (e.presupuesto && !/\*Presupuesto(?: PuertoBox| · [^*\n]+)?\*/i.test(junto)) finales.push('no dio presupuesto');
+    if (e.sinPresupuesto && /\*Presupuesto(?: PuertoBox| · [^*\n]+)?\*/i.test(junto)) finales.push('cotizó cuando no debía');
     if (e.mencionaProveedor && !/gross weight|proveedor/i.test(junto)) finales.push('no ayudó a pedirle el peso al proveedor');
     if (e.sinTabla && /32\/kg|28\/kg|25\/kg/.test(junto)) finales.push('recitó la tabla por kilo');
     if (e.deriva && !derivaciones.length) finales.push('no derivó a Gustavo');
