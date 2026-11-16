@@ -810,6 +810,7 @@ if (require.main === module) {
   // Circuito de aprendizaje (15/11): a las 23 h revisa las charlas del día y sube el informe (sin datos personales) a la rama aprendizaje-bot.
   const ticAprendizaje = () => require('./aprendizaje').tick({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), reglas: require('./agent').SYSTEM, dirLocal: path.join(path.dirname(process.env.DATA_FILE || DATA_FILE), 'aprendizaje'), avisar: (t, titulo, prioridad) => avisarNtfy(t, titulo, prioridad, fetch) }).catch((e) => console.error('Aprendizaje:', e.message));
   setInterval(ticAprendizaje, 15 * 60e3).unref();
+  setTimeout(ticAprendizaje, 2 * 60e3).unref(); // 16/11: si el servidor reinició y quedó pendiente la revisión, la hace al arrancar
   // Dólar de referencia automático (antes se cambiaba a mano cada semana).
   const dol = require('../src/dolar'); dol.actualizar(); setInterval(() => dol.actualizar(), 12 * 3600e3).unref();
   setTimeout(() => { tic(); ticDifusion(); }, 60e3).unref(); setInterval(() => { tic(); ticDifusion(); }, 15 * 60e3).unref();
