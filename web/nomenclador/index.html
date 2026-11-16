@@ -79,6 +79,7 @@ details pre{white-space:pre-wrap;font:.8rem/1.5 var(--f-mono);color:var(--ink);b
 .calc{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
 .form{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .form div{display:flex;flex-direction:column;gap:4px}
+.tcajas{width:100%;border-collapse:collapse}.tcajas th{font-size:.75rem;font-weight:600;text-align:left;padding:0 4px 2px;opacity:.75}.tcajas td{padding:2px 4px}.tcajas input{width:100%;min-width:0}.tcajas td:last-child{width:36px}.cajas #c_mas{align-self:flex-start;margin-top:4px}
 .tot td{font-weight:700;border-bottom:none}
 .tot td.n{font-size:1.05rem;color:var(--acc)}
 .avisos div{font-size:.84rem;color:var(--warn)}
@@ -150,11 +151,12 @@ input.falta{border:2px solid #c8102e;background:#fff5f5}.charla{background:#eef5
       <div class="form">
         <div><label for="c_valor">Valor al proveedor (USD)</label><input id="c_valor" type="number" min="0" step="0.01" value="300"></div>
         <div><label for="c_kg">Peso real total (kg)</label><input id="c_kg" type="number" min="0" step="0.1" value="10"></div>
-        <div><label for="c_cajas">Cantidad de cajas</label><input id="c_cajas" type="number" min="1" step="1" value="1"></div>
-        <div><label for="c_largo">Largo de una caja (cm)</label><input id="c_largo" type="number" min="0" step="1" placeholder="ej. 50"></div>
-        <div><label for="c_ancho">Ancho (cm)</label><input id="c_ancho" type="number" min="0" step="1" placeholder="ej. 40"></div>
-        <div><label for="c_alto">Alto (cm)</label><input id="c_alto" type="number" min="0" step="1" placeholder="ej. 30"></div>
-        <div style="grid-column:1/-1"><div id="c_otras"></div><button type="button" class="ghost" id="c_mas" style="margin-top:4px">+ Otro tamaño de caja</button> <span class="note">Si vienen cajas de distintos tamaños, agregá un renglón por cada tamaño.</span></div>
+        <div class="cajas" style="grid-column:1/-1">
+          <label>Cajas (una fila por cada tamaño)</label>
+          <table class="tcajas"><thead><tr><th>Cantidad</th><th>Largo (cm)</th><th>Ancho (cm)</th><th>Alto (cm)</th><th></th></tr></thead>
+            <tbody id="c_otras"><tr class="fila primera"><td><input id="c_cajas" type="number" min="1" step="1" value="1" aria-label="Cantidad de cajas de este tamaño"></td><td><input id="c_largo" type="number" min="0" step="0.5" placeholder="50" aria-label="Largo"></td><td><input id="c_ancho" type="number" min="0" step="0.5" placeholder="40" aria-label="Ancho"></td><td><input id="c_alto" type="number" min="0" step="0.5" placeholder="30" aria-label="Alto"></td><td></td></tr></tbody></table>
+          <button type="button" class="ghost" id="c_mas">+ Agregar otro tamaño de caja</button>
+        </div>
         <div><label for="c_unid">Unidades (opcional)</label><input id="c_unid" type="number" min="0" step="1" placeholder="para costo por unidad"></div>
         <div><label for="c_reg">Envío</label><select id="c_reg"><option value="comercial">Comercial (más de 3 iguales)</option><option value="personal">Pequeño envío (hasta 3 iguales)</option></select></div>
         <div><label for="c_die">DIE %</label><input id="c_die" type="number" min="0" step="0.1" value="20"></div>
@@ -318,16 +320,16 @@ function liquidar() {
 
 // ---- Cajas de distintos tamaños (16/11): renglones extra; el primer tamaño es el de arriba ----
 function filasCajas() {
-  const otras = [...document.querySelectorAll('#c_otras .fila')].map((f) => [...f.querySelectorAll('input')].map((i) => i.value));
-  return [[$('c_cajas').value || 1, $('c_largo').value, $('c_ancho').value, $('c_alto').value], ...otras].filter((v) => v.every((x) => parseFloat(x) > 0));
+  return [...document.querySelectorAll('#c_otras .fila')].map((f) => [...f.querySelectorAll('input')].map((i) => i.value)).filter((v) => v.every((x) => parseFloat(x) > 0));
 }
 const bultosTexto = () => { const f = filasCajas(); return f.length > 1 ? f.map((v) => v.join('x')).join(';') : ''; };
 function agregarCaja() {
-  const d = document.createElement('div'); d.className = 'fila'; d.style.cssText = 'display:flex;gap:6px;align-items:end;margin-top:6px;flex-wrap:wrap';
-  d.innerHTML = ['Cajas', 'Largo', 'Ancho', 'Alto'].map((l, i) => `<label style="font-size:.75rem">${l}<input type="number" min="${i ? 0 : 1}" step="${i ? 0.5 : 1}" value="${i ? '' : 1}" style="width:80px"></label>`).join('') + '<button type="button" class="ghost" title="Sacar">✕</button>';
-  d.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => { clearTimeout(cotizar.t); cotizar.t = setTimeout(cotizar, 200); }));
-  d.querySelector('button').addEventListener('click', () => { d.remove(); cotizar(); });
-  $('c_otras').appendChild(d);
+  const tr = document.createElement('tr'); tr.className = 'fila';
+  tr.innerHTML = ['Cantidad', 'Largo', 'Ancho', 'Alto'].map((l, i) => `<td><input type="number" min="${i ? 0 : 1}" step="${i ? 0.5 : 1}" value="${i ? '' : 1}" aria-label="${l}"></td>`).join('') + '<td><button type="button" class="ghost" title="Sacar este tamaño" aria-label="Sacar este tamaño">✕</button></td>';
+  tr.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => { clearTimeout(cotizar.t); cotizar.t = setTimeout(cotizar, 200); }));
+  tr.querySelector('button').addEventListener('click', () => { tr.remove(); cotizar(); });
+  $('c_otras').appendChild(tr);
+  tr.querySelectorAll('input')[1].focus();
 }
 
 // ---- Cotizador a mano (mismo motor que el bot, en el servidor) ----
@@ -341,7 +343,7 @@ async function cotizar() {
   try { r = await fetch('api/cotizar?' + p).then((x) => x.json()); } catch (e) { $('c_avisos').innerHTML = '<div>No se pudo calcular (sin conexión).</div>'; return; }
   if (pedido !== cotizar.n) return; // llegó una respuesta vieja
   ['c_valor', 'c_kg'].forEach((id) => $(id).classList.toggle('falta', !(parseFloat($(id).value) > 0)));
-  ['c_largo', 'c_ancho', 'c_alto'].forEach((id) => $(id).classList.toggle('falta', !!r.error && r.falta === 'medidas' && !(parseFloat($(id).value) > 0)));
+  document.querySelectorAll('#c_otras input').forEach((i) => i.classList.toggle('falta', !!r.error && r.falta === 'medidas' && !(parseFloat(i.value) > 0)));
   if (r.error) {
     const f = [!(parseFloat($('c_valor').value) > 0) && 'el valor al proveedor (USD)', !(parseFloat($('c_kg').value) > 0) && 'el peso'].filter(Boolean);
     $('c_pesos').innerHTML = ''; $('c_tabla').innerHTML = ''; $('c_avisos').innerHTML = `<div>${f.length ? 'Para calcular, cargá ' + f.join(' y ') + ' (marcado en rojo).' : esc(r.error)}</div>`; cotizar.ultimo = null;
