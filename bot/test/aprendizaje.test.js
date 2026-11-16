@@ -103,11 +103,46 @@ test('sin GITHUB_TOKEN arma el informe igual y avisa el motivo; sin charlas no g
   const store = storeConCharla();
   const { fetchImpl } = mockGitHub();
   const r = await ap.tick({ store, owner: '5491100000000', reglas: 'R', fetchImpl, ahora: Date.parse('2026-11-16T02:10:00Z') });
-  assert.strictEqual(r.ok, false);
-  assert.strictEqual(r.motivo, 'falta GITHUB_TOKEN');
+  assert.strictEqual(r.error, 'falta GITHUB_TOKEN', 'sin token cuenta como intento fallido (se reintenta)');
   const vacio = crearStore(null);
   const m = mockGitHub();
   const r2 = await ap.revisarDia({ store: vacio, owner: '5491100000000', fetchImpl: m.fetchImpl, reglas: 'R' });
   assert.strictEqual(r2.charlas, 0);
   assert.ok(!m.llamadas.some((l) => l.url.includes('anthropic')));
+});
+
+test('revisión nocturna: si falla reintenta, a la madrugada recupera el día anterior y al final avisa (16/11)', async () => {
+  const store = storeConCharla();
+  const base = mockGitHub();
+  let fallar = 2; // la IA falla las dos primeras veces
+  const fetchImpl = async (url, opt) => (url.includes('anthropic') && fallar-- > 0 ? { ok: false, status: 529, text: async () => 'overloaded' } : base.fetchImpl(url, opt));
+  process.env.GITHUB_TOKEN = 'token-de-prueba';
+  try {
+    const a23 = Date.parse('2026-11-16T02:10:00Z'); // 23:10 del 15/11
+    assert.ok((await ap.tick({ store, owner: '5491100000000', reglas: 'R', fetchImpl, ahora: a23 })).error, 'primer intento falla');
+    assert.strictEqual(store.meta('aprendizajeEstado').ok, false, 'no queda marcado como hecho');
+    assert.ok((await ap.tick({ store, owner: '5491100000000', reglas: 'R', fetchImpl, ahora: a23 + 15 * 60e3 })).error, 'segundo intento falla');
+    const r = await ap.tick({ store, owner: '5491100000000', reglas: 'R', fetchImpl, ahora: Date.parse('2026-11-16T03:10:00Z') }); // 00:10 del 16/11
+    assert.ok(r.ok, JSON.stringify(r));
+    assert.strictEqual(r.ruta, 'docs/aprendizaje/2026-11-15.md', 'pasada la medianoche sube el informe del día anterior');
+    assert.strictEqual(await ap.tick({ store, owner: '5491100000000', reglas: 'R', fetchImpl, ahora: Date.parse('2026-11-16T03:25:00Z') }), null, 'ya hecho: no repite');
+  } finally { delete process.env.GITHUB_TOKEN; }
+
+  assert.strictEqual(ap.fechaPendiente(Date.parse('2026-11-16T11:00:00Z')), '2026-11-15', 'a las 8 de la mañana todavía recupera ayer');
+  assert.strictEqual(ap.fechaPendiente(Date.parse('2026-11-16T18:00:00Z')), null, 'a la tarde no corre');
+
+  // Si falla siempre: después del último intento sube un informe con el motivo y avisa a Gustavo.
+  const s2 = storeConCharla();
+  const m2 = mockGitHub();
+  let llamadasIA = 0;
+  const siempreFalla = async (url, opt) => (url.includes('anthropic') && ++llamadasIA ? { ok: false, status: 500, text: async () => 'caída' } : m2.fetchImpl(url, opt));
+  const avisos = [];
+  process.env.GITHUB_TOKEN = 'token-de-prueba';
+  try {
+    for (let i = 0; i < ap.MAX_INTENTOS + 2; i++) await ap.tick({ store: s2, owner: '5491100000000', reglas: 'R', fetchImpl: siempreFalla, ahora: Date.parse('2026-11-16T02:10:00Z') + i * 15 * 60e3, avisar: async (t) => avisos.push(t) });
+  } finally { delete process.env.GITHUB_TOKEN; }
+  assert.strictEqual(llamadasIA, ap.MAX_INTENTOS, 'no reintenta para siempre');
+  assert.strictEqual(avisos.length, 1, 'avisa una sola vez');
+  const put = m2.llamadas.find((l) => l.metodo === 'PUT');
+  assert.match(Buffer.from(put.body.content, 'base64').toString('utf8'), /No se pudo armar la revisión/);
 });

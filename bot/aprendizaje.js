@@ -128,6 +128,7 @@ async function revisarDia({ store, owner, fetchImpl = fetch, ahora = Date.now(),
   const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+    signal: AbortSignal.timeout(240e3), // que no quede colgado si la IA no contesta
     body: JSON.stringify({ model: MODELO, max_tokens: 4000, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }),
   });
   if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text()).slice(0, 200)}`);
@@ -172,24 +173,56 @@ async function subir({ fecha, contenido, token = process.env.GITHUB_TOKEN, fetch
 }
 
 // ---------- Programación ----------
-/** Corre en el ciclo de 15 min del servidor: una vez por día, a partir de las 23 h (Argentina). */
-async function tick({ store, owner, reglas, fetchImpl = fetch, ahora = Date.now(), dirLocal = null, avisar = null }) {
+// 16/11: la primera revisión (15/11) no llegó. Antes se marcaba el día como hecho ANTES de intentar y solo
+// corría entre las 23 y las 24 h: un error de la IA o de GitHub, o el servidor reiniciando a esa hora, y se perdía
+// el día sin reintento. Ahora: se marca hecho solo si subió, reintenta cada 15 min (hasta MAX_INTENTOS), si a las
+// 23 h no pudo lo sigue intentando a la madrugada con las charlas de ese día, y si al final falla sube igual un
+// informe con el motivo (así la tarea de la mañana sabe qué pasó) y avisa a Gustavo.
+const MAX_INTENTOS = 6;
+let corriendo = false;
+
+/** Último momento del día `fecha` (AAAA-MM-DD) en Argentina. */
+const finDelDia = (fecha) => Date.parse(`${fecha}T23:59:59-03:00`);
+
+/** Qué día toca revisar: hoy desde las 23 h; de 0 a 12 h, ayer (por si a la noche no se pudo); si no, ninguno. */
+function fechaPendiente(ahora) {
   const { hora, fecha } = horaAR(ahora);
-  if (hora < HORA || store.meta('aprendizajeDia') === fecha) return null;
-  store.meta('aprendizajeDia', fecha); // primero se marca: si algo falla, no se repite en loop (y no gasta de más)
-  try {
-    const inf = await revisarDia({ store, owner, fetchImpl, ahora, reglas });
-    if (dirLocal) { try { fs.mkdirSync(dirLocal, { recursive: true }); fs.writeFileSync(path.join(dirLocal, `${fecha}.md`), inf.contenido); } catch (e) { console.error('Aprendizaje (local):', e.message); } }
-    const sub = await subir({ fecha, contenido: inf.contenido, fetchImpl });
-    store.meta('aprendizajeUltimo', { fecha, charlas: inf.charlas, subido: sub.ok, motivo: sub.motivo || null });
-    if (!sub.ok) console.error('Aprendizaje: no se subió al repo:', sub.motivo);
-    return { ...inf, ...sub };
-  } catch (e) {
-    console.error('Aprendizaje:', e.message);
-    store.meta('aprendizajeUltimo', { fecha, error: String(e.message).slice(0, 200) });
-    if (avisar) await avisar(`No se pudo armar la revisión nocturna del bot: ${String(e.message).slice(0, 120)}`, 'PuertoBox: revisión del bot', 'low').catch(() => {});
-    return { error: e.message };
-  }
+  if (hora >= HORA) return fecha;
+  return hora < 12 ? horaAR(ahora - 24 * 3600e3).fecha : null;
 }
 
-module.exports = { anonimizar, agregarCorreccion, textoCorrecciones, correcciones, charlasDelDia, revisarDia, subir, tick, RAMA };
+/** Corre en el ciclo de 15 min del servidor (y al arrancar). */
+async function tick({ store, owner, reglas, fetchImpl = fetch, ahora = Date.now(), dirLocal = null, avisar = null }) {
+  const fecha = fechaPendiente(ahora);
+  if (!fecha) return null;
+  const est = store.meta('aprendizajeEstado') || {};
+  const delDia = est.fecha === fecha ? est : { fecha, ok: false, intentos: 0 };
+  if (delDia.ok || delDia.intentos >= MAX_INTENTOS || corriendo) return null;
+  corriendo = true;
+  delDia.intentos += 1;
+  store.meta('aprendizajeEstado', { ...delDia });
+  const ref = Math.min(ahora, finDelDia(fecha)); // a la madrugada revisa las charlas del día anterior, no las de hoy
+  try {
+    const inf = await revisarDia({ store, owner, fetchImpl, ahora: ref, reglas });
+    if (dirLocal) { try { fs.mkdirSync(dirLocal, { recursive: true }); fs.writeFileSync(path.join(dirLocal, `${fecha}.md`), inf.contenido); } catch (e) { console.error('Aprendizaje (local):', e.message); } }
+    const sub = await subir({ fecha, contenido: inf.contenido, fetchImpl });
+    if (!sub.ok) throw new Error(sub.motivo);
+    store.meta('aprendizajeEstado', { fecha, ok: true, intentos: delDia.intentos, charlas: inf.charlas });
+    store.meta('aprendizajeUltimo', { fecha, charlas: inf.charlas, subido: true, motivo: null });
+    return { ...inf, ...sub };
+  } catch (e) {
+    const motivo = String(e.message).slice(0, 200);
+    console.error(`Aprendizaje (intento ${delDia.intentos}/${MAX_INTENTOS}):`, motivo);
+    store.meta('aprendizajeEstado', { fecha, ok: false, intentos: delDia.intentos, error: motivo });
+    store.meta('aprendizajeUltimo', { fecha, error: motivo });
+    if (delDia.intentos >= MAX_INTENTOS) {
+      // Último intento: que al menos llegue un informe con el motivo, para que a la mañana se sepa qué falló.
+      const aviso = `# Revisión del bot — ${fecha}\n\nNo se pudo armar la revisión después de ${MAX_INTENTOS} intentos.\n\nMotivo: ${anonimizar(motivo)}\n`;
+      await subir({ fecha, contenido: aviso, fetchImpl }).catch(() => {});
+      if (avisar) await avisar(`No se pudo armar la revisión nocturna del bot (${MAX_INTENTOS} intentos): ${motivo.slice(0, 120)}`, 'PuertoBox: revisión del bot', 'default').catch(() => {});
+    }
+    return { error: e.message };
+  } finally { corriendo = false; }
+}
+
+module.exports = { fechaPendiente, MAX_INTENTOS, anonimizar, agregarCorreccion, textoCorrecciones, correcciones, charlasDelDia, revisarDia, subir, tick, RAMA };
