@@ -144,3 +144,20 @@ test('precios en formato francés ("42,78 $US") y datos lejos del principio de l
 test('el aviso de "precio publicado" va una vez por charla', () => {
   assert.match(require('../agent').SYSTEM, /una vez por charla/);
 });
+
+test('si la IA no entiende la página bajada, prueba con web_fetch (16/11, v6)', async () => {
+  let llamadasIA = 0;
+  const fetchImpl = async (url, opt = {}) => {
+    if (url.includes('anthropic')) {
+      llamadasIA += 1;
+      const b = JSON.parse(opt.body);
+      if (!b.tools) return { ok: true, json: async () => ({ content: [{ type: 'text', text: 'No veo un producto en este texto.' }] }) };
+      return { ok: true, json: async () => ({ content: [{ type: 'text', text: JSON.stringify({ ...JSON_IA, titulo: 'Garwin 5-piece knife set' }) }] }) };
+    }
+    return { ok: true, status: 200, text: async () => HTML_FR };
+  };
+  const r = await leer('https://www.alibaba.co.uk/product-detail/Garwin_1601596679880.html', { fetchImpl });
+  assert.strictEqual(llamadasIA, 2);
+  assert.strictEqual(r.titulo, 'Garwin 5-piece knife set');
+  assert.strictEqual(r.fuente, 'web_fetch');
+});

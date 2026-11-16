@@ -113,9 +113,15 @@ async function leer(url, ctx = {}) {
   let datos = null;
   try {
     if (texto) {
-      datos = jsonDe(await llamarIA({ model: MODELO, max_tokens: 1500, system: INSTRUCCION, messages: [{ role: 'user', content: `Publicación (${fuente}):\n${texto}` }] }, fetchImpl));
-      if (!datos || (!datos.titulo && !datos.precios)) intentos.push(`IA: no sacó datos del texto de ${fuente.split('/')[2]}`);
-    } else {
+      const j0 = await llamarIA({ model: MODELO, max_tokens: 1500, system: INSTRUCCION, messages: [{ role: 'user', content: `Publicación (${fuente}):\n${texto}` }] }, fetchImpl);
+      datos = jsonDe(j0);
+      if (!datos || (!datos.titulo && !datos.precios)) {
+        const dijo = (j0.content || []).filter((b) => b.type === 'text').map((b) => b.text).join(' ').replace(/\s+/g, ' ').slice(0, 120);
+        intentos.push(`IA: no sacó datos del texto de ${fuente.split('/')[2]} (texto ${texto.length}; dijo: ${dijo})`);
+        datos = null; texto = ''; // 16/11, prueba v6: páginas activas que el servidor baja pero la IA no entiende → se prueba con web_fetch
+      }
+    }
+    if (!texto) {
       // 2) La IA la lee con su propia herramienta (web_fetch de Anthropic: desde ahí alibaba.fr sí se lee).
       const j = await llamarIA({
         model: MODELO, max_tokens: 3000, system: INSTRUCCION,
@@ -123,7 +129,7 @@ async function leer(url, ctx = {}) {
         messages: [{ role: 'user', content: `Leé esta publicación con web_fetch (probá en este orden hasta que traiga datos): ${urls.join(' , ')}` }],
       }, fetchImpl, 'web-fetch-2025-09-10');
       datos = jsonDe(j);
-      fuente = 'web_fetch';
+      if (datos && (datos.titulo || datos.precios)) fuente = 'web_fetch';
       if (!datos) intentos.push(`web_fetch: sin JSON (stop=${j.stop_reason || '?'}, bloques=${(j.content || []).map((b) => b.type).join('+').slice(0, 80)})`);
     }
   } catch (e) { intentos.push(`IA: ${String(e.message).slice(0, 120)}`); }
@@ -180,7 +186,7 @@ function conPedido(res, unidades) {
 // Prueba al arrancar (una vez por versión): lee links reales de Alibaba de distintos rubros y formatos y sube una tabla
 // a la rama del aprendizaje (son publicaciones públicas, sin datos de clientes). Así Claude sabe si desde Railway se leen.
 // 16/11 16:15, Gustavo: "¿podemos hacer pruebas con enlaces aleatorios de Alibaba, a ver si funciona?"
-const VERSION_PRUEBA = 'v6-16-11'; // v6: precios en formato francés, texto largo y motivo de cada falla // v5: 16 links nuevos + 4 charlas completas con la IA
+const VERSION_PRUEBA = 'v7-16-11'; // v7: si la IA no entiende la página bajada, prueba con web_fetch // v6: precios en formato francés, texto largo y motivo de cada falla // v5: 16 links nuevos + 4 charlas completas con la IA
 const LINKS_PRUEBA = [
   'https://www.alibaba.com/x/B2iQFj?ck=pdp', // control: andaba
   'https://www.alibaba.co.uk/product-detail/5Pcs-Damascus-Chef-Knife-Set-Stainless_1601596679880.html', // activa, falló en v5
