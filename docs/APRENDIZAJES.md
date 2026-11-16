@@ -207,3 +207,4 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - 16/11/2026 16:23 (Gustavo): "el precio publicado en Alibaba muchas veces es mentira; hay que pedírselo al proveedor. De última, si quiere, le pasamos con ese precio". También pidió que el bot le escriba al proveedor: no se puede (hace falta su cuenta de comprador y Alibaba suspende cuentas automatizadas).
 - 16/11/2026 16:48-16:49 (Gustavo preguntó si el presupuesto por texto estaba bien o era desprolijo; aprobó "me gusta"): texto sí, pero primero la plata, después lo técnico, montos con punto de miles y un solo aviso.
 - 16/11/2026 (prueba v9): Haiku no respeta un formato "tal cual" aunque se lo pidan. Regla: lo que tiene que salir siempre igual (presupuesto) lo arma el código y la IA solo lo manda.
+- 16/11/2026 17:02 (Gustavo, sobre los pedidos grandes con una caja por unidad): "cuando es algo difícil, pasámelo". El bot no improvisa números dudosos: deriva con motivo caso_dificil.

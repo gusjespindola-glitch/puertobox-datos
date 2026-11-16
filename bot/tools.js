@@ -56,6 +56,7 @@ const definiciones = [
         sin_franquicia: { type: 'boolean', description: 'true si el cliente de uso propio ya usó sus envíos con beneficio del año' },
         producto_corto: { type: 'string', description: 'El producto en pocas palabras y en plural, para el título del presupuesto (ej.: "arrancadores 12V con compresor", "remeras de algodón").' },
         producto_singular: { type: 'string', description: 'El producto en singular y corto (ej.: "arrancador", "remera"), para "Cada X te queda en…".' },
+        paquete_por_unidad: { type: 'boolean', description: 'true si las medidas y el peso son de UNA unidad en su caja (de "Empaque y entrega" con "Artículo individual"), no de las cajas del pedido.' },
         precio_publicado: { type: 'boolean', description: 'true si el valor salió del precio publicado de leer_link (no se lo confirmó el proveedor).' },
         unidades: { type: 'number', description: 'Obligatorio: cantidad TOTAL de unidades que trae (por ejemplo 100 remeras). Sin esto no se cotiza: con esto se calcula cuánto le queda cada unidad puesta en su casa. Si el cliente cambió el peso o el pedido, tiene que ser la cantidad NUEVA (preguntala), nunca la vieja.' },
         con_cuit_puertobox: { type: 'boolean', description: 'true si el cliente no tiene CUIT y lo traemos con el CUIT de PuertoBox: gestión más alta, envío en Argentina aparte e impuestos que se le pagan a PuertoBox.' },
@@ -93,7 +94,7 @@ const definiciones = [
     input_schema: {
       type: 'object',
       properties: {
-        motivo: { type: 'string', enum: ['listo_para_cerrar', 'mayorista', 'reclamo', 'duda', 'pide_humano'] },
+        motivo: { type: 'string', enum: ['listo_para_cerrar', 'mayorista', 'reclamo', 'duda', 'pide_humano', 'caso_dificil'], description: 'caso_dificil: cuando no está claro cómo cotizarlo bien (Gustavo, 16/11: "cuando es algo difícil, pasámelo").' },
         quiere: { type: 'string', description: 'UNA línea corta (máx. 12 palabras) con lo que pide el cliente, en simple. Ej: "Cotización de 100 y 300 trípodes Bluetooth" o "Pagar el envío de remeras".' },
         para_vos: { type: 'string', description: 'UNA línea corta (máx. 12 palabras) con lo que tiene que hacer Gustavo. Ej: "Decirle si se puede homologar en ENACOM" o "Pasarle los datos para pagar".' },
         resumen: { type: 'string', description: 'Datos para Gustavo, cortos y en una línea cada uno: producto, unidades, kg, valor, posición, presupuesto dado, nombre.' },
@@ -153,6 +154,14 @@ function ejecutar(nombre, input, ctx) {
         if (Math.abs(input.kg - esperado) / esperado > 0.3) {
           return { error: `No cierran unidades y peso: ${input.unidades} unidades de ${input.kg_por_unidad} kg son unos ${Math.round(esperado * 10) / 10} kg, no ${input.kg} kg. No cotices: preguntale al cliente (una sola pregunta) cuántas unidades entran en ${input.kg} kg, y después cuánto paga por ese pedido.` };
         }
+      }
+      // 16/11 17:02 (Gustavo: "cuando es algo difícil, pasámelo"): pedido grande cotizado con la caja de cada unidad, que se
+      // cobra mucho por volumen (mats de yoga: 100 unidades, 120 kg reales → 188 kg). El proveedor seguramente los junta en cajas
+      // grandes (caja master) y el número cambia mucho: no se da y se le pasa a Gustavo.
+      if (input.paquete_por_unidad && input.unidades > 20) {
+        const div = require('../data/precios_venta.json').flete_directo.divisor_volumetrico;
+        const vol = (input.largo_cm * input.ancho_cm * input.alto_cm / div) * (input.cantidad_cajas || 1);
+        if (vol >= input.kg * 1.3) return { error: 'Caso difícil: son muchas unidades, cada una en su caja, y se cobrarían por volumen mucho más de lo que pesan. No des ningún número. Decile en dos líneas que con esa cantidad el proveedor suele mandarlas juntas en cajas más grandes, que eso cambia mucho el flete, y que nuestro despachante lo revisa y le escribe por acá. Después usá derivar_a_gustavo con motivo caso_dificil (para_vos: "Pedir caja master al proveedor y cotizar").', caso_dificil: true };
       }
       // La posición elegida en la charla manda: el derecho no puede cambiar de un presupuesto a otro (15/11: 35% y después 20%).
       const leadPos = ctx.store.lead ? ctx.store.lead(ctx.telefono) : null;

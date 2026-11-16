@@ -129,3 +129,21 @@ test('un solo tipo de caja mandado como bultos se cotiza como cajas iguales ("la
   assert.match(r.texto_presupuesto, /las 20 cajas de 24×12×45 cm ocupan/);
   assert.match(require('../agent').SYSTEM, /nunca agregues líneas abajo del presupuesto/);
 });
+
+test('caso difícil: pedido grande con la caja de cada unidad no se cotiza, se le pasa a Gustavo (16/11 17:02)', () => {
+  const { ejecutar } = require('../tools');
+  const st = crearStore(null);
+  const mats = ejecutar('cotizar', { kg: 120, valor_factura_usd: 300, die: 35, regimen: 'comercial', unidades: 100, cantidad_cajas: 100, largo_cm: 65, ancho_cm: 12, alto_cm: 12, paquete_por_unidad: true }, { telefono: 'd1', store: st, derivaciones: [] });
+  assert.strictEqual(mats.caso_dificil, true);
+  assert.strictEqual(mats.texto_presupuesto, undefined);
+  assert.match(mats.error, /caso_dificil/);
+  const arr = ejecutar('cotizar', { kg: 40, valor_factura_usd: 526.6, die: 18, regimen: 'comercial', unidades: 20, cantidad_cajas: 20, largo_cm: 24, ancho_cm: 12, alto_cm: 45, paquete_por_unidad: true }, { telefono: 'd2', store: st, derivaciones: [] });
+  assert.ok(arr.texto_presupuesto); // 20 unidades: se cotiza como hizo Gustavo con el arrancador
+  const d = []; ejecutar('derivar_a_gustavo', { motivo: 'caso_dificil', quiere: '100 mats de yoga', para_vos: 'Pedir caja master', resumen: 'x' }, { telefono: 'd3', store: st, derivaciones: d });
+  assert.ok(st.estaPausado('d3'));
+  const { pendientes } = require('../recordatorios');
+  st.agregar('d3', 'user', 'hola');
+  st.marcar('d3', { derivadoEn: Date.now(), derivadoMotivo: 'caso_dificil' });
+  assert.ok(pendientes(st, 'x').esperando.some((p) => p.c.telefono === 'd3'));
+  assert.match(require('../agent').SYSTEM, /Caso difícil/);
+});

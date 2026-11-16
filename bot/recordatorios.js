@@ -12,8 +12,8 @@ const PRIMER_AVISO_MIN = Number(process.env.RECORDATORIO_MIN || 60);
 const CADA_HORAS = 3;
 const MAX_AVISOS = 4;
 const HORA_RESUMEN = 9;
-const MOTIVOS_GUSTAVO = ['listo_para_cerrar', 'pide_humano', 'mayorista', 'reclamo'];
-const NOMBRE_MOTIVO = { listo_para_cerrar: 'quiere avanzar/pagar', pide_humano: 'pidió hablar con vos', mayorista: 'pedido grande/mayorista', reclamo: 'reclamo', duda: 'duda para confirmar' };
+const MOTIVOS_GUSTAVO = ['listo_para_cerrar', 'pide_humano', 'mayorista', 'reclamo', 'caso_dificil'];
+const NOMBRE_MOTIVO = { listo_para_cerrar: 'quiere avanzar/pagar', pide_humano: 'pidió hablar con vos', mayorista: 'pedido grande/mayorista', reclamo: 'reclamo', duda: 'duda para confirmar', caso_dificil: 'caso difícil para vos' };
 
 /** Hora y fecha en Argentina (UTC-3, sin horario de verano). */
 function horaAR(ahora) {
