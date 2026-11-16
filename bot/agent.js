@@ -22,7 +22,7 @@ async function llamarUnaVez(messages, fetchImpl, sinHerramientas = false, extra 
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
     // cache_control: las instrucciones y herramientas (iguales en cada llamada) se cachean 5 min → cada mensaje del mismo chat sale más barato.
-    body: JSON.stringify({ model: MODELO, max_tokens: 1024, system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }, ...(extra ? [{ type: 'text', text: extra }] : [])], tools: definiciones, ...(sinHerramientas ? { tool_choice: { type: 'none' } } : {}), messages }),
+    body: JSON.stringify({ model: MODELO, max_tokens: 2048, system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }, ...(extra ? [{ type: 'text', text: extra }] : [])], tools: definiciones, ...(sinHerramientas ? { tool_choice: { type: 'none' } } : {}), messages }),
   });
   if (!r.ok) throw new Error(`Anthropic ${r.status}: ${await r.text()}`);
   return r.json();
@@ -39,7 +39,8 @@ function limpiar(t) {
   let s = t;
   for (let i = 0; i < 3; i++) s = s.replace(MULETILLA, '').replace(AGRADECIMIENTO, '').replace(RESTO_CORTADO, '');
   if (!s.trim()) return t;
-  return s.replace(/^([¿¡"'(\s]*)(\p{L})/u, (_, p, l) => p + l.toUpperCase())
+  return s.replace(/\*\*([^*\n]+)\*\*/g, '*$1*') // WhatsApp: negrita con un asterisco (16/11: llegaba "**USD 478,14**")
+    .replace(/^([¿¡"'(\s]*)(\p{L})/u, (_, p, l) => p + l.toUpperCase())
     .replace(/([?!])\.(?=\s|$)/g, '$1'); // "¿...logo?." → "¿...logo?"
 }
 
@@ -78,6 +79,16 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
       }
       messages.push({ role: 'user', content: resultados });
       continue;
+    }
+    // 16/11 (Gustavo: "se cortó la respuesta varias veces"): si la IA se quedó sin espacio a mitad de un mensaje,
+    // se le pide que termine en vez de mandar "Precio cerrado. Se paga c" al cliente.
+    if (res.stop_reason === 'max_tokens' && !res._continuado) {
+      const parcial = contenido.filter((b) => b.type === 'text').map((b) => b.text).join('\n');
+      messages.push({ role: 'assistant', content: parcial.replace(/\s+$/, '') });
+      const sigue = await llamarClaude(messages, fetchImpl, 3, true, correcciones);
+      messages.pop();
+      const resto = (sigue.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+      contenido.splice(0, contenido.length, { type: 'text', text: parcial.replace(/\s+$/, '') + resto });
     }
     const respuesta = limpiar(contenido.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim());
     if (respuesta) { store.agregar(telefono, 'assistant', respuesta); return respuesta; }

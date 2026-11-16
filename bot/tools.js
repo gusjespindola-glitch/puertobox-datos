@@ -24,6 +24,7 @@ const definiciones = [
       properties: {
         producto_completo: { type: 'string', description: 'TODO lo que dijo el cliente del producto, tal cual: nombre, modelo, para qué sirve, materiales, si tiene batería/Bluetooth/WiFi, el link si lo mandó y el código HS si lo dio el proveedor.' },
         cambiar_producto: { type: 'boolean', description: 'true solo si el cliente pasó a cotizar OTRO producto distinto en la misma charla.' },
+        dato_nuevo: { type: 'boolean', description: 'true si el cliente aclaró un dato del MISMO producto que cambia la clasificación (material, tipo de prenda, si tiene batería, uso) después de la primera clasificación. Se puede una sola vez. Pasá producto_completo con todos los datos.' },
       },
       required: ['producto_completo'],
     },
