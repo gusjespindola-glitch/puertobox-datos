@@ -110,3 +110,10 @@ test('prueba de varios links: arma la tabla con leídos y no leídos', async () 
   assert.match(subido.contenido, /Leídos: \d de 2/);
   assert.match(subido.contenido, /\| ✅ \|/);
 });
+
+test('publicación dada de baja ("Product Not Available"): lo dice, no pide capturas', async () => {
+  const fetchImpl = async (url) => (url.includes('anthropic') ? { ok: false, status: 500, text: async () => '' } : { ok: true, status: 200, text: async () => '<html><head><title>Product Not Available</title></head></html>' });
+  const r = await leer('https://www.alibaba.com/product-detail/Viejo_1601148563519.html', { fetchImpl });
+  assert.strictEqual(r.de_baja, true);
+  assert.match(r.error, /ya no está disponible/);
+});

@@ -83,15 +83,19 @@ async function leer(url, ctx = {}) {
   const intentos = [];
   let texto = '';
   let fuente = '';
+  let deBaja = false; // 16/11: 5 de 13 links de la prueba eran publicaciones dadas de baja ("Product Not Available")
   // 1) El servidor baja la página (lo más barato).
   for (const u of urls) {
     try {
       const r = await fetchImpl(u, { headers: { 'user-agent': UA, 'accept-language': 'es-AR,es;q=0.9,en;q=0.8', accept: 'text/html' }, redirect: 'follow', signal: AbortSignal.timeout(15000) });
-      const t = textoDeHtml(await r.text());
+      const html = await r.text();
+      if (/Product Not Available|produit n'est pas disponible|producto no disponible/i.test(html.slice(0, 20000))) { deBaja = true; intentos.push(`${u.split('/')[2]}: dada de baja`); continue; }
+      const t = textoDeHtml(html);
       if (r.ok && tieneDatos(t)) { texto = t; fuente = u; break; }
       intentos.push(`${u.replace(/^https:\/\/www\./, '').split('/')[0]}: ${r.status}${r.ok ? ' sin datos' : ''}`);
     } catch (e) { intentos.push(`${u.split('/')[2]}: ${String(e.message).slice(0, 60)}`); }
   }
+  if (!texto && deBaja) return { error: 'Esa publicación ya no está disponible en Alibaba (la dieron de baja). Decíselo al cliente en una línea y pedile el link nuevo o la proforma del proveedor.', de_baja: true };
   let datos = null;
   try {
     if (texto) {
