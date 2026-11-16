@@ -100,7 +100,7 @@ async function probarCharlas(fetchImpl) {
       let resp;
       try { resp = await responder({ telefono: tel, texto: m, store, derivaciones, fetchImpl }); } catch (e) { resp = `[ERROR ${e.message}]`; }
       const lead = store.lead(tel) || {};
-      if (lead.posicion_fija && /Presupuesto PuertoBox/.test(resp || '')) posiciones.push(lead.posicion_fija.posicion);
+      if (lead.posicion_fija && /\*Presupuesto(?: PuertoBox)?\*/.test(resp || '')) posiciones.push(lead.posicion_fija.posicion);
       turnos.push({ cliente: m, bot: resp || '(nada)', problemas: revisar(resp || '', { ultimo: m }) });
     }
     const todo = turnos.map((t) => t.bot).join('\n');
@@ -114,7 +114,7 @@ async function probarCharlas(fetchImpl) {
       if (c.bien) ok = ok && c.bien.test(texto);
       if (c.mal) ok = ok && !c.mal.test(texto);
       if (c.posicionFija) ok = ok && new Set(posiciones).size <= 1;
-      if (c.antesDelPresupuesto) { const i = turnos.findIndex((t) => /Presupuesto PuertoBox/.test(t.bot)); ok = ok && !turnos.slice(0, i < 0 ? turnos.length : i).some((t) => c.antesDelPresupuesto.test(t.bot)); }
+      if (c.antesDelPresupuesto) { const i = turnos.findIndex((t) => /\*Presupuesto(?: PuertoBox)?\*/.test(t.bot)); ok = ok && !turnos.slice(0, i < 0 ? turnos.length : i).some((t) => c.antesDelPresupuesto.test(t.bot)); }
       if (c.posicionEsperada) ok = ok && String(lead.posicion || '').replace(/\./g, '').startsWith(c.posicionEsperada.replace(/\./g, ''));
       if (c.dieMayorA !== undefined) ok = ok && Number(lead.posicion_fija && lead.posicion_fija.die) > c.dieMayorA;
       return { que: c.que, estado: ok ? '✅' : '❌' };

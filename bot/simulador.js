@@ -66,7 +66,7 @@ function revisar(resp, ctx) {
   const prob = [];
   if (!resp || !resp.trim()) prob.push('respuesta vacía');
   const t = resp || '';
-  const esPresupuesto = /Presupuesto PuertoBox/i.test(t);
+  const esPresupuesto = /\*Presupuesto(?: PuertoBox)?\*/i.test(t);
   const sinSaludo = t.replace(/¿c[oó]mo (va|est[aá]s|and[aá]s)\?/gi, '');
   if (!esPresupuesto && (sinSaludo.match(/\?/g) || []).length > 1) prob.push('más de una pregunta');
   if (/^\[ERROR/.test(t)) prob.push('error técnico');
@@ -79,8 +79,9 @@ function revisar(resp, ctx) {
   if (/al toque|\bjoya\b|\bche\b|\btranqui\b|buen[ií]simo|\bposta\b|\bre (bien|lindo)\b/i.test(t)) prob.push('tono poco profesional');
   if (/\p{Extended_Pictographic}/u.test(t)) prob.push('usa emojis');
   if (/^[¿¡]?\p{Ll}/u.test(t.trim())) prob.push('arranca en minúscula');
-  if (/Presupuesto PuertoBox/.test(t) && !/\*Presupuesto PuertoBox\*/.test(t)) prob.push('presupuesto sin formato');
-  if (esPresupuesto && !/Total a PuertoBox/i.test(t)) prob.push('presupuesto sin "Total a PuertoBox"');
+  if (esPresupuesto && !/\*Total: USD/i.test(t)) prob.push('presupuesto sin "*Total: USD"');
+  if (esPresupuesto && (t.match(/PuertoBox/g) || []).length > 1) prob.push('presupuesto repite "PuertoBox" (16/11)');
+  if (esPresupuesto && t.split('\n').filter((l) => l.trim()).length > 14) prob.push('presupuesto largo: más de 14 líneas (16/11)');
   if (esPresupuesto && /total estimado/i.test(t)) prob.push('mezcla PuertoBox e impuestos en un solo total');
   if (/se pueden? evaluar|lo evaluamos|lo analizamos|tenemos contemplad|en principio/i.test(t)) prob.push('frase vacía ("se puede evaluar", "contemplado"...)');
   if (/[?!]\.(\s|$)/.test(t)) prob.push('puntuación rara ("?.")');
@@ -115,8 +116,8 @@ async function correrEscenarios() {
     const junto = todas.join('\n');
     const e = esc.espera;
     const finales = [];
-    if (e.presupuesto && !/Presupuesto PuertoBox/i.test(junto)) finales.push('no dio presupuesto');
-    if (e.sinPresupuesto && /Presupuesto PuertoBox/i.test(junto)) finales.push('cotizó cuando no debía');
+    if (e.presupuesto && !/\*Presupuesto(?: PuertoBox)?\*/i.test(junto)) finales.push('no dio presupuesto');
+    if (e.sinPresupuesto && /\*Presupuesto(?: PuertoBox)?\*/i.test(junto)) finales.push('cotizó cuando no debía');
     if (e.mencionaProveedor && !/gross weight|proveedor/i.test(junto)) finales.push('no ayudó a pedirle el peso al proveedor');
     if (e.sinTabla && /32\/kg|28\/kg|25\/kg/.test(junto)) finales.push('recitó la tabla por kilo');
     if (e.deriva && !derivaciones.length) finales.push('no derivó a Gustavo');
