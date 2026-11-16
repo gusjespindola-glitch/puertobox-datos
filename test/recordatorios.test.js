@@ -486,3 +486,29 @@ test('"Ya lo atendí" también saca a un cliente de "Presupuesto enviado, no vol
   st.marcar('5491100000091', { gustavoRespondioEn: ahora - 30 * H });
   assert.strictEqual(pendientes(st, OWNER, ahora).seguimiento.length, 1, 'si el cliente escribe de nuevo, vuelve');
 });
+
+test('charlas: Gustavo marca que ya pasó presupuesto y la tarjeta queda en verde (16/11)', async () => {
+  const fs = require('fs'); const os = require('os'); const path = require('path');
+  const archivo = path.join(os.tmpdir(), `pb-marca-${process.pid}.json`);
+  const ahora = Date.now();
+  fs.writeFileSync(archivo, JSON.stringify({ vistos: [], leads: {}, chats: { '5491100000901': { mensajes: [{ role: 'user', content: 'quiero traer clamps', en: ahora - 600e3 }], ultimo: ahora - 600e3, ultimoClienteEn: ahora - 600e3, pausadoHasta: 0, vistoEn: ahora } } }));
+  process.env.ADMIN_KEY = 'clave-secreta'; process.env.OWNER_NUMBER = OWNER; process.env.DATA_FILE = archivo;
+  delete require.cache[require.resolve('../bot/server')];
+  const srv = require('../bot/server');
+  const s = srv.servidor().listen(0); await new Promise((r) => s.once('listening', r));
+  const base = `http://127.0.0.1:${s.address().port}`;
+  try {
+    const p1 = await (await fetch(`${base}/charlas?t=${srv.firma('charlas')}`)).text();
+    assert.match(p1, /✅ Ya le pasé presupuesto/);
+    assert.doesNotMatch(p1, /class="pasado"/);
+    assert.strictEqual((await fetch(`${base}/marcar-presu?tel=5491100000901&v=1&t=mal`, { method: 'POST', redirect: 'manual' })).status, 401);
+    const r = await fetch(`${base}/marcar-presu?tel=5491100000901&v=1&t=${srv.firma('marcarpresu:5491100000901')}`, { method: 'POST', redirect: 'manual' });
+    assert.strictEqual(r.status, 303);
+    const p2 = await (await fetch(`${base}/charlas?t=${srv.firma('charlas')}`)).text();
+    assert.match(p2, /<li id="c-5491100000901"[^>]*class="pasado"/);
+    assert.match(p2, /✅ Le pasaste presupuesto/);
+    assert.match(p2, /Sacar la marca de presupuesto/);
+    await fetch(`${base}/marcar-presu?tel=5491100000901&v=0&t=${srv.firma('marcarpresu:5491100000901')}`, { method: 'POST', redirect: 'manual' });
+    assert.doesNotMatch(await (await fetch(`${base}/charlas?t=${srv.firma('charlas')}`)).text(), /Le pasaste presupuesto/);
+  } finally { s.close(); }
+});
