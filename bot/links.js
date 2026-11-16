@@ -47,13 +47,23 @@ async function resolver(url, fetchImpl) {
 }
 
 /** Texto visible de una página (sin scripts ni estilos), recortado. */
+const CLAVES = /(US\s?\$|\$\s?US|\$\s?\d|\d\s?\$|€|£|price|prix|precio|gross weight|poids|peso bruto|package size|taille d|emballage|packaging|tamaño del paquete|selling units|unités de vente)/i;
+/** Texto visible de una página (sin scripts ni estilos). Si es largo, se queda con el principio (título) y con lo que
+ * rodea a precios y empaque (16/11: en páginas activas los datos quedaban más allá de lo que se leía). */
 function textoDeHtml(html, max = 20000) {
-  return String(html || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<br\s*\/?>|<\/(p|div|li|tr|h\d)>/gi, '\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
-    .replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim().slice(0, max);
+  const t = String(html || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<br\s*\/?>|<\/(p|div|li|tr|h\d|span|td|dd|dt)>/gi, '\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#36;/g, '$')
+    .replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
+  if (t.length <= max) return t;
+  const lineas = t.split('\n');
+  const elegidas = new Set();
+  lineas.forEach((l, i) => { if (CLAVES.test(l)) for (let k = Math.max(0, i - 3); k <= Math.min(lineas.length - 1, i + 6); k++) elegidas.add(k); });
+  const inicio = t.slice(0, 5000);
+  const resto = [...elegidas].sort((a, b) => a - b).map((i) => lineas[i]).join('\n');
+  return `${inicio}\n…\n${resto}`.slice(0, max);
 }
-/** ¿La página trae datos de producto (precio y algo del empaque o del producto)? */
-const tieneDatos = (t) => t.length > 1500 && /(US\s?\$|\$\s?\d|€)/.test(t) && /(kg|gross weight|package|peso|piece|pieces|unit)/i.test(t);
+/** ¿La página trae datos de producto? Acepta precios en formato francés/inglés ("42,78 $US", "US$26.33", "£19"). */
+const tieneDatos = (t) => t.length > 1500 && /(US\s?\$|\$\s?US|\$\s?\d|\d\s?\$|€|£)/.test(t) && /(kg|gross weight|poids|package|emballage|peso|piece|pièce|set|unit)/i.test(t);
 
 const INSTRUCCION = `Te paso el texto de la publicación de un producto (Alibaba, 1688, etc.). Devolvé SOLO un JSON, sin texto alrededor, con lo que DICE la página (no inventes nada; si un dato no está, null):
 {"titulo":"...","precio_por":"pieza/metro/set/par/kg","precios":[{"desde":6,"hasta":499,"usd":26.33}],"pedido_minimo":6,"unidades_de_venta":"Artículo individual","unidades_por_paquete":1,"tamano_paquete_cm":"24x12x45","peso_bruto_kg":2.0,"caracteristicas":{"marca":"OEM","modelo":"CYD17","material":"...","bateria":"litio 12000 mAh / no / no dice","inalambrico":"Bluetooth/WiFi/no","voltaje":"12V","uso":"...","otras":"lo demás que sirva para clasificarlo, en una línea"},"paquete_coherente":true,"nota":"..."}
@@ -96,7 +106,7 @@ async function leer(url, ctx = {}) {
       if (/Product Not Available|produit n'est pas disponible|producto no disponible/i.test(html.slice(0, 20000))) { deBaja = true; intentos.push(`${u.split('/')[2]}: dada de baja`); continue; }
       const t = textoDeHtml(html);
       if (r.ok && tieneDatos(t)) { texto = t; fuente = u; break; }
-      intentos.push(`${u.replace(/^https:\/\/www\./, '').split('/')[0]}: ${r.status}${r.ok ? ' sin datos' : ''}`);
+      intentos.push(`${u.replace(/^https:\/\/www\./, '').split('/')[0]}: ${r.status}${r.ok ? ` sin datos (html ${html.length}, texto ${t.length})` : ''}`);
     } catch (e) { intentos.push(`${u.split('/')[2]}: ${String(e.message).slice(0, 60)}`); }
   }
   if (!texto && deBaja) return { error: 'Esa publicación ya no está disponible en Alibaba (la dieron de baja). Decíselo al cliente en una línea y pedile el link nuevo o la proforma del proveedor.', de_baja: true };
@@ -104,6 +114,7 @@ async function leer(url, ctx = {}) {
   try {
     if (texto) {
       datos = jsonDe(await llamarIA({ model: MODELO, max_tokens: 1500, system: INSTRUCCION, messages: [{ role: 'user', content: `Publicación (${fuente}):\n${texto}` }] }, fetchImpl));
+      if (!datos || (!datos.titulo && !datos.precios)) intentos.push(`IA: no sacó datos del texto de ${fuente.split('/')[2]}`);
     } else {
       // 2) La IA la lee con su propia herramienta (web_fetch de Anthropic: desde ahí alibaba.fr sí se lee).
       const j = await llamarIA({
@@ -113,6 +124,7 @@ async function leer(url, ctx = {}) {
       }, fetchImpl, 'web-fetch-2025-09-10');
       datos = jsonDe(j);
       fuente = 'web_fetch';
+      if (!datos) intentos.push(`web_fetch: sin JSON (stop=${j.stop_reason || '?'}, bloques=${(j.content || []).map((b) => b.type).join('+').slice(0, 80)})`);
     }
   } catch (e) { intentos.push(`IA: ${String(e.message).slice(0, 120)}`); }
   if (!datos || (!datos.titulo && !datos.precios)) {
@@ -168,28 +180,19 @@ function conPedido(res, unidades) {
 // Prueba al arrancar (una vez por versión): lee links reales de Alibaba de distintos rubros y formatos y sube una tabla
 // a la rama del aprendizaje (son publicaciones públicas, sin datos de clientes). Así Claude sabe si desde Railway se leen.
 // 16/11 16:15, Gustavo: "¿podemos hacer pruebas con enlaces aleatorios de Alibaba, a ver si funciona?"
-const VERSION_PRUEBA = 'v5-16-11'; // v5: 16 links nuevos + 4 charlas completas con la IA
+const VERSION_PRUEBA = 'v6-16-11'; // v6: precios en formato francés, texto largo y motivo de cada falla // v5: 16 links nuevos + 4 charlas completas con la IA
 const LINKS_PRUEBA = [
-  'https://www.alibaba.com/x/B2iQFj?ck=pdp', // link corto del Compartir (arrancador, el de Gustavo)
-  'https://www.alibaba.co.uk/product-detail/5Pcs-Damascus-Chef-Knife-Set-Stainless_1601596679880.html',
-  'https://www.alibaba.co.uk/product-detail/Sharp-Damascus-Steel-Kitchen-Chef-Utility_60824052177.html',
-  'https://www.alibaba.co.uk/product-detail/Amber-Japanese-Kitchen-Chef-Knife-Set_1600372376931.html',
-  'https://www.alibaba.co.uk/product-detail/KBW759-15-6-Inch-Waterproof-Durable_1601056565477.html',
-  'https://www.alibaba.com/product-introduction/380-Grams-Heavy-Weight-No-String_1601314826943.html',
-  'https://holyindustries.en.alibaba.com/product/60769949049-213989284/4PCS_stainless_steel_cutlery_kitchen_knife_set_with_forged_G10_handle.html',
-  'https://southking.en.alibaba.com/product/62215325213-807032536/12V_Portable_Multi_function_Car_Jump_Starter_with_air_compressor_start_3_0L_petrol_car.html',
-  'https://anma.m.en.alibaba.com/product/1601006813235-212796826/10000mAh_jump_starter_2_in_1_function_with_air_compressor_for_car_tyre_iife_time_1000_cycles.html',
-  'https://www.alibaba.co.uk/product-detail/24V-5-in-1-RGBCCT-840LEDs_1601595630097.html',
-  'https://www.alibaba.fr/product-detail/RGBW-RGBCCT-RGB-COB-LED-Strip_1601028895170.html',
-  'https://www.alibaba.com/product-introduction/Candy-Colour-Flexible-Silicon-TPU-Phone_60793853233.html',
-  'https://www.alibaba.com/product-introduction/Silicone-Phone-case-Microfiber-Inside-Custom_1601070339036.html',
-  'https://www.alibaba.com/product-introduction/6MM-Double-layers-TPE-Custom-Print_60747200979.html',
-  'https://www.alibaba.co.uk/product-detail/Car-jump-starter-with-air-compressor_1600984082737.html',
-  'https://www.alibaba.fr/product-detail/Car-Air-Pump-Tire-Inflator-12V_1601808632663.html',
-  'https://www.alibaba.fr/product-detail/Mini-Car-Jump-Starter-With-Air_1601270449501.html',
+  'https://www.alibaba.com/x/B2iQFj?ck=pdp', // control: andaba
+  'https://www.alibaba.co.uk/product-detail/5Pcs-Damascus-Chef-Knife-Set-Stainless_1601596679880.html', // activa, falló en v5
+  'https://www.alibaba.fr/product-detail/Mini-Car-Jump-Starter-With-Air_1601270449501.html', // activa, falló en v5
+  'https://www.alibaba.fr/product-detail/RGBW-RGBCCT-RGB-COB-LED-Strip_1601028895170.html', // falló en v5
+  'https://www.alibaba.com/product-introduction/Silicone-Phone-case-Microfiber-Inside-Custom_1601070339036.html', // falló en v5
+  'https://www.alibaba.com/product-detail/Smart-wifi-leds-5050-rgb-light_1600997656793.html', // dada de baja (control)
+  'https://www.alibaba.co.uk/product-detail/Sharp-Damascus-Steel-Kitchen-Chef-Utility_60824052177.html', // control: andaba
+  'https://www.alibaba.co.uk/product-detail/KBW759-15-6-Inch-Waterproof-Durable_1601056565477.html', // control: andaba
 ];
 // Charlas completas con la IA de verdad (16/11, "hacé más pruebas"): el cliente manda el link y contesta lo que le piden.
-const CHARLAS_PRUEBA = [
+const CHARLAS_PRUEBA = !process.env.PRUEBA_CHARLAS_LINK ? [] : [
   { nombre: 'Link corto del Compartir (arrancador)', msgs: ['Hola quiero traer esto https://www.alibaba.com/x/B2iQFj?ck=pdp', '20 unidades', 'sin marca'] },
   { nombre: 'Mat de yoga (product-introduction)', msgs: ['Hola, cuánto me sale traer esto? https://www.alibaba.com/product-introduction/Non-Slip-Custom-logo-print-Double_60747406011.html', '100 unidades, sin marca'] },
   { nombre: 'Poleas (paquete imposible en la publicación)', msgs: ['quiero traer estas poleas https://www.alibaba.com/product-detail/DIY-Sport-Gym-Fitness-Equipment-Wheel_1600958949996.html', '200 unidades'] },
@@ -223,7 +226,7 @@ async function autoprueba({ store, fetchImpl = fetch, links = LINKS_PRUEBA, subi
     const bien = !r.error && !!r.titulo;
     if (bien) ok += 1;
     const p0 = (r.precios || [])[0];
-    filas.push(`| ${bien ? '✅' : '❌'} | ${celda(l.replace(/^https:\/\/(www\.)?/, '').slice(0, 60))} | ${celda(r.fuente && r.fuente.replace(/^https:\/\/(www\.)?/, '').split('/')[0])} | ${celda(r.titulo)} | ${p0 ? `USD ${p0.usd} desde ${p0.desde}` : '—'} | ${celda(r.unidades_de_venta)} | ${celda(r.tamano_paquete_cm)} | ${celda(r.peso_bruto_kg)} | ${r.paquete_coherente === false ? '⚠️ no' : r.paquete_coherente ? 'sí' : '—'} | ${celda(r.error ? `${r.error} ${r.detalle || ''}` : r.nota)} |`);
+    filas.push(`| ${bien ? '✅' : '❌'} | ${celda(l.replace(/^https:\/\/(www\.)?/, '').slice(0, 60))} | ${celda(r.fuente && r.fuente.replace(/^https:\/\/(www\.)?/, '').split('/')[0])} | ${celda(r.titulo)} | ${p0 ? `USD ${p0.usd} desde ${p0.desde}` : '—'} | ${celda(r.unidades_de_venta)} | ${celda(r.tamano_paquete_cm)} | ${celda(r.peso_bruto_kg)} | ${r.paquete_coherente === false ? '⚠️ no' : r.paquete_coherente ? 'sí' : '—'} | ${r.error ? String(`${r.de_baja ? 'Dada de baja' : 'No leída'}: ${r.detalle || ''}`).replace(/\|/g, '/').slice(0, 300) : celda(r.nota)} |`);
   }
   const fecha = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
   let charlas = '';
