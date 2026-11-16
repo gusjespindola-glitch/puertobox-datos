@@ -49,10 +49,23 @@ function armarDatos({ nro, lead, cliente = {}, ahora = new Date(), validezDias =
   };
 }
 
+/** Nombre del archivo para guardar: "Presupuesto 0001-00000012 - Juan Perez.pdf" (o el producto si no hay nombre). */
+function nombreArchivo(D) {
+  const quien = (D && D.cliente && D.cliente.nombre) || (D && D.mercaderia && D.mercaderia.desc) || '';
+  const limpio = String(quien).normalize('NFC').replace(/[\\/:*?"<>|\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60).trim();
+  return `Presupuesto ${D.nro}${limpio ? ' - ' + limpio : ''}.pdf`;
+}
+
+/** Cabecera content-disposition con el nombre (ASCII de respaldo + UTF-8 para tildes). */
+function disposicion(nombre, tipo = 'inline') {
+  const ascii = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7e]/g, '').replace(/"/g, '');
+  return `${tipo}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(nombre)}`;
+}
+
 /** Devuelve el PDF (Buffer). */
 function pdf(D) {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 36, info: { Title: `Presupuesto PuertoBox ${D.nro}`, Author: 'PuertoBox' } });
+    const doc = new PDFDocument({ size: 'A4', margin: 36, info: { Title: nombreArchivo(D).replace(/\.pdf$/, ''), Author: 'PuertoBox' } });
     const partes = []; doc.on('data', (b) => partes.push(b)); doc.on('end', () => resolve(Buffer.concat(partes))); doc.on('error', reject);
     const INK = '#1b2333', MUT = '#5b6475', RED = '#c8102e', L = 36, W = doc.page.width - 72;
     const R = L + W;
@@ -122,4 +135,4 @@ function pdf(D) {
   });
 }
 
-module.exports = { armarDatos, pdf };
+module.exports = { armarDatos, pdf, nombreArchivo, disposicion };
