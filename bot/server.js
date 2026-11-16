@@ -511,7 +511,7 @@ function cotizarAMano(q) {
   // Al cotizador le hablamos a Gustavo, no al bot (15/11 y 16/11: le aparecía "no cotices... pedíselas al cliente").
   if (r.error) {
     const e = String(r.error);
-    if (/medidas|medir/i.test(e)) return { error: 'Cargá el largo, el ancho y el alto de la caja (en cm). Si hay cajas de distintos tamaños, tocá "+ Otro tamaño de caja".', falta: 'medidas' };
+    if (/medidas|medir/i.test(e)) return { error: 'Cargá el largo, el ancho y el alto de la caja (en cm). Si hay cajas de distintos tamaños, agregá una fila por cada tamaño.', falta: 'medidas' };
     if (/cajas/i.test(e)) return { error: 'Cargá cuántas cajas son.', falta: 'cajas' };
     if (/peso o el valor/i.test(e)) return { error: 'Cargá el valor al proveedor y el peso.', falta: 'valor_kg' };
     if (/No cierran unidades y peso/i.test(e)) return { error: 'Las unidades y el peso no cierran: revisalos.', falta: 'unidades' };
