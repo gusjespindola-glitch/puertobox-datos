@@ -303,7 +303,7 @@ test('prompt: reglas de cambio de peso, precio por kilo y cliente molesto', () =
   assert.match(p, /no reuses las unidades ni el valor viejos/);
   assert.match(p, /usd_por_kilo_con_gestion/);
   assert.match(p, /No vuelvas a hacer la pregunta pendiente/);
-  assert.match(p, /no del kilo/);
+  assert.match(p, /precio del kilo/);
 });
 
 test('simulador: detecta frases de robot (15/11)', () => {

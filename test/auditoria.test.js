@@ -121,8 +121,8 @@ test('presupuesto: lo de PuertoBox separado de los impuestos del courier (sin to
   assert.strictEqual(r.total_puertobox_usd, r.flete_puertobox_usd + r.handling_puertobox_usd);
   assert.strictEqual(r.total_estimado_usd, undefined);
   const prompt = negocio.render(fs.readFileSync(path.join(__dirname, '..', 'bot', 'prompt.md'), 'utf8'));
-  assert.match(prompt, /\*Total a PuertoBox: USD \[total_puertobox\]\*/);
-  assert.match(prompt, /no se paga a PuertoBox/);
+  assert.match(prompt, /\*Total: USD \[total_puertobox\]\*/); // 16/11: presupuesto corto, sin repetir PuertoBox
+  assert.match(prompt, /Impuestos estimados, aparte/);
   assert.ok(!/Total estimado: USD/.test(prompt));
 });
 
@@ -189,7 +189,7 @@ test('al cliente: "nuestro despachante" (no el nombre) y los impuestos se pagan 
   const fs = require('fs'); const path = require('path');
   const prompt = negocio.render(fs.readFileSync(path.join(__dirname, '..', 'bot', 'prompt.md'), 'utf8'));
   assert.ok(!/(lo confirma|le escribe|lo asesora|revisa que)[^.\n]{0,15}Gustavo|Gustavo (lo confirma|confirma el plazo|le escribe|lo asesora|revisa)/.test(prompt.replace(/derivá a Gustavo/g, '')), 'el prompt le hace decir "Gustavo" al cliente');
-  assert.match(prompt, /Se los pagás a la empresa de transporte cuando te entrega el paquete/);
+  assert.match(prompt, /los pagás a la empresa de transporte al recibir/);
   assert.ok(!/pagás al courier|Se los pagás al courier/.test(prompt));
   const faq = JSON.stringify(require('../data/faq.json'));
   assert.ok(!/Gustavo/.test(faq.replace(/"_meta"[^]*?",/, '')), 'faq.json nombra a Gustavo');
