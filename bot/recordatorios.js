@@ -329,4 +329,4 @@ ${chats.length ? `<ul>${chats.map(tarjeta).join('')}</ul>` : '<p>Ningún cliente
 <script>document.querySelectorAll('li[data-visto] details').forEach(function(d){d.addEventListener('toggle',function(){if(!d.open)return;var li=d.parentNode;if(!li.classList.contains('nuevo'))return;try{fetch(li.getAttribute('data-visto'),{method:'POST'});}catch(e){}li.classList.remove('nuevo');var b=li.querySelector('.badge');if(b)b.remove();});});</script></body></html>`;
 }
 
-module.exports = { paraEmpujar, esGustavo, pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes, paginaCharlas, embudo, vistaCliente };
+module.exports = { paraEmpujar, esGustavo, pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes, paginaCharlas, embudo, vistaCliente, resumenVista };

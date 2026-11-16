@@ -371,10 +371,16 @@ test('chat en manos de Gustavo: el cliente escribe y el aviso sale al instante, 
     await procesar(msg('5491166600000', 'te paso las facturas'), { fetchImpl, store, debounceMs: 0 });
     const avisos = llamadas.whatsapp.filter((b) => b.topic === 'prueba-avisos');
     assert.strictEqual(avisos.length, 1);
-    assert.match(avisos[0].message, /Gian \(\+5491166600000\) te escribió:\nte paso las facturas/);
+    assert.match(avisos[0].message, /^💬 Gian \(\+5491166600000\): te paso las facturas$/);
     assert.strictEqual(llamadas.claude.length, 0, 'el bot no contesta: el chat es de Gustavo');
     await procesar(msg('5491166600000', 'y otra cosa'), { fetchImpl, store, debounceMs: 0 });
     assert.strictEqual(llamadas.whatsapp.filter((b) => b.topic === 'prueba-avisos').length, 1, 'no repite el aviso en 10 min');
+    // 16/11: un audio se avisa limpio, sin los códigos internos.
+    store.agregar('5491166600001', 'user', 'hola'); store.pausar('5491166600001', 'gustavo_respondio');
+    const { avisoMensajeNuevo } = require('../server');
+    await avisoMensajeNuevo(store, '5491166600001', '[Audio del cliente, pasado a texto automáticamente] [archivo:/media/e1cbd25c379bbb1633d33fdf40c09092.ogg] Hola Gustavo, buen día. Bueno, primero muchas gracias', '549000', fetchImpl);
+    const ult = llamadas.whatsapp.filter((b) => b.topic === 'prueba-avisos').pop().message;
+    assert.strictEqual(ult, '💬 +5491166600001: 🎧 Audio: Hola Gustavo, buen día. Bueno, primero muchas gracias');
   } finally { delete process.env.NTFY_TOPIC; }
 });
 
