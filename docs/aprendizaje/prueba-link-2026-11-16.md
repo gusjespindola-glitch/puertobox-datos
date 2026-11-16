@@ -34,8 +34,8 @@ Esperado (captura de Gustavo): USD 26,33 desde 6, artículo individual, 24x12x45
  "peso_bruto_kg": 2,
  "bateria": "si",
  "material": null,
- "paquete_coherente": false,
- "nota": "El paquete de 24x12x45 cm es demasiado grande para una sola unidad de un arrancador con compresor; parece una caja de varias unidades. El peso de 2.0 kg sí es plausible para una unidad.",
+ "paquete_coherente": true,
+ "nota": "Las medidas 24x12x45 cm pueden estar exageradas para un arrancador con compresor; conviene confirmarlo con el proveedor.",
  "fuente": "https://www.alibaba.fr/product-detail/12V-Car-Jump-Starter-With-Air_1601952873179.html",
  "link": "https://www.alibaba.fr/product-detail/12V-Car-Jump-Starter-With-Air_1601952873179.html"
 }
