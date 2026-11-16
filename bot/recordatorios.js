@@ -83,7 +83,9 @@ function pendientes(store, owner, ahora = Date.now()) {
       continue;
     }
     // Presupuesto mandado y el cliente no volvió a escribir en más de 24 h (hasta 7 días): para hacer seguimiento.
-    if (lead?.estado === 'cotizado' && ultimoCliente && ahora - ultimoCliente > 24 * H && ahora - ultimoCliente < 7 * 24 * H) {
+    // 15/11 21:44 (Gustavo: "no puedo sacar ese mensaje de Nusse"): "Ya lo atendí" no lo sacaba de esta lista. Ahora sí:
+    // si Gustavo lo marcó después del último mensaje del cliente, no aparece (vuelve si el cliente escribe de nuevo).
+    if (lead?.estado === 'cotizado' && ultimoCliente && respondio < ultimoCliente && ahora - ultimoCliente > 24 * H && ahora - ultimoCliente < 7 * 24 * H) {
       seguimiento.push({ c, lead, desde: ultimoCliente, importante: esImportante(c, lead) });
     }
   }

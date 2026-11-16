@@ -448,3 +448,16 @@ test('charlas: lo que el cliente escribió y Gustavo no vio va en rojo y arriba;
   const h2 = pagina(st, OWNER, Date.now() + 3000);
   assert.doesNotMatch(h2, /mensajes? nuevos?/);
 });
+
+test('"Ya lo atendí" también saca a un cliente de "Presupuesto enviado, no volvieron a escribir" (Nusse, 15/11 21:44)', () => {
+  const ahora = TARDE;
+  const st = crearStore(null);
+  st.marcar('5491100000091', { ultimoClienteEn: ahora - 33 * H });
+  st.guardarLead('5491100000091', { estado: 'cotizado' });
+  assert.strictEqual(pendientes(st, OWNER, ahora).seguimiento.length, 1);
+  st.marcar('5491100000091', { gustavoRespondioEn: ahora - H });
+  assert.strictEqual(pendientes(st, OWNER, ahora).seguimiento.length, 0, 'marcado como atendido: sale de la lista');
+  st.marcar('5491100000091', { ultimoClienteEn: ahora - 30 * H + 4 * H }); // el cliente vuelve a escribir después
+  st.marcar('5491100000091', { gustavoRespondioEn: ahora - 30 * H });
+  assert.strictEqual(pendientes(st, OWNER, ahora).seguimiento.length, 1, 'si el cliente escribe de nuevo, vuelve');
+});
