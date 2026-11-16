@@ -47,8 +47,16 @@ function gestionPara(kgCob) {
 
 /** Lo que le paga PuertoBox al forwarder. */
 function fleteCosto(kg) {
-  const t = tramo(kg, M.tramos_costo_dhl);
-  return t.total_usd !== undefined ? t.total_usd : r2(t.usd_kg * kg);
+  // 16/11: Gustavo trabaja con UPS y FedEx (no DHL). Se toma el más barato para ese peso.
+  const tablas = (M.couriers_costo || ['tramos_costo_dhl']).map((k) => M[k]).filter(Boolean);
+  return Math.min(...tablas.map((tab) => { const t = tramo(kg, tab); return t.total_usd !== undefined ? t.total_usd : r2(t.usd_kg * kg); }));
+}
+/** Qué courier conviene para ese peso (UPS o FedEx). */
+function courierPara(kg) {
+  const nombres = { tramos_costo_ups: 'UPS', tramos_costo_fedex: 'FedEx', tramos_costo_dhl: 'DHL' };
+  const ks = (M.couriers_costo || ['tramos_costo_dhl']).filter((k) => M[k]);
+  const costo = (k) => { const t = tramo(kg, M[k]); return t.total_usd !== undefined ? t.total_usd : t.usd_kg * kg; };
+  return nombres[ks.reduce((a, b) => (costo(b) < costo(a) ? b : a))];
 }
 
 /**
@@ -100,4 +108,4 @@ function presupuesto({ kg, largo, ancho, alto, cajas = 1, bultos = null, valorFa
   };
 }
 
-module.exports = { kgCobrable, fleteVenta, fleteCosto, estimarImpuestos, presupuesto, gestionPara };
+module.exports = { courierPara, kgCobrable, fleteVenta, fleteCosto, estimarImpuestos, presupuesto, gestionPara };

@@ -88,7 +88,7 @@
  },
  "flete_directo": {
   "descripcion": "Modelo vigente desde 13/11/2026. Envío a nombre y domicilio del cliente por DHL. PuertoBox cobra flete (por peso real de balanza en el depósito de China) + handling fijo, por adelantado. Impuestos y gasto administrativo los paga el cliente al courier.",
-  "courier": "DHL (vía Howard)",
+  "courier": "UPS o FedEx vía Howard, el más barato para cada peso (DHL descartado por Gustavo el 13/11: 'DHL no, es muy caro. FedEx y UPS')",
   "tolerancia": 0,
   "divisor_volumetrico": 5000,
   "tramos_venta": [
@@ -165,7 +165,31 @@
     "usd_kg": 13.5
    }
   ],
-  "tramos_costo_ups_referencia": [
+  "fuente_costos": "Howard Huang, Alibaba chat 13/11/2026 (DHL, UPS y FedEx)",
+  "pendiente": [
+   "gasto administrativo de DHL en Argentina",
+   "recargo zona remota",
+   "días de tránsito"
+  ],
+  "handling_usd": 20,
+  "handling_tramos": [
+   {
+    "hasta_kg": 5,
+    "usd": 20
+   },
+   {
+    "hasta_kg": null,
+    "usd": 40
+   }
+  ],
+  "_handling_tramos": "16/11/2026, Gustavo: gestión USD 20 en envíos de hasta 5 kg cobrables y USD 40 en los de más de 5 kg (envíos chicos ya están caros vs mercado; desde 5 kg hay margen y el trabajo es el mismo).",
+  "cobro": "Flete por kilo cobrable del proveedor (sin margen) + gestión USD 20 hasta 5 kg y USD 40 desde 6 kg. Precio cerrado: se respeta aunque la caja llegue hasta 15% más pesada o grande; si supera eso, se ajusta con foto de la balanza. 100% al ingresar la caja al depósito de China.",
+  "decision": "13/11/2026: opción C (sin 15%, handling USD 20), elegida por Gustavo.",
+  "flete_declarado_usd_kg": 2.5,
+  "flete_declarado_fuente": "Flete que figura en la factura del courier y usa Aduana para el CIF (no es nuestro flete de venta). Facturas reales: FedEx 2025 USD 146,75 / 58,7 kg = 2,50; UPS 05/01/2026 USD 21 / 8,5 kg = 2,47 (data/facturas_reales.json).",
+  "handling_cuit_puertobox_usd": 50,
+  "_handling_cuit_puertobox_usd": "Gustavo 15/11: si el cliente no tiene CUIT y se trae con el de PuertoBox, la gestión es USD 50 (llega a domicilio de PuertoBox y hay que reenviarla). Envío dentro de Argentina aparte, a costo. Los impuestos los paga PuertoBox a la empresa de transporte: el cliente se los paga a PuertoBox antes del despacho.",
+  "tramos_costo_ups": [
    {
     "desde_kg": 0,
     "hasta_kg": 1.5,
@@ -202,24 +226,47 @@
     "usd_kg": 13.5
    }
   ],
-  "fuente_costos": "Howard Huang, Alibaba chat 13/11/2026",
-  "pendiente": [
-   "gasto administrativo de DHL en Argentina",
-   "recargo zona remota",
-   "días de tránsito",
-   "¿sigue tarifa 11 USD/kg 20kg+ por FedEx?"
+  "tramos_costo_fedex": [
+   {
+    "desde_kg": 0,
+    "hasta_kg": 1.5,
+    "total_usd": 57
+   },
+   {
+    "desde_kg": 1.5,
+    "hasta_kg": 3,
+    "usd_kg": 42
+   },
+   {
+    "desde_kg": 3,
+    "hasta_kg": 5,
+    "usd_kg": 38
+   },
+   {
+    "desde_kg": 5,
+    "hasta_kg": 10,
+    "usd_kg": 32
+   },
+   {
+    "desde_kg": 10,
+    "hasta_kg": 15,
+    "usd_kg": 15
+   },
+   {
+    "desde_kg": 15,
+    "hasta_kg": 20,
+    "usd_kg": 15
+   },
+   {
+    "desde_kg": 20,
+    "hasta_kg": null,
+    "usd_kg": 13.5
+   }
   ],
-  "handling_usd": 20,
-  "handling_tramos": [
-   { "hasta_kg": 5, "usd": 20 },
-   { "hasta_kg": null, "usd": 40 }
+  "couriers_costo": [
+   "tramos_costo_ups",
+   "tramos_costo_fedex"
   ],
-  "_handling_tramos": "16/11/2026, Gustavo: gestión USD 20 en envíos de hasta 5 kg cobrables y USD 40 en los de más de 5 kg (envíos chicos ya están caros vs mercado; desde 5 kg hay margen y el trabajo es el mismo).",
-  "cobro": "Flete por kilo cobrable del proveedor (sin margen) + gestión USD 20 hasta 5 kg y USD 40 desde 6 kg. Precio cerrado: se respeta aunque la caja llegue hasta 15% más pesada o grande; si supera eso, se ajusta con foto de la balanza. 100% al ingresar la caja al depósito de China.",
-  "decision": "13/11/2026: opción C (sin 15%, handling USD 20), elegida por Gustavo.",
-  "flete_declarado_usd_kg": 2.5,
-  "flete_declarado_fuente": "Flete que figura en la factura del courier y usa Aduana para el CIF (no es nuestro flete de venta). Facturas reales: FedEx 2025 USD 146,75 / 58,7 kg = 2,50; UPS 05/01/2026 USD 21 / 8,5 kg = 2,47 (data/facturas_reales.json).",
-  "handling_cuit_puertobox_usd": 50,
-  "_handling_cuit_puertobox_usd": "Gustavo 15/11: si el cliente no tiene CUIT y se trae con el de PuertoBox, la gestión es USD 50 (llega a domicilio de PuertoBox y hay que reenviarla). Envío dentro de Argentina aparte, a costo. Los impuestos los paga PuertoBox a la empresa de transporte: el cliente se los paga a PuertoBox antes del despacho."
+  "_couriers_costo": "16/11/2026: el costo es el del courier más barato entre los que usa Gustavo (UPS y FedEx; tarifas de Howard del 13/11, capturas). UPS conviene hasta 9 kg (FedEx a 3-9 kg cuesta más que lo que cobramos); FedEx desde 10 kg. tramos_costo_dhl queda de referencia."
  }
 }
