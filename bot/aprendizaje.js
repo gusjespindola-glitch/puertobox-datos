@@ -33,6 +33,9 @@ function anonimizar(texto, nombres = []) {
   s = s.replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '[mail]');
   s = s.replace(/\+?\d[\d\s().-]{6,}\d/g, '[número]'); // teléfonos, CUIT, DNI, CBU
   s = s.replace(/\b(me llamo|mi nombre es|soy)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?)/g, '$1 [nombre]');
+  // 16/11 (revisión general): el bot saluda por el nombre ("Hola Agustín, ¿cómo estás?") aunque el lead no lo tenga guardado,
+  // y el repo es público. Se saca el nombre que sigue a un saludo o a una despedida.
+  s = s.replace(/\b(hola|buen[oa]s(?:\s+(?:d[ií]as|tardes|noches))?|gracias|chau|saludos),?\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,})(?=[\s,.!?¡¿]|$)/gi, (m, saludo, nombre) => (/^(por|a|que|de|me|te|como|cómo|vos|ustedes|igualmente|nuevamente|quiero|quisiera|necesito|tengo|consulta|buen|buenas|estoy|soy|una|un)$/i.test(nombre) || nombre === nombre.toLowerCase() ? m : `${saludo} [nombre]`));
   for (const n of nombres) {
     for (const parte of String(n || '').split(/\s+/).filter((p) => p.length >= 3)) {
       s = s.replace(new RegExp(`\\b${parte.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'), '[nombre]');
@@ -84,7 +87,7 @@ function charlasDelDia(store, owner, ahora = Date.now()) {
     .map((c, i) => {
       const l = (store.lead && store.lead(c.telefono)) || {};
       const nombres = [l.nombre].filter(Boolean);
-      const lineas = c.mensajes.map((m) => {
+      const lineas = c.mensajes.filter((m) => (m.en || 0) >= (c.inicioEn || 0)).map((m) => { // solo la charla actual (16/11: el store ya guarda las anteriores)
         const t = texto(m.content).trim();
         if (!t) return null;
         const quien = m.role === 'user' ? 'Cliente' : t.startsWith('[Gustavo]') ? 'Despachante' : 'Bot';

@@ -12,6 +12,8 @@
   "_numeros_gustavo": "Números de Gustavo (698 WhatsApp Business, 3034 personal y 9132 del trabajo): sus pruebas no cuentan como clientes en el resumen ni en pendientes.",
   "mensaje_whatsapp": "Hola, vi la web y quiero cotizar un envío desde China",
   "mensaje_anuncio": "Hola, quiero cotizar un envío desde China",
+  "mensaje_anuncio_whatsapp": "Hola, quiero traer de China:",
+  "_mensaje_anuncio_whatsapp": "Texto precargado de los anuncios de WhatsApp directo (desde 15/11 ~18:00). Si el chat empieza así, también queda marcado como del anuncio (por si WhatsApp no manda los datos del anuncio).",
   "_mensaje_anuncio": "Texto precargado del link del anuncio de Meta (wa.me). Si un chat empieza con este texto, queda marcado como que vino del anuncio. Si se cambia en el anuncio, cambiarlo acá.",
   "mensaje_698": "Hola, me pasaron este número para cotizar un envío desde China",
   "_mensaje_698": "Texto precargado del link que va en el mensaje automático del 698 (ycloud-agent/whatsapp_698_bienvenida.txt). Si un chat empieza con este texto, queda marcado como que vino del 698. Si se cambia acá, cambiar también el link del automático.",

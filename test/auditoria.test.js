@@ -29,15 +29,15 @@ test('flete: nunca se pierde, ni con la caja 15% más pesada', () => {
 
 test('cotizar: frena datos imposibles y pedidos sobre el tope', () => {
   const ctx = { store: crearStore(null), telefono: '1', derivaciones: [] };
-  assert.ok(ejecutar('cotizar', { kg: 0, valor_factura_usd: 100, die: 20, regimen: 'comercial' }, ctx).error);
-  assert.ok(ejecutar('cotizar', { kg: 5, valor_factura_usd: 0, die: 20, regimen: 'comercial' }, ctx).error);
-  const grande = ejecutar('cotizar', { kg: 50, valor_factura_usd: 8000, die: 20, regimen: 'comercial' , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
+  assert.ok(ejecutar('cotizar', { kg: 0, valor_factura_usd: 100, die: 20, regimen: 'comercial', unidades: 10 }, ctx).error);
+  assert.ok(ejecutar('cotizar', { kg: 5, valor_factura_usd: 0, die: 20, regimen: 'comercial', unidades: 10 }, ctx).error);
+  const grande = ejecutar('cotizar', { kg: 50, valor_factura_usd: 8000, die: 20, regimen: 'comercial', unidades: 10 , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
   assert.ok(grande.aviso && !grande.flete_puertobox_usd);
 });
 
 test('cotizar: el flete es firme solo con medidas y cajas de hasta 50 kg (máximo por bulto, Gustavo 15/11)', () => {
   const ctx = { store: crearStore(null), telefono: '1', derivaciones: [] };
-  const base = { valor_factura_usd: 300, die: 20, regimen: 'comercial' };
+  const base = { valor_factura_usd: 300, die: 20, regimen: 'comercial', unidades: 10 };
   assert.strictEqual(ejecutar('cotizar', { ...base, kg: 5, largo_cm: 40, ancho_cm: 30, alto_cm: 30 , cantidad_cajas: 1 }, ctx).flete_firme, true);
   // Sin medidas o sin cantidad de cajas no hay presupuesto (Gustavo 15/11 17:59: "no podemos pasar presupuestos sin todos los parámetros").
   const sinMedidas = ejecutar('cotizar', { ...base, kg: 5, cantidad_cajas: 1 }, ctx);
@@ -55,7 +55,7 @@ test('cotizar: el flete es firme solo con medidas y cajas de hasta 50 kg (máxim
 
 test('cotizar: uso propio sin envíos con beneficio paga derechos', () => {
   const ctx = { store: crearStore(null), telefono: '1', derivaciones: [] };
-  const base = { kg: 2, valor_factura_usd: 80, die: 20, regimen: 'personal', cantidad_cajas: 1, largo_cm: 20, ancho_cm: 20, alto_cm: 10 };
+  const base = { kg: 2, valor_factura_usd: 80, die: 20, regimen: 'personal', unidades: 10, cantidad_cajas: 1, largo_cm: 20, ancho_cm: 20, alto_cm: 10 };
   const con = ejecutar('cotizar', base, ctx).detalle_impuestos.derechos_y_tasa;
   const sin = ejecutar('cotizar', { ...base, sin_franquicia: true , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx).detalle_impuestos.derechos_y_tasa;
   assert.strictEqual(con, 0);
@@ -111,13 +111,13 @@ test('envío dentro de China: lo paga el cliente y lo dicen el bot, la web y la 
   assert.match(paginas.home(), /Ese envío dentro de China lo pagás vos/);
   assert.match(paginas.home(), /Quién paga el envío de la fábrica/);
   const ctx = { store: crearStore(null), telefono: '1', derivaciones: [] };
-  assert.match(ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 20, regimen: 'comercial' , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx).reglas, /Shenzhen NO está incluido/);
+  assert.match(ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 20, regimen: 'comercial', unidades: 10 , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx).reglas, /Shenzhen NO está incluido/);
 });
 
 test('presupuesto: lo de PuertoBox separado de los impuestos del courier (sin total mezclado)', () => {
   const fs = require('fs'); const path = require('path');
   const ctx = { store: crearStore(null), telefono: '1', derivaciones: [] };
-  const r = ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 20, regimen: 'comercial', largo_cm: 40, ancho_cm: 30, alto_cm: 30 , cantidad_cajas: 1 }, ctx);
+  const r = ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 20, regimen: 'comercial', unidades: 10, largo_cm: 40, ancho_cm: 30, alto_cm: 30 , cantidad_cajas: 1 }, ctx);
   assert.strictEqual(r.total_puertobox_usd, r.flete_puertobox_usd + r.handling_puertobox_usd);
   assert.strictEqual(r.total_estimado_usd, undefined);
   const prompt = negocio.render(fs.readFileSync(path.join(__dirname, '..', 'bot', 'prompt.md'), 'utf8'));
@@ -138,10 +138,10 @@ test('impuestos: el estimado reproduce la factura real de UPS (flete declarado, 
 test('cotizar deja el lead como cotizado (para el seguimiento)', () => {
   const st = crearStore(null);
   const ctx = { store: st, telefono: '5491100000007', derivaciones: [] };
-  ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 20, regimen: 'comercial' , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
+  ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 20, regimen: 'comercial', unidades: 10 , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
   assert.strictEqual(st.lead('5491100000007').estado, 'cotizado');
   st.guardarLead('5491100000007', { estado: 'listo_para_cerrar' });
-  ejecutar('cotizar', { kg: 6, valor_factura_usd: 300, die: 20, regimen: 'comercial' , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
+  ejecutar('cotizar', { kg: 6, valor_factura_usd: 300, die: 20, regimen: 'comercial', unidades: 10 , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
   assert.strictEqual(st.lead('5491100000007').estado, 'listo_para_cerrar', 'no lo baja de estado');
 });
 
@@ -212,8 +212,13 @@ test('cotizar con unidades: costo por unidad puesta en la casa = (producto + Pue
   const esperado = Math.round(((300 + r.total_puertobox_usd + r.impuestos_y_gastos_estimados_usd) / 100) * 100) / 100;
   assert.strictEqual(r.costo_por_unidad_usd, esperado);
   assert.strictEqual(r.producto_por_unidad_usd, 3);
-  const sin = ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 35, regimen: 'comercial' , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
-  assert.strictEqual(sin.costo_por_unidad_usd, undefined);
+  // 16/11: sin unidades el bot no cotiza (todos los parámetros); el cotizador a mano de Gustavo sí, sin costo por unidad.
+  const sin = ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 35, regimen: 'comercial', cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
+  assert.match(sin.error, /unidades/);
+  assert.strictEqual(sin.flete_puertobox_usd, undefined);
+  const manual = ejecutar('cotizar', { kg: 5, valor_factura_usd: 300, die: 35, regimen: 'comercial', cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, { ...ctx, manual: true });
+  assert.strictEqual(manual.costo_por_unidad_usd, undefined);
+  assert.ok(manual.flete_puertobox_usd > 0);
 });
 
 test('media pública: sirve los videos de web/media y nada fuera de ahí', () => {

@@ -12,8 +12,8 @@ const { crearStore } = require('./store');
 // Cada escenario: mensajes del cliente en orden y qué tiene que pasar.
 const ESCENARIOS = [
   { nombre: 'Cliente que no sabe nada', msgs: ['hola', 'quiero traer cosas de china', 'ropa', 'para vender', 'no tiene marca', 'como 600 dolares', 'no se cuanto pesa'], espera: { sinPresupuesto: true, mencionaProveedor: true, contiene: /Could you please/i } },
-  { nombre: 'Manda todo junto', msgs: ['Hola, quiero traer 2 cajas de remeras sin marca para vender, pago 700 usd, pesan 30 kilos, cada caja 50x40x50'], espera: { presupuesto: true } },
-  { nombre: 'Uso propio chico', msgs: ['hola quiero traer unas zapatillas para mi', 'sin marca', '80 dolares', '2 kilos'], espera: { presupuesto: true } },
+  { nombre: 'Manda todo junto', msgs: ['Hola, quiero traer 2 cajas de remeras de algodón sin marca para vender, 200 remeras, pago 700 usd, pesan 30 kilos, cada caja 50x40x50'], espera: { presupuesto: true } },
+  { nombre: 'Uso propio chico', msgs: ['hola quiero traer unas zapatillas para mi', 'sin marca', 'un par, 80 dolares', '2 kilos, en una caja de 35x25x15'], espera: { presupuesto: true } },
   { nombre: 'Se va de tema', msgs: ['hola', 'quiero traer juguetes', 'che y ustedes donde estan?', 'para vender'], espera: {} },
   { nombre: 'Pregunta el kilo', msgs: ['cuanto sale el kilo?'], espera: { sinTabla: true } },
   { nombre: 'Marca para revender', msgs: ['quiero traer zapatillas nike para vender en mi local'], espera: { sinPresupuesto: true } },
@@ -22,41 +22,41 @@ const ESCENARIOS = [
   { nombre: 'Perfumes', msgs: ['traen perfumes?'], espera: { sinPresupuesto: true } },
   { nombre: 'Mensaje cortado', msgs: ['hola quiero tr'], espera: {} },
   { nombre: 'Pregunta si es bot', msgs: ['sos un bot?'], espera: { noDiceHumano: true } },
-  { nombre: 'Quiere pagar', msgs: ['quiero traer remeras sin marca para vender, 300 usd, 5 kilos, 1 caja 40x30x30', 'dale quiero avanzar como pago?'], espera: { deriva: true } },
-  { nombre: 'Mayorista', msgs: ['necesito traer un contenedor de muebles'], espera: { deriva: true } },
+  { nombre: 'Quiere pagar', msgs: ['quiero traer remeras de algodón sin marca para vender, 50 remeras, 300 usd, 5 kilos, 1 caja 40x30x30', 'dale quiero avanzar como pago?'], espera: { deriva: true } },
+  { nombre: 'Contenedor (solo courier, 14/11)', msgs: ['necesito traer un contenedor de muebles'], espera: { sinPresupuesto: true, noDeriva: true } },
   { nombre: 'Pedido grande por courier', msgs: ['quiero traer remeras estampadas sin marca para vender', 'le pago 8000 dolares al proveedor'], espera: { sinPresupuesto: true, contiene: /pes|kilo|caja/i } },
-  { nombre: 'Juguetes para vender (certificación)', msgs: ['quiero traer juguetes sin marca para vender, pago 400 usd, son 12 kilos en una caja de 40x30x30'], espera: { presupuesto: true, contiene: /certific/i } },
-  { nombre: 'Cargadores para vender (seguridad eléctrica)', msgs: ['cargadores de celular sin marca para vender, 250 dolares, 6 kilos'], espera: { presupuesto: true, contiene: /certific/i } },
-  { nombre: 'Caja de más de 23 kg', msgs: ['mochilas sin marca para vender, 900 usd, una sola caja de 30 kilos'], espera: { presupuesto: true, contiene: /divid|23 ?kg/i } },
-  { nombre: 'Uso propio de más de USD 400', msgs: ['unas zapatillas sin marca para mi, pago 600 dolares, pesan 3 kilos'], espera: { presupuesto: true } },
+  { nombre: 'Juguetes para vender (certificación)', msgs: ['quiero traer juguetes sin marca para vender, 80 unidades, pago 400 usd, son 12 kilos en una caja de 40x30x30'], espera: { presupuesto: true, contiene: /certific/i } },
+  { nombre: 'Cargadores para vender (seguridad eléctrica)', msgs: ['cargadores de celular sin marca para vender, 100 unidades, 250 dolares, 6 kilos, una caja de 40x30x30'], espera: { presupuesto: true, contiene: /certific/i } },
+  { nombre: 'Caja de más de 23 kg (recargo, 15/11)', msgs: ['mochilas sin marca para vender, 60 unidades, 900 usd, una sola caja de 30 kilos de 60x50x50'], espera: { presupuesto: true, contiene: /recargo|23 ?kg/i } },
+  { nombre: 'Uso propio de más de USD 400', msgs: ['2 pares de zapatillas sin marca para mi, pago 600 dolares, pesan 3 kilos, en una caja de 40x30x20'], espera: { presupuesto: true } },
   { nombre: 'Valor no creíble', msgs: ['un robot de cocina de 25 kilos que me sale 60 dolares, para vender, sin marca'], espera: { sinPresupuesto: true } },
   { nombre: 'Pregunta el plazo', msgs: ['cuanto tarda en llegar?'], espera: { noContiene: /\b\d+\s*(a\s*\d+\s*)?d[ií]as\b/i } },
   { nombre: 'Pregunta cómo se paga', msgs: ['como se paga?'], espera: { contiene: /dep[oó]sito|pes/i } },
   { nombre: 'Manda un audio', msgs: ['[El cliente mandó un audio. Pedile que lo describa por texto o derivá si hace falta.]'], espera: { contiene: /escrib|texto/i } },
-  { nombre: 'Zona alejada', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja de 40x30x30', 'mi codigo postal es 9410, ushuaia'], espera: { presupuesto: true, contiene: /recargo|zona/i } },
+  { nombre: 'Zona alejada', msgs: ['remeras de algodón sin marca para vender, 50 remeras, 300 usd, 5 kilos, una caja de 40x30x30', 'mi codigo postal es 9410, ushuaia'], espera: { presupuesto: true, contiene: /recargo|zona/i } },
   { nombre: 'Monotributista', msgs: ['soy monotributista, puedo importar para vender?'], espera: { sinPresupuesto: true, contiene: /s[ií]/i, noContiene: /responsable inscripto es obligatorio/i } },
   { nombre: 'Envíos por año', msgs: ['cuantos envios puedo hacer por año?'], espera: { contiene: /5/ } },
   { nombre: 'Auriculares bluetooth para vender', msgs: ['quiero traer auriculares bluetooth sin marca para vender'], espera: { sinPresupuesto: true } },
   { nombre: 'Uso propio con más de 3 iguales', msgs: ['quiero traer 6 remeras sin marca para mi, 60 dolares, 2 kilos'], espera: { contiene: /vender|iguales|misma/i } },
   { nombre: 'Sin medidas no hay presupuesto (Gustavo 15/11 17:59)', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja, no tengo las medidas'], espera: { sinPresupuesto: true, contiene: /Could you please/i } },
-  { nombre: 'Licuadoras para vender (sin permiso de envases)', msgs: ['licuadoras sin marca para vender, 500 dolares, 15 kilos, una caja de 40x30x30'], espera: { presupuesto: true, contiene: /certific/i } },
+  { nombre: 'Licuadoras para vender (sin permiso de envases)', msgs: ['licuadoras sin marca para vender, 10 unidades, 500 dolares, 15 kilos, una caja de 40x30x30'], espera: { presupuesto: true, contiene: /certific/i } },
   { nombre: 'Envío dentro de China', msgs: ['quien paga el envio de la fabrica hasta el deposito?'], espera: { sinPresupuesto: true, contiene: /proveedor/i } },
-  { nombre: 'Audio pasado a texto', msgs: ['[Audio del cliente, pasado a texto automáticamente] hola buen día quería saber cuánto me sale traer unas mochilas sin marca para vender, son como 400 dólares y pesan 8 kilos, vienen en una caja de 40 por 30 por 30'], espera: { presupuesto: true, noContiene: /no (puedo )?escuch/i } },
-  { nombre: 'Marca desconocida para vender (INPI)', msgs: ['cargadores marca Baseus para vender, 300 dolares, 5 kilos, una caja de 40x30x30'], espera: { presupuesto: true, deriva: true } },
+  { nombre: 'Audio pasado a texto', msgs: ['[Audio del cliente, pasado a texto automáticamente] hola buen día quería saber cuánto me sale traer unas mochilas sin marca para vender, son 40 mochilas, como 400 dólares y pesan 8 kilos, vienen en una caja de 40 por 30 por 30'], espera: { presupuesto: true, noContiene: /no (puedo )?escuch/i } },
+  { nombre: 'Marca desconocida para vender (INPI)', msgs: ['cargadores marca Baseus para vender, 60 unidades, 300 dolares, 5 kilos, una caja de 40x30x30'], espera: { presupuesto: true, deriva: true } },
   { nombre: 'Fundas para vender (respuesta clara)', msgs: ['quiero traer fundas de celular para vender'], espera: { contiene: /\bs[ií]\b|traemos/i } },
   // 15/11: charla real del arrancador (10 unidades de 0,9 kg que pasaron a "23 kg"): el bot recotizó con las 10 unidades viejas,
   // el costo por unidad saltó a USD 82 y el cliente lo leyó como precio por kilo; después negó el precio de la publicidad y repitió el código postal.
   { nombre: 'Cambia el peso: preguntar unidades nuevas', msgs: ['arrancadores portatiles 12V sin marca para vender, 10 unidades, cada una pesa 900 gramos con caja, le pago 200 dolares en total', 'serian mas de 20 kilos, unos 23 kg'], espera: { ultima: { contiene: /unidades/i, noContiene: /Presupuesto PuertoBox/i } } },
   { nombre: 'Compara con el precio de la publicidad', msgs: ['remeras sin marca para vender, 100 unidades, pago 500 dolares, 23 kilos, una caja de 40x30x30', 'en la publicidad decian que arriba de 20 kg es 16 por kilo, por que me cobras mas?'], espera: { presupuesto: true, ultima: { contiene: /kilo/i, noContiene: /no es (nuestr[oa]|el nuestro)|no puedo cotiz|como dice tu publicidad|c[oó]digo postal/i } } },
   { nombre: 'Confunde costo por unidad con el kilo', msgs: ['remeras sin marca para vender, 100 unidades, pago 500 dolares, 23 kilos, una caja de 40x30x30', 'me estas cobrando 13 dolares el kilo? no tiene sentido'], espera: { ultima: { contiene: /unidad|remera/i, noContiene: /c[oó]digo postal/i } } },
-  { nombre: 'Se enoja y pide una persona', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja de 40x30x30', 'no entiendo nada, esto es un papelon, quiero hablar con una persona'], espera: { deriva: true, ultima: { noContiene: /c[oó]digo postal/i } } },
+  { nombre: 'Se enoja y pide una persona', msgs: ['remeras de algodón sin marca para vender, 50 remeras, 300 usd, 5 kilos, una caja de 40x30x30', 'no entiendo nada, esto es un papelon, quiero hablar con una persona'], espera: { deriva: true, ultima: { noContiene: /c[oó]digo postal/i } } },
   // 15/11 (Gustavo: "la charla es muy bot"): que suene a persona y conteste lo que le preguntan.
   { nombre: 'Cita un precio de un posteo viejo', msgs: ['vi que cobran 15 dolares el kilo desde 10 kg, es asi?'], espera: { ultima: { contiene: /anterior|hoy/i, noContiene: /no es nuestr|no puedo cotiz/i } } },
   { nombre: 'Posición fija entre presupuestos', msgs: ['arrancador portatil 12V con compresor de aire y bateria de litio, sin marca, para vender, 10 unidades, 200 dolares, 9 kilos, una caja de 40x30x30', '25 unidades, 500 dolares, 23 kilos'], espera: { presupuesto: true } },
   { nombre: 'Pide más información (anuncio)', msgs: ['¡Hola! Quiero más información'], espera: { ultima: { contiene: /China|casa|impuestos/i } } },
-  { nombre: 'Pregunta aéreo o marítimo', msgs: ['remeras sin marca para vender, 300 usd, 5 kilos, una caja de 40x30x30', 'es aereo o es maritimo?'], espera: { ultima: { contiene: /^\s*(Es )?a[ée]reo/i, noContiene: /medidas|c[oó]digo postal/i } } },
+  { nombre: 'Pregunta aéreo o marítimo', msgs: ['remeras de algodón sin marca para vender, 50 remeras, 300 usd, 5 kilos, una caja de 40x30x30', 'es aereo o es maritimo?'], espera: { ultima: { contiene: /^\s*(Es )?a[ée]reo/i, noContiene: /medidas|c[oó]digo postal/i } } },
   { nombre: 'Dice que no', msgs: ['quiero traer ropa replica de marcas para vender', 'no graciass igualmente'], espera: { ultima: { noContiene: /presupuesto|sin marca|\?/i } } },
-  { nombre: 'Repuestos de auto', msgs: ['repuestos de auto genericos para vender, 800 dolares, 20 kilos, 2 cajas de 50x40x40'], espera: { presupuesto: true } },
+  { nombre: 'Repuestos de auto', msgs: ['repuestos de auto genericos para vender, 40 unidades, 800 dolares, 20 kilos, 2 cajas de 50x40x40'], espera: { presupuesto: true } },
 ];
 
 const MULETILLAS = /^(¡?genial|¡?anotado|¡?perfecto|¡?buen[ií]simo|¡?excelente|gracias(?! por escribir)|joya|dale|tranqui|entendido|entiendo|comprendido|correcto)\b/i;
@@ -121,6 +121,7 @@ async function correrEscenarios() {
     if (e.mencionaProveedor && !/gross weight|proveedor/i.test(junto)) finales.push('no ayudó a pedirle el peso al proveedor');
     if (e.sinTabla && /32\/kg|28\/kg|25\/kg/.test(junto)) finales.push('recitó la tabla por kilo');
     if (e.deriva && !derivaciones.length) finales.push('no derivó a Gustavo');
+    if (e.noDeriva && derivaciones.some((d) => d.motivo !== 'confirmar_posicion')) finales.push('derivó cuando no debía');
     if (e.contiene && !e.contiene.test(junto)) finales.push(`le faltó mencionar ${e.contiene}`);
     if (e.noContiene && e.noContiene.test(junto)) finales.push(`no debía decir ${e.noContiene}`);
     // Revisión solo de la última respuesta (para ver cómo reacciona a un cambio o a una queja).

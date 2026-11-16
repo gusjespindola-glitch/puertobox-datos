@@ -3,6 +3,10 @@
 const fs = require('fs');
 
 const HISTORIAL_MAX = 30; // mensajes por chat que se mandan a la IA
+// 16/11 (revisión general): antes se borraba todo lo anterior a los últimos 30 mensajes y, si el cliente volvía después de 48 h,
+// la charla entera. /charlas es la única forma de ver las charlas: Gustavo perdía el principio (presupuesto, datos).
+// Ahora se guarda todo (hasta GUARDADOS_MAX) y a la IA le llegan solo los últimos 30 de la charla actual.
+const GUARDADOS_MAX = 400;
 const PAUSA_HORAS = Number(process.env.PAUSA_HORAS || 24);
 const RESET_HORAS = Number(process.env.RESET_HORAS || 48); // conversación nueva si el cliente vuelve después de 48 h
 
@@ -36,20 +40,26 @@ function crearStore(archivo) {
       db.vistos.push(id); if (db.vistos.length > 2000) db.vistos.splice(0, 1000); guardar();
       return false;
     },
-    historial: (tel) => chat(tel).mensajes,
+    /** Lo que se le manda a la IA: la charla actual (desde que volvió después de 48 h), últimos 30, empezando por el cliente. */
+    historial: (tel) => {
+      const c = chat(tel);
+      const desde = c.inicioEn || 0;
+      const h = c.mensajes.filter((m) => (m.en || 0) >= desde).slice(-HISTORIAL_MAX);
+      while (h.length && h[0].role !== 'user') h.shift();
+      return h;
+    },
     /** Marca el último mensaje nuestro de la charla como no entregado por WhatsApp (15/11). */
     marcarNoEntregado(tel) { const m = [...chat(tel).mensajes].reverse().find((x) => x.role === 'assistant'); if (m) { m.noEntregado = true; guardar(); } },
     agregar(tel, role, content) {
       const c = chat(tel);
       if (role === 'user' && c.ultimo && Date.now() - c.ultimo > RESET_HORAS * 3600e3) {
-        c.mensajes = [];
+        c.inicioEn = Date.now(); // charla nueva para la IA; lo anterior se sigue viendo en /charlas
         if (db.leads[tel]) delete db.leads[tel].posicion_fija; // charla nueva: puede ser otro producto
       }
       c.ultimo = Date.now();
       if (role === 'user') { c.ultimoClienteEn = c.ultimo; c.avisoVentana = false; } // ventana de 24 h nueva
       c.mensajes.push({ role, content, en: Date.now() }); // en: para marcar en /charlas lo que Gustavo todavía no vio (15/11)
-      if (c.mensajes.length > HISTORIAL_MAX) c.mensajes = c.mensajes.slice(-HISTORIAL_MAX);
-      while (c.mensajes.length && c.mensajes[0].role !== 'user') c.mensajes.shift();
+      if (c.mensajes.length > GUARDADOS_MAX) c.mensajes = c.mensajes.slice(-GUARDADOS_MAX);
       guardar();
     },
     pausar(tel, motivo, horas = PAUSA_HORAS) {
