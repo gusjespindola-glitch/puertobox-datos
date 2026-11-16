@@ -122,3 +122,10 @@ test('el presupuesto lo arma el programa con el formato aprobado (16/11): igual 
   assert.match(rem.texto_presupuesto, /Shenzhen\. Si el proveedor arma cajas más chicas o más llenas, el flete baja\.\n/);
   assert.strictEqual(rem.texto_presupuesto.split('\n').length, 14);
 });
+
+test('un solo tipo de caja mandado como bultos se cotiza como cajas iguales ("las 20 cajas de…")', () => {
+  const { ejecutar } = require('../tools');
+  const r = ejecutar('cotizar', { kg: 40, valor_factura_usd: 526.6, die: 18, regimen: 'comercial', unidades: 20, bultos: [{ cantidad: 20, largo_cm: 24, ancho_cm: 12, alto_cm: 45 }], producto_corto: 'arrancadores', producto_singular: 'arrancador' }, { telefono: 'b1', store: crearStore(null), derivaciones: [] });
+  assert.match(r.texto_presupuesto, /las 20 cajas de 24×12×45 cm ocupan/);
+  assert.match(require('../agent').SYSTEM, /nunca agregues líneas abajo del presupuesto/);
+});
