@@ -15,6 +15,15 @@ Informe: `docs/auditoria/2026-11-16-revision-general.md`. Arreglado y con prueba
 - Simulador y prueba completa: escenarios viejos (sin unidades/medidas, "contenedor → derivar", formato "Presupuesto PuertoBox") actualizados.
 - `precio_render.py` usaba "desde 20 kg": ahora toma `kg_desde_total`.
 
+## Charlas del 16/11 (captura de /charlas que mandó Gustavo a las 15:43)
+Lo que se vio y se arregló (`bot/test/charlas-16-11.test.js`):
+- **Mensajes repetidos:** si el cliente escribe mientras el bot contesta, el bot mandaba un segundo mensaje casi igual (poleas: el cálculo de 63 kg y el mensaje en inglés dos veces; consolidado: "solo courier" dos veces). Ahora contesta solo lo nuevo y, si ya estaba contestado, no manda nada.
+- **"No puedo abrir las publicaciones"** (links de Alibaba): ahora saca el producto del link (`product-detail/DIY-Sport-Gym-Fitness-Equipment-Wheel` = polea de gimnasio) y pide lo que falta.
+- **Volvía a saludar** a mitad de charla ("Hola, ¿cómo estás? Para avanzar necesito…"). Prohibido.
+- **Rango del proveedor** ("50–60 kg, 5 o 6 cajas", clamps): cotiza con el mayor y lo aclara, como hizo Gustavo con Leo (USD 1.120 + impuestos). **Cajón de madera:** avisa que suma peso y pide sus datos.
+- **Excel de proformas y packing lists** (cintas de Gian): ahora se leen.
+- Lo que siguió siendo de Gustavo: el arrancador (reclamo por el precio de la publicidad) y negociar.
+
 ## Que el bot lleve las charlas (16/11 14:43, Gustavo: "que la mayoría las lleves vos y que intervenga yo solo cuando no puedas; si intervengo, una opción para que la sigas vos")
 - **"🤖 Que lo siga el bot"** en cada charla de /charlas donde el bot está callado (porque contestó Gustavo o porque derivó). La tarjeta dice "🙋 Lo atendés vos". Al tocarlo, el bot retoma, y si el último mensaje es del cliente (dentro de las 24 h), le contesta enseguida. El prompt le dice cómo seguir después de Gustavo: respetar lo que él dijo, no repetir y no saludar de nuevo.
 - **¿Podía el bot?** (`bot/intervenciones.js`): el servidor junta las charlas de los últimos 7 días en las que escribió Gustavo o el bot derivó, las anonimiza, la IA dice en cada una si el bot podía solo, con un cambio o si necesitaba a Gustavo, y lo sube a la rama `aprendizaje-bot` (`docs/aprendizaje/intervenciones-AAAA-MM-DD.md`). Corre una vez por versión (`VERSION`), 4 min después del deploy, con hasta 4 intentos. Avisa por ntfy cuando está. Para volver a correrlo: cambiar `VERSION`. Ojo: las charlas que se cortaron antes del 16/11 (límite de 30 mensajes) llegan incompletas. v1 y v2 fallaron: la IA llegaba al tope sin escribir (se gastaba el espacio "pensando"). Era la misma causa probable del informe vacío del 15/11. v3: `thinking` desactivado y 16000 tokens, también en la revisión nocturna. Si un intento falla, sube `intervenciones-AAAA-MM-DD-error.md` con el motivo.
@@ -62,7 +71,8 @@ Informe: `docs/auditoria/2026-11-16-revision-general.md`. Arreglado y con prueba
 
 ### Imágenes y archivos de clientes (15/11/2026)
 - 15/11 21:33 (Gustavo: "es un quilombo, si manda el archivo dejá el archivo, no escribas arriba"): en /charlas lo que manda el cliente se ve solo como el archivo (📎 nombre + link, o la foto/audio) y lo que escribió; la lectura de la IA y las instrucciones para el bot se guardan para el bot pero no se muestran.
-- 15/11 21:30: la lectura de archivos se cortaba en facturas largas (tope de 700 palabras de respuesta; la de DL Medical con 11 renglones quedó en "5) El"). Subido a 2000. Los Excel (.xlsx) siguen sin leerse: el bot pide los datos por texto.
+- **16/11 (captura de /charlas, Gustavo 15:43): Excel y CSV se leen.** El .xlsx se pasa a texto (todas las hojas, sin librerías: usa el lector de zip del arancel) y la IA saca los datos igual que de un PDF. También si el celular lo manda como octet-stream. Si la IA se queda sin lugar sin escribir, reintenta con más lugar y sin pensar. Word (.docx) todavía no.
+- 15/11 21:30: la lectura de archivos se cortaba en facturas largas (tope de 700 palabras de respuesta; la de DL Medical con 11 renglones quedó en "5) El"). Subido a 2000. (Desde el 16/11 los Excel sí se leen.)
 - Fotos y PDF: se bajan de YCloud, la IA los lee y el bot recibe el contenido (lo anota y cotiza). Se guardan en /data/media y se ven en /charlas. Otros archivos (Excel, Word): se guardan y el bot pide los datos por texto. Usa el modelo del clasificador (una lectura por archivo).
 
 ### Presupuesto formal automático (15/11/2026)
