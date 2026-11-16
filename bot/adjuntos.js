@@ -18,7 +18,7 @@ const NOMBRE = { image: 'una imagen', document: 'un archivo', video: 'un video',
 
 const INSTRUCCIONES = `Sos el asistente de PuertoBox (importación courier desde China a Argentina). Un cliente mandó esta imagen o documento por WhatsApp.
 Escribí en castellano, en texto plano y en hasta 12 líneas, todo lo que sirva para cotizar la importación: qué producto es (modelo, materiales, si tiene batería o marca visible), cantidades, precio unitario y total (con moneda), peso por unidad y total, medidas del producto y de la caja de envío, cantidad de cajas, proveedor.
-Si es una proforma, factura o captura de Alibaba/1688, pasá los ítems con cantidad y precio. Si es la foto de un producto, describilo para poder clasificarlo.
+Si es una proforma, factura o captura de Alibaba/1688, pasá los ítems con cantidad y precio. Si es la sección "Empaque y entrega" / "Packaging & delivery" de Alibaba, copiá tal cual "Unidades de venta", "Tamaño del paquete" y "Peso bruto" y aclará que son por unidad de venta. Si es la parte del precio, copiá los escalones de precio y el pedido mínimo. Si es la foto de un producto, describilo para poder clasificarlo.
 No inventes datos que no se vean. Si no se lee bien, decilo.`;
 
 function tipoMime(media) {

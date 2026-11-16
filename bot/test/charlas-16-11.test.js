@@ -69,5 +69,9 @@ test('prompt: links de Alibaba, no volver a saludar, rango del proveedor y cajó
 });
 
 test('link de Alibaba: como la página no se puede leer, pide la captura del precio y de "Packaging & delivery"', () => {
-  assert.match(require('../agent').SYSTEM, /Packaging & delivery/);
+  const p = require('../agent').SYSTEM;
+  assert.match(p, /Packaging & delivery/);
+  assert.match(p, /Empaque y entrega/);
+  assert.match(p, /Artículo individual/);
+  assert.match(require('../adjuntos').INSTRUCCIONES, /Empaque y entrega/);
 });
