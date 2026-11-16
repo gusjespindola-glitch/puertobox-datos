@@ -382,10 +382,26 @@ test('si la IA se queda sin espacio a mitad del mensaje, lo termina en vez de ma
   const store = crearStore(null);
   const { fetchImpl, llamadas } = mock([
     { stop_reason: 'max_tokens', content: [{ type: 'text', text: '*Total a PuertoBox: USD 560*\nPrecio cerrado. Se paga c' }] },
-    (body) => { assert.strictEqual(body.messages.at(-1).role, 'assistant'); return txt('uando la caja llega al depósito.'); },
+    (body) => { assert.strictEqual(body.messages.at(-1).role, 'user'); assert.match(body.messages.at(-1).content, /Precio cerrado\. Se paga c/); return txt('Precio cerrado. Se paga cuando la caja llega al depósito.'); },
   ]);
   await procesar(msg('5491177700000', 'pasame el presupuesto'), { fetchImpl, store, debounceMs: 0 });
   const enviado = llamadas.whatsapp.map((b) => (b.text && b.text.body) || '').join('\n');
   assert.match(enviado, /Se paga cuando la caja llega al depósito\./);
   assert.strictEqual(llamadas.claude.length, 2);
+});
+
+test('si el cliente escribió mientras el bot contestaba, el pedido a la IA termina en un mensaje del cliente (16/11)', async () => {
+  const { responder } = require('../agent');
+  const { crearStore } = require('../store');
+  const st = crearStore(null);
+  st.agregar('5491100000001', 'user', 'Unos 21grs');
+  st.agregar('5491100000001', 'user', '21kgr');
+  st.agregar('5491100000001', 'assistant', '¿Los 21 kg son el peso total?');
+  let ultimo;
+  const fetchImpl = async (url, opt) => { const b = JSON.parse(opt.body); ultimo = b.messages.at(-1); return { ok: true, json: async () => ({ content: [{ type: 'text', text: '¿Viene en una caja o en varias?' }], stop_reason: 'end_turn' }) }; };
+  process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || 'x';
+  const r = await responder({ telefono: '5491100000001', texto: '21kgr', store: st, fetchImpl, guardado: true });
+  assert.strictEqual(ultimo.role, 'user');
+  assert.match(ultimo.content, /mientras le contestabas/);
+  assert.match(r, /caja/);
 });

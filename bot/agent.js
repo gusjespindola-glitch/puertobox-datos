@@ -59,6 +59,12 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
     if (last && last.role === m.role) last.content += `\n${m.content}`;
     else messages.push({ role: m.role, content: m.content });
   }
+  // 16/11 (bombachas y difusores: "Disculpá, tuvimos un inconveniente momentáneo"): si el cliente manda otro mensaje
+  // mientras el bot le contesta el anterior, el historial queda terminado en la respuesta del bot y la API rechaza el
+  // pedido (no acepta terminar en un mensaje del asistente). Se agrega una nota para que conteste lo que falte.
+  if (!messages.length || messages[messages.length - 1].role !== 'user') {
+    messages.push({ role: 'user', content: `[Sistema: el cliente mandó esto mientras le contestabas el mensaje anterior: "${texto}". Respondé lo que falte; si ya quedó contestado, respondé en una línea.]` });
+  }
   const ctx = { telefono, store, derivaciones, fetchImpl };
 
   // Correcciones de Gustavo desde /charlas (circuito de aprendizaje, 15/11): valen desde el próximo mensaje.
@@ -83,12 +89,18 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
     // 16/11 (Gustavo: "se cortó la respuesta varias veces"): si la IA se quedó sin espacio a mitad de un mensaje,
     // se le pide que termine en vez de mandar "Precio cerrado. Se paga c" al cliente.
     if (res.stop_reason === 'max_tokens' && !res._continuado) {
-      const parcial = contenido.filter((b) => b.type === 'text').map((b) => b.text).join('\n');
-      messages.push({ role: 'assistant', content: parcial.replace(/\s+$/, '') });
+      // Sin "prefill" (terminar en un mensaje del asistente), que algunos modelos rechazan: se guarda lo completo hasta
+      // la última línea entera y se le pide que escriba solo lo que falta, empezando por la línea cortada.
+      const parcial = contenido.filter((b) => b.type === 'text').map((b) => b.text).join('\n').replace(/\s+$/, '');
+      const corte = parcial.lastIndexOf('\n');
+      const completas = corte >= 0 ? parcial.slice(0, corte) : '';
+      const cortada = corte >= 0 ? parcial.slice(corte + 1) : parcial;
+      messages.push({ role: 'assistant', content: parcial });
+      messages.push({ role: 'user', content: `[Sistema: tu mensaje se cortó por largo. No lo repitas: escribí SOLO lo que falta, empezando por esta línea completa: "${cortada}". Sin saludo ni explicación.]` });
       const sigue = await llamarClaude(messages, fetchImpl, 3, true, correcciones);
-      messages.pop();
-      const resto = (sigue.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
-      contenido.splice(0, contenido.length, { type: 'text', text: parcial.replace(/\s+$/, '') + resto });
+      messages.pop(); messages.pop();
+      const resto = (sigue.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('').replace(/^\s+/, '');
+      contenido.splice(0, contenido.length, { type: 'text', text: (completas ? completas + '\n' : '') + resto });
     }
     const respuesta = limpiar(contenido.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim());
     if (respuesta) { store.agregar(telefono, 'assistant', respuesta); return respuesta; }
