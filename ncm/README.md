@@ -17,6 +17,8 @@ Versión cargada: ver `sim_meta.json` (fecha de los archivos y cantidad de posic
 | `../web/ncm.html` | Buscador para el celular (datos embebidos) |
 
 ## Actualizar
+**Automático (16/11/2026):** el servidor baja todos los días el `arancel.zip` de ARCA (`src/arancel.js`) y, si es nuevo, lo instala en `/data/arancel/` y avisa los cambios. Lo de abajo queda para actualizar el repo a mano.
+
 1. Bajá los 3 archivos nuevos de ARCA y ponelos en `ncm/fuentes_arca/` (reemplazando los viejos).
 2. `bash ncm/actualizar.sh`
 3. Commit.

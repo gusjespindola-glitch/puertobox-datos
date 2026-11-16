@@ -13,9 +13,11 @@ const { crear } = require('./nomenclador');
 const negocio = require('./negocio');
 
 const RAIZ = path.join(__dirname, '..');
-const dataNom = (f) => JSON.parse(fs.readFileSync(path.join(RAIZ, 'web', 'nomenclador', 'data', f), 'utf8'));
-let motor = null;
+const arancel = require('./arancel');
+const dataNom = (f) => JSON.parse(fs.readFileSync(arancel.ruta(f), 'utf8')); // arancel ARCA bajado solo (16/11) o el del repo
+let motor = null; let motorVersion = -1;
 function nom() {
+  if (motorVersion !== arancel.version()) { motor = null; motorVersion = arancel.version(); }
   if (!motor) motor = crear({ sim: dataNom('sim.json'), intervenciones: dataNom('intervenciones.json'), sinonimos: dataNom('sinonimos.json'), frecuentes: dataNom('productos_frecuentes.json') });
   return motor;
 }

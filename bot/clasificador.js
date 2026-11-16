@@ -15,10 +15,12 @@ const { crear } = require('../src/nomenclador');
 const MODELO = process.env.CLASIFICADOR_MODEL || 'claude-sonnet-5-5';
 const TOPE_DIA = Number(process.env.CLASIFICACIONES_WEB_DIA || 15); // tope de clasificaciones con búsqueda web por día (cuida el saldo)
 
-let motor = null;
+let motor = null; let motorVersion = -1;
 function getMotor() {
+  const arancel = require('../src/arancel'); // arancel ARCA bajado solo (16/11) o el del repo
+  if (motorVersion !== arancel.version()) { motor = null; motorVersion = arancel.version(); }
   if (!motor) {
-    const d = (f) => require(path.join(__dirname, '..', 'web', 'nomenclador', 'data', f));
+    const d = (f) => JSON.parse(require('fs').readFileSync(arancel.ruta(f), 'utf8'));
     motor = crear({ sim: d('sim.json'), sufijos: {}, intervenciones: d('intervenciones.json'), sinonimos: d('sinonimos.json'), notas: {}, frecuentes: d('productos_frecuentes.json') });
   }
   return motor;
@@ -26,7 +28,7 @@ function getMotor() {
 
 /** Todas las aperturas argentinas que empiezan con un código (4, 6 u 8 dígitos, con o sin puntos). Exacto, sin buscar palabras. */
 function aperturas(codigo) {
-  const sim = require(path.join(__dirname, '..', 'web', 'nomenclador', 'data', 'sim.json'));
+  const sim = require('../src/arancel').leer('sim.json');
   const dig = String(codigo || '').replace(/\D/g, '');
   if (dig.length < 4) return [];
   const m = getMotor();
