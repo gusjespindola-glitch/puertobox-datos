@@ -209,7 +209,21 @@ function ejecutar(nombre, input, ctx) {
         porUnidad.dolar_usado_ars = dolar;
         avisos.push(`Ganancia: mostrala en una o dos líneas y en la moneda en que te habló el cliente: "Cada unidad te queda en unos $${porUnidad.costo_por_unidad_ars.toLocaleString('es-AR')} puesta en tu casa; si la vendés a $X, te quedan unos $${porUnidad.ganancia_por_unidad_ars.toLocaleString('es-AR')} por unidad (${porUnidad.margen_sobre_costo_pct}% sobre el costo)." Aclarale que es estimado, con dólar oficial de $${dolar}, y que no descuenta comisiones de venta (Mercado Libre, envío) ni tu monotributo.${gan <= 0 ? ' OJO: no le queda ganancia: decíselo con honestidad y sin vueltas.' : ''}`);
       }
+      // Peso volumétrico (16/11, Gustavo: "quiero que diga peso volumétrico, para que no me pregunten por qué les cobro de más"):
+      // cuando el flete se cobra por lo que ocupan las cajas y no por lo que pesan, el presupuesto lo dice y explica por qué.
+      const divVol = require('../data/precios_venta.json').flete_directo.divisor_volumetrico;
+      const fmt = (n) => String(Math.round(n * 10) / 10).replace('.', ',');
+      const volKg = input.bultos ? input.bultos.reduce((t, b) => t + (b.largo_cm * b.ancho_cm * b.alto_cm / divVol) * b.cantidad, 0)
+        : conMedidas ? (input.largo_cm * input.ancho_cm * input.alto_cm / divVol) * cajas : 0;
+      const aplicaVol = volKg > 0 && r.kg_presupuestado > Math.max(Math.ceil(input.kg - 1e-9), 1);
+      const medidasTxt = input.bultos ? input.bultos.map((b) => `${b.cantidad} × ${fmt(b.largo_cm)}×${fmt(b.ancho_cm)}×${fmt(b.alto_cm)}`).join(' + ') : `${cajas > 1 ? `${cajas} × ` : ''}${fmt(input.largo_cm)}×${fmt(input.ancho_cm)}×${fmt(input.alto_cm)}`;
+      const lineaVol = aplicaVol ? `Peso cobrable: ${r.kg_presupuestado} kg por *peso volumétrico*: pesa ${fmt(input.kg)} kg, pero las cajas ocupan como ${fmt(volKg)} kg (${medidasTxt} cm ÷ ${divVol}). La aerolínea cobra el mayor entre el peso real y el volumen.` : null;
       const resultado = {
+        aplica_volumetrico: aplicaVol,
+        peso_real_kg: input.kg,
+        peso_volumetrico_kg: Math.round(volKg * 100) / 100,
+        kg_cobrable: r.kg_presupuestado,
+        ...(lineaVol ? { linea_volumetrico: lineaVol } : {}),
         ...(fija ? { posicion: fija.posicion, posicion_a_confirmar: fija.confianza !== 'alta' && !fija.confirmada } : { posicion: 'a confirmar' }),
         flete_firme: conMedidas && !cajaPesada,
         ...porUnidad,
@@ -224,7 +238,7 @@ function ejecutar(nombre, input, ctx) {
         total_puertobox_usd: totalPB,
         // Para cuando el cliente pregunta "¿cuánto me sale el kilo?" o compara con la publicidad (que dice el kilo con la gestión incluida).
         usd_por_kilo_con_gestion: Math.round((totalPB / r.kg_presupuestado) * 100) / 100,
-        reglas: `El flete es PRECIO CERRADO: se respeta aunque la caja llegue hasta ${NEG.precio_cerrado_hasta_pct}% más pesada o grande; si supera eso, se ajusta con foto de la balanza. Se suma la gestión por envío (${NEG.gestion_texto}), ya incluida en total_puertobox_usd. El cliente le paga a PuertoBox SOLO total_puertobox_usd (flete + gestión); los impuestos son un estimado aparte que cobra el courier: nunca los sumes al total de PuertoBox. Nunca digas que si pesa menos paga menos. No le muestres al cliente kg_presupuestado ni el margen: solo el flete. Flete + handling se pagan al pesarse, antes de que salga. El envío de la fábrica al depósito en ${NEG.deposito_china} NO está incluido: lo paga el cliente (ideal: que lo incluya el proveedor; si lo paga PuertoBox, se suma aparte a lo que cueste). Impuestos y gasto administrativo son ESTIMADOS y se pagan directo a la empresa de transporte cuando entrega el paquete (decí "la empresa de transporte"; puede ser DHL, UPS o FedEx, no nombres una salvo que pregunten).`,
+        reglas: `El flete es PRECIO CERRADO: se respeta aunque la caja llegue hasta ${NEG.precio_cerrado_hasta_pct}% más pesada o grande; si supera eso, se ajusta con foto de la balanza. Se suma la gestión por envío (${NEG.gestion_texto}), ya incluida en total_puertobox_usd. El cliente le paga a PuertoBox SOLO total_puertobox_usd (flete + gestión); los impuestos son un estimado aparte que cobra el courier: nunca los sumes al total de PuertoBox. Nunca digas que si pesa menos paga menos. No le muestres el margen. Si aplica_volumetrico es true, poné linea_volumetrico tal cual en el presupuesto (16/11, Gustavo). Flete + handling se pagan al pesarse, antes de que salga. El envío de la fábrica al depósito en ${NEG.deposito_china} NO está incluido: lo paga el cliente (ideal: que lo incluya el proveedor; si lo paga PuertoBox, se suma aparte a lo que cueste). Impuestos y gasto administrativo son ESTIMADOS y se pagan directo a la empresa de transporte cuando entrega el paquete (decí "la empresa de transporte"; puede ser DHL, UPS o FedEx, no nombres una salvo que pregunten).`,
       };
       // precio_usd = lo que de verdad se le cobra (antes no sumaba recargos, gestión con CUIT de PuertoBox ni la del anuncio).
       if (ctx.store.guardarLead && ctx.store.lead) { const l = ctx.store.lead(ctx.telefono) || {}; if (l.cotizacion) ctx.store.guardarLead(ctx.telefono, { precio_usd: totalPB, cotizacion: { ...l.cotizacion, r: { ...resultado, reglas: undefined, aviso: undefined } } }); }
