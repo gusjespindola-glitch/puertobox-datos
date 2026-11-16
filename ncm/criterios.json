@@ -1,0 +1,169 @@
+{
+ "_meta": {
+  "que": "Criterios de clasificación arancelaria de ARCA (Res. Gral. 1618 y sucesivas), por posición NCM. La descripción es un resumen: el texto oficial está en el anexo de cada norma.",
+  "actualizado": "2026-11-16"
+ },
+ "normas": [
+  {
+   "id": "RG 5667/2025",
+   "anexo": "IF-2025-01196839-AFIP-DETNCA#SDGTLA",
+   "fecha_anexo": "2025-03-27",
+   "url": "https://pcram.net/pdf/2025-a5667_01.pdf"
+  },
+  {
+   "id": "Res. norma 59645",
+   "anexo": "",
+   "fecha_anexo": "",
+   "url": "https://www.argentina.gob.ar/normativa/nacional/norma-59645/texto"
+  }
+ ],
+ "criterios": [
+  {
+   "pos": "1806.90.00",
+   "desc": "Confitería a base de azúcar, aceite y grasa vegetal y cacao, con emulsionantes y saborizantes; sabor chocolate, avellana y frutilla; envase de 10 g",
+   "criterio": "21/25",
+   "expediente": "EX-2024-03776725",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "4901.99.00",
+   "desc": "Libro en español de tapa blanda, 72 páginas a color, guía de personajes, con caja adherida que contiene un rompecabezas de 300 piezas de cartón",
+   "criterio": "22/25",
+   "expediente": "EX-2023-01651176",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "3003.90.39",
+   "desc": "Medicamento en polvo a base de ibuprofeno (~85 %) con celulosa microcristalina, dióxido de silicio coloidal y croscaramelosa sódica; sin acondicionar para venta al por menor; envase de 50 kg",
+   "criterio": "23/25",
+   "expediente": "EX-2024-03444177",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "7019.69.00",
+   "desc": "Tejido de fibra de vidrio (>96 % SiO2) en sarga de malla cerrada, recubierto de silicona en ambas caras, con propiedades ignífugas",
+   "criterio": "24/25",
+   "expediente": "EX-2024-03516533",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "3824.99.29",
+   "desc": "Preparación emulsionante y estabilizante en polvo: estearoil lactilato de sodio (80 %) y carbonato de calcio (20 %); envase de 25 kg; aditivo alimentario",
+   "criterio": "25/25",
+   "expediente": "EX-2024-03046726",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "9406.90.20",
+   "desc": "Construcción prefabricada de acero galvanizado (~130 x 195 x 200 cm), con estructura, paredes, techo y puerta; presentada desmontada con elementos para montaje",
+   "criterio": "26/25",
+   "expediente": "EX-2024-02879968",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "9018.19.80",
+   "desc": "Tomógrafo de coherencia óptica (OCT) para visualizar y registrar estructuras oculares y diagnosticar daños en retina o nervio óptico, con soporte de cabeza y panel táctil",
+   "criterio": "27/25",
+   "expediente": "EX-2023-00181332",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "9401.39.00",
+   "desc": "Asiento giratorio de oficina con altura regulable, apoyabrazos, respaldo reclinable, base de aluminio en estrella con cinco ruedas",
+   "criterio": "28/25",
+   "expediente": "EX-2024-00670538",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "8708.99.90",
+   "desc": "Semieje de vehículo de ~525 mm con junta homocinética de rodamiento de bolas en un extremo y junta tipo trípode en el otro",
+   "criterio": "29/25",
+   "expediente": "EX-2024-02084579",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "8517.62.99",
+   "desc": "Aparato de conversión de datos en gabinete plástico con múltiples puertos (HDMI, USB, USB-C, RJ45, SD, audio, DP), USB-C como host, SSD removible de 256 GB tipo M.2",
+   "criterio": "30/25",
+   "expediente": "EX-2024-02705414",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "1806.90.00",
+   "desc": "Confitería a base de azúcar, aceite y grasa vegetal y cacao, con emulsionantes y saborizantes; sabor chocolate y avellana; envase de 10 g",
+   "criterio": "31/25",
+   "expediente": "EX-2024-00838674",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "4901.99.00",
+   "desc": "Libro en español de tapa blanda, 72 páginas a color, guía de personajes, con caja adherida que contiene un rompecabezas de 300 piezas de cartón",
+   "criterio": "32/25",
+   "expediente": "EX-2023-01650837",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "7019.69.00",
+   "desc": "Tejido de fibra de vidrio (>96 % SiO2) en sarga de malla cerrada, ignífugo, con adhesivo en una cara protegido por lámina plástica descartable",
+   "criterio": "33/25",
+   "expediente": "EX-2024-03204202",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "9603.90.00",
+   "desc": "Cepillo de limpieza tipo PIG para tuberías de plataformas petroleras, cilíndrico con punta cónica, núcleo de poliuretano, cubierta de poliéster y cerdas de acero",
+   "criterio": "34/25",
+   "expediente": "EX-2024-02641479",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "7019.69.00",
+   "desc": "Cinta tubular de fibra de vidrio (>96 % SiO2), diámetro interno de 25,4 mm, en rollo; funda ignífuga para aislamiento térmico de tuberías",
+   "criterio": "35/25",
+   "expediente": "EX-2024-03204245",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "3924.10.00",
+   "desc": "Vaso infantil de polipropileno con forma de cabeza de personaje, tapa basculante y orificio para sorbete, presentado con sorbete del mismo material",
+   "criterio": "36/25",
+   "expediente": "EX-2024-03819048",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "8470.50.10",
+   "desc": "Terminal de pago con lector de banda magnética, pantalla táctil LCD de 15,6 pulgadas, puertos LAN, USB y VGA, pantalla de cliente y cajón de dinero; para locales comerciales",
+   "criterio": "37/25",
+   "expediente": "EX-2024-00576538",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "2931.90.29",
+   "desc": "Hexametildisiloxano en pulverizador de 50 ml para venta al por menor, usado para retirar adhesivo de la piel de pacientes con ostomía",
+   "criterio": "38/25",
+   "expediente": "EX-2024-01154006",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "9026.20.10",
+   "desc": "Manómetro de hasta 21 kg/cm² con tubo flexible, tubo rígido y caja plástica; se instala en lugar de bujías para medir compresión en motores de encendido por chispa",
+   "criterio": "39/25",
+   "expediente": "EX-2023-01284365",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "9401.71.00",
+   "desc": "Sofá reclinable de dos cuerpos con relleno y tapizado de plástico, estructura de metal y madera, con mecanismos para reclinar respaldo y extender apoyapiés",
+   "criterio": "40/25",
+   "expediente": "EX-2025-00322380",
+   "norma": "RG 5667/2025"
+  },
+  {
+   "pos": "3005.10.90",
+   "desc": "Cinta adhesiva (esparadrapo), acondicionada para la venta al por menor con fines médicos",
+   "criterio": "201/99",
+   "expediente": "",
+   "norma": "Res. norma 59645"
+  }
+ ]
+}

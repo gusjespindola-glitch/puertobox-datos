@@ -99,10 +99,15 @@ function ejecutar(nombre, input, ctx) {
       const res = m.buscar(input.producto, 15).filter((f) => !f.c.startsWith('00')).slice(0, 5).map((f) => ({
         posicion: f.c, die: f.die, impuestos_internos: f.ii, descripcion: m.jerarquia(f).slice(-3).join(' › '),
         intervenciones_posibles: m.intervencionesDe(f).map((i) => i.organismo),
+        // Criterios de clasificación de ARCA para esa posición (16/11): pesan más que la descripción del arancel.
+        ...(() => { const cr = require('../src/criterios').dePosicion(f.c); return cr.length ? { criterios_arca: cr.map((c) => `Criterio ${c.criterio} (${c.norma}): ${c.desc}`) } : {}; })(),
       }));
+      const parecidos = require('../src/criterios').buscar(input.producto, 3);
       if (!res.length) return { aviso: 'Sin resultados. Probá con otras palabras (por ejemplo, de qué material es o para qué se usa) o derivá a Gustavo.' };
       const guia = m.buscar(input.producto, 1)[0]?.frecuente;
-      return guia ? { como_elegir: guia + ' Elegí la que corresponda según lo que dijo el cliente; si no sabés el material o el tipo, preguntalo. Es orientativa: la confirma nuestro despachante.', posiciones: res } : res;
+      const extra = parecidos.length ? { criterios_arca_parecidos: parecidos.map((c) => `${c.pos}: criterio ${c.criterio} (${c.norma}) para "${c.desc}"`) } : {};
+      if (guia) return { como_elegir: guia + ' Elegí la que corresponda según lo que dijo el cliente; si no sabés el material o el tipo, preguntalo. Es orientativa: la confirma nuestro despachante.', posiciones: res, ...extra };
+      return parecidos.length ? { posiciones: res, ...extra } : res;
     }
     case 'cotizar': {
       // Controles antes de dar un precio: datos imposibles o pedidos que no se cotizan por acá.
