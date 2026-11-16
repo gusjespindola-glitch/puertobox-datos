@@ -230,3 +230,10 @@ test('/wa: link de bio que sale del navegador de TikTok y lleva al bot', () => {
   assert.ok(/noindex/.test(r.cuerpo));
   assert.strictEqual(paginas.servir('/tiktok', new URLSearchParams()).cuerpo, r.cuerpo);
 });
+
+test('apenas sabe el producto, pide valor, peso y medidas juntos (o la proforma) y después lo que falte de a uno (Gustavo 16/11)', () => {
+  const prompt = require('fs').readFileSync(require('path').join(__dirname, '..', 'bot', 'prompt.md'), 'utf8');
+  assert.match(prompt, /pedile todos los datos juntos, en un solo mensaje/);
+  assert.match(prompt, /proforma o el packing list/);
+  assert.match(prompt, /Después, de a uno/);
+});
