@@ -106,8 +106,9 @@ test('avisos: van como JSON a ntfy (con tildes), con botones firmados, y si ntfy
   const intentos = [];
   const ok = await avisarGustavo(OWNER, 'hola', async (u, o) => { const b = JSON.parse(o.body); intentos.push(b); return b.actions ? { ok: false, status: 400, text: async () => 'invalid' } : { ok: true }; }, undefined, '5491100000001');
   assert.strictEqual(ok, true);
-  assert.strictEqual(intentos.length, 2);
-  assert.ok(!intentos[1].actions);
+  // 16/11: primero con número de serie, después sin serie y con botones, al final sin botones.
+  assert.strictEqual(intentos.length, 3);
+  assert.ok(!intentos[2].actions);
   delete process.env.NTFY_TOPIC;
 });
 
