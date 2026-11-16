@@ -21,11 +21,27 @@ function candidatas(url) {
   const m = u.match(/alibaba\.[a-z.]+\/product-detail\/([^?#\s]+?\.html)/i) || u.match(/m\.alibaba\.com\/product\/(\d+)\/([^?#\s]+?\.html)/i);
   if (m) {
     const ruta = m[2] ? `${m[2].replace(/\.html$/, '')}_${m[1]}.html` : m[1];
-    return ['fr', 'co.uk', 'com'].map((d) => `https://www.alibaba.${d}/product-detail/${ruta}`);
+    const id = (ruta.match(/[_-](\d{8,})\.html$/) || [])[1];
+    // 16/11: el "Compartir" de la app lleva a spanish.alibaba.com/product-detail/subject-<número>.html, que llega vacía;
+    // alibaba.fr con "subject-<número>" sí trae la publicación.
+    const rutas = [...new Set([ruta, ...(id ? [`subject-${id}.html`] : [])])];
+    return [...new Set([...rutas.flatMap((r) => ['fr', 'co.uk'].map((d) => `https://www.alibaba.${d}/product-detail/${r}`)), `https://www.alibaba.com/product-detail/${ruta}`])];
   }
   return /^https?:\/\//i.test(u) ? [u.split('#')[0]] : [];
 }
-const idDe = (url) => (String(url).match(/_(\d{8,})\.html/) || String(url).match(/\/(\d{8,})\//) || [])[1] || String(url).split('?')[0];
+const idDe = (url) => (String(url).match(/[_-](\d{8,})\.html/) || String(url).match(/\/(\d{8,})\//) || [])[1] || String(url).split('?')[0];
+/** Links cortos del "Compartir" de la app (alibaba.com/x/B2iQFj): se sigue la redirección para saber qué producto es. */
+const esCorto = (u) => /alibaba\.[a-z.]+\/x\//i.test(u) || /^https?:\/\/(s\.)?(click|a)\.aliexpress\.com\//i.test(u);
+async function resolver(url, fetchImpl) {
+  let u = String(url || '').trim();
+  for (let i = 0; i < 4 && esCorto(u); i++) {
+    const r = await fetchImpl(u, { redirect: 'manual', headers: { 'user-agent': UA }, signal: AbortSignal.timeout(15000) });
+    const loc = r.headers && (typeof r.headers.get === 'function' ? r.headers.get('location') : r.headers.location);
+    if (!loc) break;
+    u = new URL(loc, u).toString();
+  }
+  return u;
+}
 
 /** Texto visible de una página (sin scripts ni estilos), recortado. */
 function textoDeHtml(html, max = 20000) {
@@ -58,7 +74,9 @@ const jsonDe = (j) => {
 /** Lee un link y devuelve los datos de la publicación, o { error }. ctx: { fetchImpl, store }. */
 async function leer(url, ctx = {}) {
   const fetchImpl = ctx.fetchImpl || fetch;
-  const urls = candidatas(url);
+  let real = url;
+  try { real = await resolver(url, fetchImpl); } catch (e) { /* si no se puede seguir, se prueba con el link tal cual */ }
+  const urls = candidatas(real);
   if (!urls.length) return { error: 'No es un link. Pedile al cliente el link de la publicación o una captura.' };
   const id = idDe(urls[0]);
   if (cache.has(id)) return { ...cache.get(id), ya_leido: true };
@@ -100,8 +118,8 @@ async function leer(url, ctx = {}) {
 
 // Prueba al arrancar (una vez por versión): lee el link real del arrancador y sube el resultado a la rama del
 // aprendizaje (es una publicación pública, sin datos de clientes). Así Claude sabe si desde Railway se lee.
-const VERSION_PRUEBA = 'v2-16-11'; // v2: el control ya no frena un paquete grande pero posible
-const LINK_PRUEBA = 'https://www.alibaba.com/product-detail/12V-Car-Jump-Starter-With-Air_1601952873179.html';
+const VERSION_PRUEBA = 'v3-16-11'; // v3: link corto del Compartir de la app // v2: el control ya no frena un paquete grande pero posible
+const LINK_PRUEBA = 'https://www.alibaba.com/x/B2iQFj?ck=pdp'; // el que mandó Gustavo desde la app (16/11 16:04): es el arrancador
 async function autoprueba({ store, fetchImpl = fetch }) {
   if (!store.meta || store.meta('pruebaLink') === VERSION_PRUEBA) return null;
   store.meta('pruebaLink', VERSION_PRUEBA);
