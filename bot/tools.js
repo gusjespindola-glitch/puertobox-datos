@@ -6,10 +6,12 @@ const { crear } = require('../src/nomenclador');
 const NEG = require('../src/negocio').datos();
 
 // Mismos datos que el Nomenclador PuertoBox (web/nomenclador/data), generados desde ARCA.
-let motor = null;
+let motor = null; let motorVersion = -1;
 function getMotor() {
+  const arancel = require('../src/arancel'); // arancel ARCA bajado solo (16/11) o el del repo
+  if (motorVersion !== arancel.version()) { motor = null; motorVersion = arancel.version(); }
   if (!motor) {
-    const d = (f) => require(path.join(__dirname, '..', 'web', 'nomenclador', 'data', f));
+    const d = (f) => JSON.parse(require('fs').readFileSync(arancel.ruta(f), 'utf8'));
     motor = crear({ sim: d('sim.json'), sufijos: {}, intervenciones: d('intervenciones.json'), sinonimos: d('sinonimos.json'), notas: {}, frecuentes: d('productos_frecuentes.json') });
   }
   return motor;

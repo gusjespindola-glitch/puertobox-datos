@@ -129,6 +129,7 @@ input.falta{border:2px solid #c8102e;background:#fff5f5}.charla{background:#eef5
 <header>
   <h1>Nomenclador PuertoBox</h1>
   <span class="src" id="src">Cargando Arancel Integrado ARCA…</span>
+  <div id="cambios" style="font-size:.8rem;margin-top:4px;opacity:.85"></div>
 </header>
 <div class="wrap">
   <aside class="panel side">
@@ -225,6 +226,23 @@ async function cargar() {
   if (h) { const r = N.buscar(h[1], 1); if (r[0]) { $('q').value = r[0].c; buscar(); abrir(r[0].c); } }
   else { $('q').value = 'zapatillas'; buscar(); const r = N.buscar('zapatillas', 30).find((f) => f.die > 0); if (r) abrir(r.c); }
   verHist();
+  verCambios();
+}
+
+// Arancel que se actualiza solo (16/11): el servidor baja ARCA todos los días y guarda qué cambió.
+async function verCambios() {
+  let h = [];
+  try { h = await fetch('api/cambios').then((r) => (r.ok ? r.json() : [])); } catch (e) { /* sin conexión */ }
+  const u = h[0];
+  if (!u) { $('cambios').textContent = 'Se actualiza solo: el servidor revisa ARCA todos los días.'; return; }
+  const fecha = (f) => String(f || '').split('-').reverse().join('/');
+  const n = u.cambios.length + u.altas.length + u.bajas.length;
+  const fila = (c, t) => `<div><a href="#p-${c.replace(/\D/g, '')}" data-c="${esc(c)}" class="vc">${esc(c)}</a> ${esc(t)}</div>`;
+  $('cambios').innerHTML = `Se actualiza solo desde ARCA. Último arancel nuevo: archivos del ${fecha(u.hasta)} (antes ${fecha(u.desde)})${n ? '' : ', sin cambios en derechos.'}` + (n ? `<details style="margin-top:4px"><summary>${n} cambios del arancel</summary>${
+    u.cambios.slice(0, 200).map((x) => fila(x.c, x.dif.map((d) => (d.campo === 'Descripción' ? `descripción: "${d.ahora}"` : `${d.campo} ${d.antes} → ${d.ahora}`)).join(', '))).join('')
+  }${u.altas.length ? `<div style="margin-top:4px"><b>Nuevas</b></div>${u.altas.slice(0, 100).map((x) => fila(x.c, x.d.split(' > ').pop())).join('')}` : ''}${
+    u.bajas.length ? `<div style="margin-top:4px"><b>Dadas de baja</b></div>${u.bajas.slice(0, 100).map((x) => `<div>${esc(x.c)} ${esc(x.d.split(' > ').pop())}</div>`).join('')}` : ''}</details>` : '');
+  $('cambios').querySelectorAll('.vc').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); $('q').value = a.dataset.c; buscar(); abrir(a.dataset.c); }));
 }
 
 function buscar() {

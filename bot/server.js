@@ -276,6 +276,23 @@ async function avisoMensajeNuevo(st, tel, texto, owner, fetchImpl = fetch, ahora
   return avisarNtfy(`💬 ${l.nombre ? l.nombre + ' (+' + tel + ')' : '+' + tel} te escribió:\n${linea}`, 'PuertoBox: mensaje nuevo', rec.silencio(ahora) ? 'low' : 'high', fetchImpl, tel);
 }
 
+async function ticArancel(fetchImpl = fetch) {
+  try {
+    const r = await require('../src/arancel').actualizar(fetchImpl);
+    if (r.nuevo) await avisarGustavo(soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), r.texto, fetchImpl, 'PuertoBox: arancel ARCA actualizado');
+    return r;
+  } catch (e) {
+    console.error('arancel ARCA:', e.message);
+    // Si ARCA no responde o cambia el archivo, Gustavo se entera (como mucho una vez por semana) y el nomenclador sigue con el anterior.
+    const marca = path.join(require('../src/arancel').dir(), 'aviso_error.txt');
+    let ultimo = 0; try { ultimo = Number(fs.readFileSync(marca, 'utf8')) || 0; } catch (_) { /* nunca avisó */ }
+    if (Date.now() - ultimo > 7 * 864e5) {
+      try { fs.mkdirSync(path.dirname(marca), { recursive: true }); fs.writeFileSync(marca, String(Date.now())); } catch (_) { /* sin volumen */ }
+      await avisarGustavo(soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), `⚠️ No pude bajar el arancel de ARCA para actualizar el nomenclador (${e.message}). Sigue funcionando con el del ${require('../src/arancel').leer('sim.json').meta.fecha_archivos}.`, fetchImpl, 'PuertoBox: arancel ARCA');
+    }
+    return { error: e.message };
+  }
+}
 async function avisarGustavo(owner, texto, fetchImpl = fetch, titulo = 'PuertoBox: cliente para atender', tel = null, tipo = null) {
   if (process.env.NTFY_TOPIC) return avisarNtfy(texto, titulo, 'high', fetchImpl, tel, tipo);
   if (owner) await enviar(owner, texto, fetchImpl);
@@ -515,6 +532,16 @@ function servirNomenclador(req, res, url) {
   if (rel === 'api/cotizar') {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
     return res.end(JSON.stringify(cotizarAMano(url.searchParams)));
+  }
+  // Arancel ARCA que se actualiza solo (16/11): historial de cambios y datos bajados, que mandan sobre los del repo.
+  if (rel === 'api/cambios') {
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+    return res.end(JSON.stringify(require('../src/arancel').historial()));
+  }
+  if (/^data\/(sim|notas|sufijos)\.json$/.test(rel)) {
+    const p = require('../src/arancel').ruta(rel.slice(5));
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-cache' });
+    return fs.createReadStream(p).pipe(res);
   }
   const archivo = path.normalize(path.join(WEB, rel));
   if (!archivo.startsWith(WEB + path.sep) || !fs.existsSync(archivo) || fs.statSync(archivo).isDirectory()) { res.writeHead(404); return res.end('No encontrado'); }
@@ -814,6 +841,8 @@ if (require.main === module) {
   setTimeout(ticAprendizaje, 2 * 60e3).unref(); // 16/11: si el servidor reinició y quedó pendiente la revisión, la hace al arrancar
   // Dólar de referencia automático (antes se cambiaba a mano cada semana).
   const dol = require('../src/dolar'); dol.actualizar(); setInterval(() => dol.actualizar(), 12 * 3600e3).unref();
+  // Arancel ARCA (16/11, Gustavo: "que se mantenga actualizada"): se fija una vez por día si ARCA publicó uno nuevo.
+  setTimeout(ticArancel, 3 * 60e3).unref(); setInterval(ticArancel, 24 * 3600e3).unref();
   setTimeout(() => { tic(); ticDifusion(); }, 60e3).unref(); setInterval(() => { tic(); ticDifusion(); }, 15 * 60e3).unref();
 }
 /** Chats con un mensaje del cliente guardado y sin respuesta (por un reinicio), dentro de la ventana de 24 h y sin pausa. */
@@ -822,4 +851,4 @@ function pendientesSinResponder(st, ahora = Date.now()) {
     && (c.mensajes || []).length && c.mensajes[c.mensajes.length - 1].role === 'user');
 }
 
-module.exports = { firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo };
+module.exports = { firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo, ticArancel };
