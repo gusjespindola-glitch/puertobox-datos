@@ -300,8 +300,9 @@ async function avisoMensajeNuevo(st, tel, texto, owner, fetchImpl = fetch, ahora
   if (c.avisoNuevoEn && ahora - c.avisoNuevoEn < 10 * 60e3) return false;
   if (st.marcar) st.marcar(tel, { avisoNuevoEn: ahora });
   const l = (st.lead && st.lead(tel)) || {};
-  const linea = rec.vistaCliente(String(texto || '')).split('\n')[0].slice(0, 160);
-  return avisarNtfy(`💬 ${l.nombre ? l.nombre + ' (+' + tel + ')' : '+' + tel} te escribió:\n${linea}`, 'PuertoBox: mensaje nuevo', rec.silencio(ahora) ? 'low' : 'high', fetchImpl, tel);
+  // 16/11: sin códigos internos ("[Audio del cliente…] [archivo:/media/…]") y en la primera línea, que es lo que se ve sin abrir el aviso.
+  const linea = rec.resumenVista(String(texto || '')).replace(/\s+/g, ' ').trim().slice(0, 160);
+  return avisarNtfy(`💬 ${l.nombre ? l.nombre + ' (+' + tel + ')' : '+' + tel}: ${linea}`, 'PuertoBox: mensaje nuevo', rec.silencio(ahora) ? 'low' : 'high', fetchImpl, tel);
 }
 
 async function ticArancel(fetchImpl = fetch) {
@@ -909,4 +910,4 @@ function pendientesSinResponder(st, ahora = Date.now()) {
     && (c.mensajes || []).length && c.mensajes[c.mensajes.length - 1].role === 'user');
 }
 
-module.exports = { leerMultipart, firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo, ticArancel };
+module.exports = { avisoMensajeNuevo, leerMultipart, firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo, ticArancel };
