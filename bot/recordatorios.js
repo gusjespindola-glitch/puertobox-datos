@@ -236,6 +236,24 @@ function resumenVista(t) {
   return v.length > 120 ? v.slice(0, 118) + '…' : v;
 }
 
+/**
+ * Lo que mandó el cliente, como lo ve Gustavo en /charlas (15/11 21:33, Gustavo: "si manda el archivo, dejá el archivo,
+ * no escribas arriba"): solo el archivo (foto, PDF, audio) con su nombre y lo que escribió el cliente.
+ * La lectura de la IA y las instrucciones para el bot quedan guardadas para el bot, pero no se muestran.
+ */
+function vistaCliente(t) {
+  const v = String(t || '');
+  if (!/^\[El cliente mandó /.test(v)) return v;
+  const archivo = (v.match(/\[archivo:\/media\/[0-9a-f]{32}\.[a-z0-9]{1,5}\]/) || [])[0] || '';
+  const noBajado = /\[no se pudo bajar el archivo[^\]]*\]/.test(v);
+  const que = (v.match(/^\[El cliente mandó (una imagen|un archivo|un video|un audio|un sticker)/) || [])[1] || '';
+  const nombre = (v.match(/^\[El cliente mandó [a-z ]+? \(([^)]+)\)/) || [])[1] || '';
+  const escribio = (v.match(/Escribió: "([^"]*)"/) || [])[1] || '';
+  const icono = que === 'una imagen' ? '📷' : que === 'un audio' ? '🎧' : que === 'un video' ? '🎬' : '📎';
+  const titulo = `${icono} ${nombre || (que ? que.replace(/^un[a]? /, '').replace(/^./, (l) => l.toUpperCase()) : 'Archivo')}`;
+  return [titulo, archivo, noBajado ? '[no se pudo bajar el archivo: pedíselo de nuevo]' : '', escribio && escribio !== nombre ? escribio : ''].filter(Boolean).join('\n');
+}
+
 function textoMensaje(content) {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
@@ -278,7 +296,7 @@ ${pos}
     const msgs = c.mensajes.map((m) => {
       const txt = textoMensaje(m.content).trim();
       if (m.role !== 'user' && txt.startsWith('[Gustavo] ')) return { quien: 'vos', txt: txt.slice(10), noEntregado: !!m.noEntregado };
-      return { quien: m.role === 'user' ? 'cliente' : 'bot', txt, noEntregado: !!m.noEntregado };
+      return { quien: m.role === 'user' ? 'cliente' : 'bot', txt: m.role === 'user' ? vistaCliente(txt) : txt, noEntregado: !!m.noEntregado };
     }).filter((m) => m.txt);
     // Responder desde el 6773 (15/11: Gustavo no tiene WhatsApp en ese número y el Inbox de YCloud no muestra los chats del bot).
     const quedanH = 24 - (ahora - (c.ultimoClienteEn || 0)) / 3600e3;
@@ -299,4 +317,4 @@ ${pos}
 ${chats.length ? `<ul>${chats.map(tarjeta).join('')}</ul>` : '<p>Ningún cliente le escribió al bot en estos días.</p>'}</body></html>`;
 }
 
-module.exports = { paraEmpujar, esGustavo, pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes, paginaCharlas, embudo };
+module.exports = { paraEmpujar, esGustavo, pendientes, textoPendientes, revisar, silencio, horaAR, paginaPendientes, paginaCharlas, embudo, vistaCliente };

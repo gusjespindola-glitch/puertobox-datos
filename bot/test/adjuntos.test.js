@@ -86,7 +86,8 @@ test('vista previa de la tarjeta: sin el código del archivo', () => {
   const store = crearStore(null);
   store.agregar('5493', 'user', '[El cliente mandó una imagen, leído automáticamente. [archivo:/media/2a8f8f8a602164d01fc5361fa6b87b57.jpg]]\nEs la foto de una minera ASIC');
   const h = paginaCharlas(store, 'x', Date.now(), 3, () => '/r');
-  assert.match(h, /“📷 Foto: Es la foto de una minera ASIC”/);
+  assert.match(h, /“📷 Imagen”/); // 15/11 21:33: se ve el archivo, no la lectura de la IA
+  assert.doesNotMatch(h, /Es la foto de una minera ASIC/);
   assert.ok(!/“[^”]*\[archivo:/.test(h));
 });
 
