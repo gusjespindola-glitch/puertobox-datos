@@ -14,8 +14,11 @@ const M = precios.flete_directo;
 
 /** Kg cobrable: mayor entre real y volumétrico, redondeado hacia arriba al kilo entero, mínimo 1.
  * 15/11/2026 (Gustavo): nunca medios kilos; la aerolínea redondea al kilo, PuertoBox también. */
-function kgCobrable({ kg, largo, ancho, alto, cajas = 1 }) {
-  const vol = largo && ancho && alto ? ((largo * ancho * alto) / M.divisor_volumetrico) * (cajas || 1) : 0;
+function kgCobrable({ kg, largo, ancho, alto, cajas = 1, bultos = null }) {
+  // 16/11 (Gustavo: "¿cuando son muchas cajas distintas?"): cada tipo de caja suma su volumétrico.
+  const vol = Array.isArray(bultos) && bultos.length
+    ? bultos.reduce((t, b) => t + ((b.largo * b.ancho * b.alto) / M.divisor_volumetrico) * (b.cantidad || 1), 0)
+    : largo && ancho && alto ? ((largo * ancho * alto) / M.divisor_volumetrico) * (cajas || 1) : 0;
   return Math.max(Math.ceil(Math.max(kg, vol) - 1e-9), 1);
 }
 
@@ -71,8 +74,8 @@ function estimarImpuestos({ valorFactura, flete, die, internos = 0, regimen = 'c
 }
 
 /** Presupuesto estimado para el cliente (flete final = peso de balanza). */
-function presupuesto({ kg, largo, ancho, alto, cajas = 1, valorFactura, die = 0, internos = 0, regimen = 'comercial', conFranquicia = true }) {
-  const declarado = kgCobrable({ kg, largo, ancho, alto, cajas });
+function presupuesto({ kg, largo, ancho, alto, cajas = 1, bultos = null, valorFactura, die = 0, internos = 0, regimen = 'comercial', conFranquicia = true }) {
+  const declarado = kgCobrable({ kg, largo, ancho, alto, cajas, bultos });
   const kgPres = Math.ceil(declarado * (1 + (M.tolerancia || 0)) - 1e-9);
   const flete = fleteVenta(kgPres);
   const handling = M.handling_usd || 0;

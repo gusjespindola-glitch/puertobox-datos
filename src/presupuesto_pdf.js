@@ -17,7 +17,8 @@ function armarDatos({ nro, lead, cliente = {}, ahora = new Date(), validezDias =
   if (!c) return null;
   const { input, r } = c;
   const vence = new Date(ahora.getTime() + validezDias * 864e5);
-  const vol = input.largo_cm && input.ancho_cm && input.alto_cm ? Math.round((input.largo_cm * input.ancho_cm * input.alto_cm / 5000) * (input.cantidad_cajas || 1) * 100) / 100 : null;
+  const vol = Array.isArray(input.bultos) && input.bultos.length ? Math.round(input.bultos.reduce((t, b) => t + (b.largo_cm * b.ancho_cm * b.alto_cm / 5000) * b.cantidad, 0) * 100) / 100
+    : input.largo_cm && input.ancho_cm && input.alto_cm ? Math.round((input.largo_cm * input.ancho_cm * input.alto_cm / 5000) * (input.cantidad_cajas || 1) * 100) / 100 : null;
   const items = [[`Flete aéreo courier China a domicilio (${r.kg_presupuestado} kg cobrables)`, r.flete_puertobox_usd]];
   if (r.recargo_cajas_usd) items.push(['Recargo de la aerolínea por cajas de más de 23 kg', r.recargo_cajas_usd]);
   if (r.recargo_litio_usd) items.push(['Recargo de la aerolínea por batería de litio (carga peligrosa)', r.recargo_litio_usd]);
@@ -40,7 +41,7 @@ function armarDatos({ nro, lead, cliente = {}, ahora = new Date(), validezDias =
     mercaderia: {
       desc: lead.producto || '', posicion: (lead.posicion_fija && lead.posicion_fija.posicion) || lead.posicion || 'a confirmar',
       valor: input.valor_factura_usd, unidades: input.unidades || null, peso_real: input.kg, vol, kg_cob: r.kg_presupuestado,
-      bultos: input.largo_cm && input.ancho_cm && input.alto_cm ? `${input.cantidad_cajas || 1} × ${input.largo_cm}×${input.ancho_cm}×${input.alto_cm} cm` : `${input.cantidad_cajas || 1} (medidas a confirmar)`,
+      bultos: Array.isArray(input.bultos) && input.bultos.length ? input.bultos.map((b) => `${b.cantidad} × ${b.largo_cm}×${b.ancho_cm}×${b.alto_cm} cm`).join(' + ') : input.largo_cm && input.ancho_cm && input.alto_cm ? `${input.cantidad_cajas || 1} × ${input.largo_cm}×${input.ancho_cm}×${input.alto_cm} cm` : `${input.cantidad_cajas || 1} (medidas a confirmar)`,
       envio: input.regimen === 'personal' ? 'Pequeño envío (hasta 3 unidades iguales)' : 'Courier comercial',
     },
     items, total: r.total_puertobox_usd, imp, impTotal: r.impuestos_y_gastos_estimados_usd,

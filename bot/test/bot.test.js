@@ -405,3 +405,30 @@ test('si el cliente escribió mientras el bot contestaba, el pedido a la IA term
   assert.match(ultimo.content, /mientras le contestabas/);
   assert.match(r, /caja/);
 });
+
+test('cajas de distintos tamaños: cada tamaño suma su volumétrico (caso Gian, 3 fábricas, 16/11)', () => {
+  const { ejecutar } = require('../tools');
+  const ctx = { telefono: '549110000777', store: { lead: () => null, guardarLead() {} } };
+  const base = { kg: 3.9, valor_factura_usd: 83, die: 16, regimen: 'comercial', unidades: 54 };
+  const r = ejecutar('cotizar', { ...base, bultos: [
+    { cantidad: 1, largo_cm: 26, ancho_cm: 20, alto_cm: 11.5, kg_por_caja: 0.7 },
+    { cantidad: 1, largo_cm: 22, ancho_cm: 14.5, alto_cm: 11, kg_por_caja: 0.7 },
+    { cantidad: 1, largo_cm: 34, ancho_cm: 34, alto_cm: 20, kg_por_caja: 2.5 },
+  ] }, ctx);
+  // 1,196 + 0,70 + 4,62 = 6,52 kg de volumen → 7 kg cobrables (el peso real es 3,9).
+  assert.strictEqual(r.kg_presupuestado, 7);
+  assert.strictEqual(r.total_puertobox_usd, 195);
+  // Con solo la caja grande x3 daría mucho más: no se promedia ni se toma la más grande.
+  const mal = ejecutar('cotizar', { ...base, cantidad_cajas: 3, largo_cm: 34, ancho_cm: 34, alto_cm: 20 }, ctx);
+  assert.ok(mal.kg_presupuestado > 13);
+  // Falta medir una caja: no hay número.
+  const sin = ejecutar('cotizar', { ...base, bultos: [{ cantidad: 1, largo_cm: 26, ancho_cm: 20, alto_cm: 11.5 }, { cantidad: 2 }] }, ctx);
+  assert.match(sin.error, /Falta medir alguna caja/);
+  // Una caja de más de 23 kg entre varias livianas: recargo solo para esa.
+  const pes = ejecutar('cotizar', { kg: 34, valor_factura_usd: 500, die: 16, regimen: 'comercial', bultos: [
+    { cantidad: 1, largo_cm: 50, ancho_cm: 40, alto_cm: 40, kg_por_caja: 26 }, { cantidad: 2, largo_cm: 30, ancho_cm: 30, alto_cm: 30, kg_por_caja: 4 },
+  ] }, ctx);
+  const una = ejecutar('cotizar', { kg: 26, valor_factura_usd: 500, die: 16, regimen: 'comercial', cantidad_cajas: 1, largo_cm: 50, ancho_cm: 40, alto_cm: 40 }, ctx);
+  assert.ok(pes.recargo_cajas_usd > 0);
+  assert.strictEqual(pes.recargo_cajas_usd, una.recargo_cajas_usd);
+});
