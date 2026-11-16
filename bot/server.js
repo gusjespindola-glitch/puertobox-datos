@@ -844,12 +844,13 @@ function servidor() {
       return fs.createReadStream(archivo).pipe(res);
     }
     // Presupuesto formal en PDF (15/11). El PDF se sirve por un código largo (lo necesita WhatsApp para descargarlo).
-    if (req.method === 'GET' && /^\/presupuesto\/[0-9a-f]{32}\.pdf$/.test(url.pathname)) {
+    // También /presupuesto/<código>/<nombre>.pdf: el iPhone guarda el archivo con el último tramo del link (16/11, Gustavo: que se guarde con el nombre del cliente o del producto).
+    if (req.method === 'GET' && /^\/presupuesto\/[0-9a-f]{32}(\.pdf|\/[^/]+\.pdf)$/.test(url.pathname)) {
       const p = store.presupuesto(url.pathname.slice(13, 45));
       const lead = p && store.lead(p.tel);
       const datos = p && lead && require('../src/presupuesto_pdf').armarDatos({ nro: p.nro, lead, cliente: p.cliente, ahora: new Date(p.creado) });
       if (!datos) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Presupuesto no encontrado.'); }
-      return require('../src/presupuesto_pdf').pdf(datos).then((buf) => { res.writeHead(200, { 'content-type': 'application/pdf', 'content-disposition': `inline; filename="Presupuesto PuertoBox ${p.nro}.pdf"`, 'cache-control': 'no-store', 'x-robots-tag': 'noindex' }); res.end(buf); });
+      return require('../src/presupuesto_pdf').pdf(datos).then((buf) => { res.writeHead(200, { 'content-type': 'application/pdf', 'content-disposition': require('../src/presupuesto_pdf').disposicion(require('../src/presupuesto_pdf').nombreArchivo(datos)), 'cache-control': 'no-store', 'x-robots-tag': 'noindex' }); res.end(buf); });
     }
     if (req.method === 'POST' && (url.pathname === '/presupuesto-ver' || url.pathname === '/presupuesto-enviar')) {
       const tel = soloDigitos(url.searchParams.get('tel') || '');
@@ -864,12 +865,16 @@ function servidor() {
         const p = store.presupuestoDe(tel) && store.lead(tel).presupuesto && store.presupuestoDe(tel).cotizacionEn === (store.lead(tel).cotizacion || {}).en ? store.presupuestoDe(tel) : store.crearPresupuesto(tel);
         if (!p) return volver('&error=' + encodeURIComponent('ese cliente todavía no tiene una cotización completa'));
         store.actualizarPresupuesto(p.token, { cliente: { nombre: (f.get('nombre') || '').trim(), doc: (f.get('doc') || '').trim(), dom: (f.get('dom') || '').trim(), iva: (f.get('iva') || '').trim() } });
-        const link = `${BASE_URL()}/presupuesto/${p.token}.pdf`;
-        if (url.pathname === '/presupuesto-ver') { res.writeHead(303, { location: `/presupuesto/${p.token}.pdf` }); return res.end(); }
+        const PP = require('../src/presupuesto_pdf');
+        const datosP = PP.armarDatos({ nro: p.nro, lead: store.lead(tel), cliente: (store.presupuesto(p.token) || p).cliente, ahora: new Date(p.creado) });
+        const nombre = datosP ? PP.nombreArchivo(datosP) : `Presupuesto ${p.nro}.pdf`;
+        const ruta = `/presupuesto/${p.token}/${encodeURIComponent(nombre)}`;
+        const link = `${BASE_URL()}${ruta}`;
+        if (url.pathname === '/presupuesto-ver') { res.writeHead(303, { location: ruta }); return res.end(); }
         const c = store.chats().find((x) => x.telefono === tel);
         if (!c || Date.now() - (c.ultimoClienteEn || 0) > 24 * 3600e3) return volver('&error=' + encodeURIComponent('pasaron más de 24 h desde su último mensaje'));
         const texto = `Te paso el presupuesto formal N° ${p.nro}. Cualquier duda, te la respondo por acá.`;
-        try { await enviarDocumento(tel, link, `Presupuesto PuertoBox ${p.nro}.pdf`, texto); } catch (e) { return volver('&error=' + encodeURIComponent(String(e.message).slice(0, 120))); }
+        try { await enviarDocumento(tel, link, nombre, texto); } catch (e) { return volver('&error=' + encodeURIComponent(String(e.message).slice(0, 120))); }
         store.agregar(tel, 'assistant', `[Gustavo] ${texto} (PDF)`);
         store.pausar(tel, 'gustavo_respondio');
         const ahora = Date.now();
