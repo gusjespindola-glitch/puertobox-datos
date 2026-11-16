@@ -21,7 +21,7 @@ const definiciones = [
   {
     name: 'leer_link',
     description: 'Lee la publicación de un link que mandó el cliente (Alibaba, 1688, etc.) y devuelve título, escalones de precio, pedido mínimo y "Empaque y entrega" (unidades de venta, tamaño del paquete, peso bruto). Usala SIEMPRE que el cliente mande un link de producto, antes de pedirle datos.',
-    input_schema: { type: 'object', properties: { url: { type: 'string', description: 'El link tal cual lo mandó el cliente' } }, required: ['url'] },
+    input_schema: { type: 'object', properties: { url: { type: 'string', description: 'El link tal cual lo mandó el cliente' }, unidades: { type: 'number', description: 'Cuántas unidades quiere el cliente, si ya lo dijo: devuelve el precio que le toca, el valor total, el peso y los datos para cotizar.' } }, required: ['url'] },
   },
   {
     name: 'clasificar_producto',
@@ -105,7 +105,7 @@ function ejecutar(nombre, input, ctx) {
     case 'clasificar_producto':
       return require('./clasificador').clasificar(input, ctx); // async: busca en internet y en ARCA
     case 'leer_link':
-      return require('./links').leer(input.url, ctx); // async (16/11)
+      return require('./links').leer(input.url, { ...ctx, unidades: input.unidades }); // async (16/11)
     case 'buscar_posicion': {
       const m = getMotor();
       const res = m.buscar(input.producto, 15).filter((f) => !f.c.startsWith('00')).slice(0, 5).map((f) => ({

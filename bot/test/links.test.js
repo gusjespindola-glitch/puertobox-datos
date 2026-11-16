@@ -117,3 +117,15 @@ test('publicación dada de baja ("Product Not Available"): lo dice, no pide capt
   assert.strictEqual(r.de_baja, true);
   assert.match(r.error, /ya no está disponible/);
 });
+
+test('precio publicado en Alibaba: avisa que puede no ser el real y que lo confirme el proveedor (Gustavo 16/11)', () => {
+  const p = require('../agent').SYSTEM;
+  assert.match(p, /El precio publicado en Alibaba muchas veces no es el real/);
+  assert.match(p, /precio publicado, a confirmar con el proveedor/);
+  assert.match(p, /send me your best unit price/);
+});
+
+test('links de la tienda del proveedor (proveedor.en.alibaba.com/product/<número>-...) se leen por el número', () => {
+  assert.strictEqual(candidatas('https://holyindustries.en.alibaba.com/product/60769949049-213989284/4PCS_knife_set.html')[0], 'https://www.alibaba.fr/product-detail/subject-60769949049.html');
+  assert.strictEqual(candidatas('https://anma.m.en.alibaba.com/product/1601006813235-212796826/x.html')[0], 'https://www.alibaba.fr/product-detail/subject-1601006813235.html');
+});
