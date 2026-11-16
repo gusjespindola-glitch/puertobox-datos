@@ -514,7 +514,7 @@ async function atender(tel, texto, st, fetchImpl, owner, guardado = false) {
         : esIG
         ? `🔔 PuertoBox (Instagram): ${d.motivo.replace(/_/g, ' ')}\n${d.resumen}\n(Respondele desde los mensajes de Instagram de PuertoBox. El bot quedó pausado en ese chat; para reactivarlo escribí #bot en ese mismo chat.)`
         : avisoCorto(d, st);
-      const TITULO = { listo_para_cerrar: 'Quiere pagar', mayorista: 'Pedido grande', reclamo: 'Reclamo', pide_humano: 'Pide hablar con vos', duda: 'Duda para vos' };
+      const TITULO = { listo_para_cerrar: 'Quiere pagar', mayorista: 'Pedido grande', reclamo: 'Reclamo', pide_humano: 'Pide hablar con vos', duda: 'Duda para vos', caso_dificil: 'Caso difícil para vos' };
       await avisarGustavo(owner, aviso, fetchImpl, d.motivo === 'confirmar_posicion' ? 'PuertoBox: confirmá la posición' : `PuertoBox: ${TITULO[d.motivo] || 'cliente para atender'}`, d.telefono, d.motivo);
       salidas.push({ to: owner, body: aviso });
     }
