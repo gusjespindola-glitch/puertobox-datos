@@ -11,7 +11,7 @@ test('el cotizador a mano suma cada tamaño de caja', async () => {
     const r = await (await fetch(u + encodeURIComponent('1x26x20x11.5;1x22x14.5x11;1x34x34x20'))).json();
     assert.strictEqual(r.kg_presupuestado, 7);
     assert.strictEqual(r.peso_volumetrico_kg, 6.52);
-    assert.strictEqual(r.total_puertobox_usd, 195);
+    assert.strictEqual(r.total_puertobox_usd, 215); // flete 175 + gestión 40 (más de 5 kg, 16/11)
     const una = await (await fetch(u)).json();
     assert.strictEqual(una.kg_presupuestado, 4); // sin los otros tamaños: solo la primera caja (1,2 kg vol) vs 3,9 real
   } finally { s.close(); }

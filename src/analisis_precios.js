@@ -68,7 +68,7 @@ function informe(fecha = new Date().toISOString().slice(0, 10)) {
   const t = [
     `# Análisis de precios PuertoBox — ${fecha}`,
     '',
-    `Precio de venta = flete por kilo cobrable del proveedor (sin recargo) + gestión fija USD ${require('../data/precios_venta.json').flete_directo.handling_usd}. Costo = tarifa DHL de Howard + 3% de pasarela.`,
+    `Precio de venta = flete por kilo cobrable del proveedor (sin recargo) + gestión ${require('./negocio').datos().gestion_texto}. Costo = tarifa DHL de Howard + 3% de pasarela.`,
     '"Peor caso" = la caja llega 15% más pesada (lo máximo que absorbe el precio firme).',
     'Competencia: precio por kilo publicado (referencias_mercado.json), sin mínimos, recargos ni domicilio: es orientativo.',
     '',

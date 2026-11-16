@@ -39,6 +39,12 @@ function fleteVenta(kg) {
   return Math.min(precioTramo(t, kg), ...siguientes);
 }
 
+/** Gestión según el tamaño del envío (16/11, Gustavo: USD 20 hasta 5 kg cobrables, USD 40 de ahí en más). */
+function gestionPara(kgCob) {
+  const t = (M.handling_tramos || []).find((x) => x.hasta_kg == null || kgCob <= x.hasta_kg);
+  return t ? t.usd : (M.handling_usd || 0);
+}
+
 /** Lo que le paga PuertoBox al forwarder. */
 function fleteCosto(kg) {
   const t = tramo(kg, M.tramos_costo_dhl);
@@ -78,7 +84,7 @@ function presupuesto({ kg, largo, ancho, alto, cajas = 1, bultos = null, valorFa
   const declarado = kgCobrable({ kg, largo, ancho, alto, cajas, bultos });
   const kgPres = Math.ceil(declarado * (1 + (M.tolerancia || 0)) - 1e-9);
   const flete = fleteVenta(kgPres);
-  const handling = M.handling_usd || 0;
+  const handling = gestionPara(kgPres);
   // Aduana calcula el CIF con el flete que declara el courier en su factura (~USD 2,50/kg según facturas reales),
   // no con lo que cobra PuertoBox. Sin el dato, se usa el flete de venta (más alto: sobreestima).
   const fleteAduana = M.flete_declarado_usd_kg ? r2(kgPres * M.flete_declarado_usd_kg) : flete;
@@ -94,4 +100,4 @@ function presupuesto({ kg, largo, ancho, alto, cajas = 1, bultos = null, valorFa
   };
 }
 
-module.exports = { kgCobrable, fleteVenta, fleteCosto, estimarImpuestos, presupuesto };
+module.exports = { kgCobrable, fleteVenta, fleteCosto, estimarImpuestos, presupuesto, gestionPara };

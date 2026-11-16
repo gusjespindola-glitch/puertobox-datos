@@ -37,7 +37,7 @@ test('cotiza con el modelo flete directo y responde al cliente', async () => {
   const out = await procesar(msg('5491111111111', 'Quiero traer remeras, 10 kg, factura USD 500'), { fetchImpl, store, debounceMs: 0 });
   assert.strictEqual(r.kg_presupuestado, 12); // 12 kg volumétricos (sin margen, opción C)
   assert.strictEqual(r.flete_puertobox_usd, 240); // 12 kg x USD 20
-  assert.strictEqual(r.handling_puertobox_usd, 20);
+  assert.strictEqual(r.handling_puertobox_usd, 40); // más de 5 kg: gestión USD 40 (Gustavo 16/11)
   assert.ok(r.impuestos_y_gastos_estimados_usd > 0);
   assert.strictEqual(out[0].body, 'Flete USD 240');
   assert.strictEqual(llamadas.whatsapp[0].to, '5491111111111');
@@ -286,8 +286,8 @@ test('cotizar: devuelve el kilo con la gestión incluida (para comparar con la p
     (b) => { r = JSON.parse(b.messages.at(-1).content[0].content); return txt('ok'); },
   ]);
   await procesar(msg('5494', 'cotizame'), { fetchImpl, store, debounceMs: 0 });
-  assert.strictEqual(r.total_puertobox_usd, 434); // 23 kg x USD 18 + USD 20
-  assert.strictEqual(r.usd_por_kilo_con_gestion, 18.87);
+  assert.strictEqual(r.total_puertobox_usd, 454); // 23 kg x USD 18 + USD 40 de gestión (más de 5 kg, 16/11)
+  assert.strictEqual(r.usd_por_kilo_con_gestion, 19.74);
   assert.strictEqual(r.unidades, 25);
 });
 
@@ -415,9 +415,9 @@ test('cajas de distintos tamaños: cada tamaño suma su volumétrico (caso Gian,
     { cantidad: 1, largo_cm: 22, ancho_cm: 14.5, alto_cm: 11, kg_por_caja: 0.7 },
     { cantidad: 1, largo_cm: 34, ancho_cm: 34, alto_cm: 20, kg_por_caja: 2.5 },
   ] }, ctx);
-  // 1,196 + 0,70 + 4,62 = 6,52 kg de volumen → 7 kg cobrables (el peso real es 3,9).
+  // 1,196 + 0,70 + 4,62 = 6,52 kg de volumen → 7 kg cobrables (el peso real es 3,9). Flete 175 + gestión 40 (más de 5 kg).
   assert.strictEqual(r.kg_presupuestado, 7);
-  assert.strictEqual(r.total_puertobox_usd, 195);
+  assert.strictEqual(r.total_puertobox_usd, 215);
   // Con solo la caja grande x3 daría mucho más: no se promedia ni se toma la más grande.
   const mal = ejecutar('cotizar', { ...base, cantidad_cajas: 3, largo_cm: 34, ancho_cm: 34, alto_cm: 20 }, ctx);
   assert.ok(mal.kg_presupuestado > 13);
@@ -431,4 +431,31 @@ test('cajas de distintos tamaños: cada tamaño suma su volumétrico (caso Gian,
   const una = ejecutar('cotizar', { kg: 26, valor_factura_usd: 500, die: 16, regimen: 'comercial', cantidad_cajas: 1, largo_cm: 50, ancho_cm: 40, alto_cm: 40 }, ctx);
   assert.ok(pes.recargo_cajas_usd > 0);
   assert.strictEqual(pes.recargo_cajas_usd, una.recargo_cajas_usd);
+});
+
+test('gestión escalonada (Gustavo 16/11): USD 20 hasta 5 kg cobrables, USD 40 desde 6 kg', () => {
+  const { presupuesto } = require('../../src/flete_directo');
+  assert.strictEqual(presupuesto({ kg: 1, valorFactura: 100 }).handling_puertobox_usd, 20);
+  assert.strictEqual(presupuesto({ kg: 5, valorFactura: 100 }).handling_puertobox_usd, 20);
+  assert.strictEqual(presupuesto({ kg: 5.2, valorFactura: 100 }).handling_puertobox_usd, 40); // se cobran 6 kg
+  assert.strictEqual(presupuesto({ kg: 30, valorFactura: 100 }).handling_puertobox_usd, 40);
+  const d = require('../../src/negocio').datos();
+  assert.strictEqual(d.gestion_texto, 'USD 20 en envíos de hasta 5 kg y USD 40 en los de más de 5 kg');
+  assert.match(require('../../src/negocio').render(require('fs').readFileSync(require('path').join(__dirname, '..', 'prompt.md'), 'utf8')), /USD 20 en envíos de hasta 5 kg y USD 40 en los de más de 5 kg/);
+});
+
+test('respeta el anuncio que corre (USD 19/kg con gestión desde 20 kg) a los que vienen del anuncio, hasta que se cambie (16/11)', () => {
+  const { ejecutar } = require('../tools');
+  const { crearStore } = require('../store');
+  const NEG = require('../../src/negocio').datos();
+  const st = crearStore(null);
+  st.agregar('5491100000555', 'user', 'Hola, quiero traer de China: ropa');
+  st.marcar('5491100000555', { origen: 'anuncio', origenEn: Date.now() });
+  const datos = { kg: 25, valor_factura_usd: 800, die: 35, regimen: 'comercial', cantidad_cajas: 2, largo_cm: 40, ancho_cm: 30, alto_cm: 30 }; // 2 cajas: sin recargo de más de 23 kg
+  const delAnuncio = ejecutar('cotizar', datos, { telefono: '5491100000555', store: st });
+  const otro = ejecutar('cotizar', datos, { telefono: '5491100000556', store: st });
+  assert.strictEqual(otro.handling_puertobox_usd, 40);
+  const vigente = new Date().toISOString().slice(0, 10) <= NEG.anuncio_anterior.hasta;
+  assert.strictEqual(delAnuncio.handling_puertobox_usd, vigente ? 20 : 40);
+  if (vigente) assert.ok(delAnuncio.total_puertobox_usd / delAnuncio.kg_presupuestado <= 19);
 });

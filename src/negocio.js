@@ -17,6 +17,9 @@ function datos() {
   const tramos = fd.tramos_venta;
   const gestion = fd.handling_usd;
   const precioKg = require('./flete_directo').fleteVenta; // un solo cálculo de flete para bot, web y páginas
+  const gestionPara = require('./flete_directo').gestionPara;
+  const tg = fd.handling_tramos || [];
+  const gestionTexto = tg.length > 1 ? tg.map((t, i) => (t.hasta_kg == null ? `USD ${t.usd} en los de más de ${tg[i - 1].hasta_kg} kg` : `USD ${t.usd} en envíos de hasta ${t.hasta_kg} kg`)).join(' y ') : `USD ${gestion}`;
   const ultimo = tramos[tramos.length - 1];
   const filas = tramos.map((t, i) => {
     // Kilos enteros (15/11): el tramo va del primer kilo entero que alcanza hasta el último entero antes del siguiente.
@@ -29,11 +32,16 @@ function datos() {
   const d = {
     ...n,
     gestion_usd: gestion,
+    gestion_texto: gestionTexto, // "USD 20 en envíos de hasta 5 kg y USD 40 en los de más de 5 kg"
+    gestion_grande_usd: gestionPara(1000),
     gestion_cuit_puertobox_usd: fd.handling_cuit_puertobox_usd || gestion,
-    envio_minimo_usd: precioKg(1) + gestion,
+    envio_minimo_usd: precioKg(1) + gestionPara(1),
     usd_kg_desde: ultimo.usd_kg,
     kg_desde: ultimo.desde_kg,
-    usd_kg_total_desde: Math.round((precioKg(ultimo.desde_kg) + gestion) / ultimo.desde_kg),
+    // Kilo con la gestión incluida que se publica (16/11, gestión escalonada): el último precio por kilo + 1 (USD 19),
+    // y desde cuántos kilos es cierto (con gestión USD 40, 40 kg). Así el anuncio y la web nunca prometen de menos.
+    usd_kg_total_desde: ultimo.usd_kg + 1,
+    kg_desde_total: (() => { for (let k = Math.ceil(ultimo.desde_kg); k <= 500; k++) if ((precioKg(k) + gestionPara(k)) / k <= ultimo.usd_kg + 1) return k; return null; })(),
     franquicia_usd: n.pequenos_envios.franquicia_usd,
     envios_por_anio: n.pequenos_envios.envios_por_anio,
     unidades_iguales: n.pequenos_envios.unidades_iguales,
