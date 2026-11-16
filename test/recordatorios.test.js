@@ -408,3 +408,24 @@ test('cotizador a mano del nomenclador: con clave, mismo resultado que el bot, p
     assert.doesNotMatch(html, /más liviana|pesa menos/);
   } finally { s.close(); }
 });
+
+test('charlas: si el cliente manda un archivo, se ve solo el archivo (sin la lectura de la IA) — Gustavo 15/11 21:33', () => {
+  const { vistaCliente, paginaCharlas: pagina } = require('../bot/recordatorios');
+  const media = '/media/' + 'a'.repeat(32) + '.pdf';
+  const leido = `[El cliente mandó un archivo (Packing list.pdf), leído automáticamente. Escribió: "Packing list.pdf". [archivo:${media}]]\nEs un packing list de PHYSIOTAPING con 9 ítems...`;
+  assert.strictEqual(vistaCliente(leido), `📎 Packing list.pdf\n[archivo:${media}]`);
+  const xlsx = `[El cliente mandó un archivo (PI26-W01-Gian.xlsx) que no se pudo leer automáticamente. Escribió: "PI26-W01-Gian.xlsx". [archivo:/media/${'b'.repeat(32)}.xlsx] Nuestro despachante lo puede ver. Pedile por texto los datos que falten.]`;
+  assert.strictEqual(vistaCliente(xlsx), `📎 PI26-W01-Gian.xlsx\n[archivo:/media/${'b'.repeat(32)}.xlsx]`);
+  const foto = `[El cliente mandó una imagen, leída automáticamente. Escribió: "estas son las cajas". [archivo:/media/${'c'.repeat(32)}.jpg]]\nSe ven dos cajas...`;
+  assert.strictEqual(vistaCliente(foto), `📷 Imagen\n[archivo:/media/${'c'.repeat(32)}.jpg]\nestas son las cajas`);
+  assert.strictEqual(vistaCliente('hola, quiero traer cintas'), 'hola, quiero traer cintas');
+  // En la página: el link al archivo sí, la lectura y las instrucciones para el bot no.
+  const st = crearStore(null);
+  st.agregar('5491100000077', 'user', leido);
+  st.agregar('5491100000077', 'user', xlsx);
+  const html = pagina(st, OWNER, Date.now());
+  assert.match(html, /Packing list\.pdf/);
+  assert.match(html, /Abrir el archivo \(PDF\)/);
+  assert.doesNotMatch(html, /Es un packing list de PHYSIOTAPING/);
+  assert.doesNotMatch(html, /Pedile por texto|leído automáticamente/);
+});

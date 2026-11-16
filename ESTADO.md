@@ -34,6 +34,7 @@ Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (mate
 
 
 ### Imágenes y archivos de clientes (15/11/2026)
+- 15/11 21:33 (Gustavo: "es un quilombo, si manda el archivo dejá el archivo, no escribas arriba"): en /charlas lo que manda el cliente se ve solo como el archivo (📎 nombre + link, o la foto/audio) y lo que escribió; la lectura de la IA y las instrucciones para el bot se guardan para el bot pero no se muestran.
 - 15/11 21:30: la lectura de archivos se cortaba en facturas largas (tope de 700 palabras de respuesta; la de DL Medical con 11 renglones quedó en "5) El"). Subido a 2000. Los Excel (.xlsx) siguen sin leerse: el bot pide los datos por texto.
 - Fotos y PDF: se bajan de YCloud, la IA los lee y el bot recibe el contenido (lo anota y cotiza). Se guardan en /data/media y se ven en /charlas. Otros archivos (Excel, Word): se guardan y el bot pide los datos por texto. Usa el modelo del clasificador (una lectura por archivo).
 
