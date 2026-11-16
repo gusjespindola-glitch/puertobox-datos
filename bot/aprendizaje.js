@@ -17,6 +17,7 @@ const path = require('path');
 const { horaAR, esGustavo } = require('./recordatorios');
 
 const MODELO = process.env.APRENDIZAJE_MODEL || process.env.CLASIFICADOR_MODEL || 'claude-sonnet-5-5';
+const MODELO_RESPALDO = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5'; // el del bot
 const REPO = process.env.GITHUB_REPO || 'gusjespindola-glitch/puertobox-datos';
 const RAMA = process.env.APRENDIZAJE_RAMA || 'aprendizaje-bot';
 const HORA = Number(process.env.APRENDIZAJE_HORA || 23);
@@ -125,17 +126,28 @@ async function revisarDia({ store, owner, fetchImpl = fetch, ahora = Date.now(),
     `## Correcciones de Gustavo de hoy\n${corr.length ? corr.map((c, i) => `${i + 1}. Cliente: "${c.cliente_dijo}" · Bot: "${c.bot_dijo}" · Tenía que ser: ${c.indicacion}`).join('\n') : 'Ninguna'}`,
     `## Charlas de hoy\n${charlas.map((c) => `### Charla ${c.n}${c.origen ? ` (llegó por: ${c.origen})` : ''}${c.estado ? ` · estado: ${c.estado}` : ''}\n${c.texto}`).join('\n\n')}`,
   ].join('\n\n');
-  const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    signal: AbortSignal.timeout(240e3), // que no quede colgado si la IA no contesta
-    body: JSON.stringify({ model: MODELO, max_tokens: 4000, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }),
-  });
-  if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text()).slice(0, 200)}`);
-  const j = await r.json();
-  const informe = (j.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
-  if (!informe) throw new Error('La IA no devolvió el informe');
-  const pie = `\n\n---\nGenerado a las ${HORA} h por el servidor del bot (bot/aprendizaje.js) con ${MODELO}. ${charlas.length} charlas, ${corr.length} correcciones. Sin datos personales.\n`;
+  // 16/11: el 15/11 la IA contestó sin texto 6 veces seguidas ("La IA no devolvió el informe"). Ahora: más lugar para
+  // escribir, se anota por qué vino vacía (stop_reason y tipos de bloque) y, si el modelo principal no escribe nada,
+  // se prueba con el modelo del bot (el que contesta a los clientes todos los días).
+  const modelos = [...new Set([MODELO, MODELO_RESPALDO].filter(Boolean))];
+  const fallas = [];
+  let informe = '';
+  let usado = MODELO;
+  for (const model of modelos) {
+    const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+      signal: AbortSignal.timeout(240e3), // que no quede colgado si la IA no contesta
+      body: JSON.stringify({ model, max_tokens: 8000, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }),
+    });
+    if (!r.ok) { fallas.push(`${model}: Anthropic ${r.status} ${(await r.text()).slice(0, 150)}`); continue; }
+    const j = await r.json();
+    informe = (j.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
+    if (informe) { usado = model; break; }
+    fallas.push(`${model}: sin texto (stop_reason=${j.stop_reason || '?'}, bloques=${(j.content || []).map((b) => b.type).join('+') || 'ninguno'})`);
+  }
+  if (!informe) throw new Error(`La IA no devolvió el informe. ${fallas.join(' | ')}`);
+  const pie = `\n\n---\nGenerado a las ${HORA} h por el servidor del bot (bot/aprendizaje.js) con ${usado}. ${charlas.length} charlas, ${corr.length} correcciones. Sin datos personales.\n`;
   return { fecha, contenido: anonimizar(informe) + pie, charlas: charlas.length };
 }
 
@@ -211,7 +223,7 @@ async function tick({ store, owner, reglas, fetchImpl = fetch, ahora = Date.now(
     store.meta('aprendizajeUltimo', { fecha, charlas: inf.charlas, subido: true, motivo: null });
     return { ...inf, ...sub };
   } catch (e) {
-    const motivo = String(e.message).slice(0, 200);
+    const motivo = String(e.message).slice(0, 400);
     console.error(`Aprendizaje (intento ${delDia.intentos}/${MAX_INTENTOS}):`, motivo);
     store.meta('aprendizajeEstado', { fecha, ok: false, intentos: delDia.intentos, error: motivo });
     store.meta('aprendizajeUltimo', { fecha, error: motivo });

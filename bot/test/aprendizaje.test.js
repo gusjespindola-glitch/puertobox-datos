@@ -114,7 +114,7 @@ test('sin GITHUB_TOKEN arma el informe igual y avisa el motivo; sin charlas no g
 test('revisión nocturna: si falla reintenta, a la madrugada recupera el día anterior y al final avisa (16/11)', async () => {
   const store = storeConCharla();
   const base = mockGitHub();
-  let fallar = 2; // la IA falla las dos primeras veces
+  let fallar = 4; // la IA falla los dos primeros intentos (2 modelos por intento)
   const fetchImpl = async (url, opt) => (url.includes('anthropic') && fallar-- > 0 ? { ok: false, status: 529, text: async () => 'overloaded' } : base.fetchImpl(url, opt));
   process.env.GITHUB_TOKEN = 'token-de-prueba';
   try {
@@ -141,8 +141,28 @@ test('revisión nocturna: si falla reintenta, a la madrugada recupera el día an
   try {
     for (let i = 0; i < ap.MAX_INTENTOS + 2; i++) await ap.tick({ store: s2, owner: '5491100000000', reglas: 'R', fetchImpl: siempreFalla, ahora: Date.parse('2026-11-16T02:10:00Z') + i * 15 * 60e3, avisar: async (t) => avisos.push(t) });
   } finally { delete process.env.GITHUB_TOKEN; }
-  assert.strictEqual(llamadasIA, ap.MAX_INTENTOS, 'no reintenta para siempre');
+  assert.strictEqual(llamadasIA, ap.MAX_INTENTOS * 2, // modelo principal + respaldo por intento
+    'no reintenta para siempre');
   assert.strictEqual(avisos.length, 1, 'avisa una sola vez');
   const put = m2.llamadas.find((l) => l.metodo === 'PUT');
   assert.match(Buffer.from(put.body.content, 'base64').toString('utf8'), /No se pudo armar la revisión/);
+});
+
+test('si la IA contesta sin texto, prueba con el modelo del bot y anota por qué vino vacía (16/11)', async () => {
+  const store = storeConCharla();
+  const base = mockGitHub();
+  const modelos = [];
+  const fetchImpl = async (url, opt) => {
+    if (url.includes('anthropic')) {
+      modelos.push(JSON.parse(opt.body).model);
+      if (modelos.length === 1) return { ok: true, json: async () => ({ stop_reason: 'max_tokens', content: [{ type: 'thinking', thinking: '...' }] }) };
+    }
+    return base.fetchImpl(url, opt);
+  };
+  const r = await ap.revisarDia({ store, owner: '5491100000000', fetchImpl, reglas: 'R', ahora: Date.parse('2026-11-16T02:10:00Z') });
+  assert.strictEqual(modelos.length, 2, 'probó un segundo modelo');
+  assert.notStrictEqual(modelos[0], modelos[1]);
+  assert.match(r.contenido, /frase mocha/);
+  const vacia = async (url, opt) => (url.includes('anthropic') ? { ok: true, json: async () => ({ stop_reason: 'refusal', content: [] }) } : base.fetchImpl(url, opt));
+  await assert.rejects(ap.revisarDia({ store, owner: '5491100000000', fetchImpl: vacia, reglas: 'R', ahora: Date.parse('2026-11-16T02:10:00Z') }), /stop_reason=refusal/);
 });
