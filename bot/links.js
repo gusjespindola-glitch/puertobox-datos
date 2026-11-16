@@ -27,6 +27,9 @@ function candidatas(url) {
     const rutas = [...new Set([ruta, ...(id ? [`subject-${id}.html`] : [])])];
     return [...new Set([...rutas.flatMap((r) => ['fr', 'co.uk'].map((d) => `https://www.alibaba.${d}/product-detail/${r}`)), `https://www.alibaba.com/product-detail/${ruta}`])];
   }
+  // Tiendas de proveedores (proveedor.en.alibaba.com/product/<número>-<otro>/...): se lee por el número.
+  const t = u.match(/alibaba\.com\/product\/(\d{8,})-\d+\//i);
+  if (t) return ['fr', 'co.uk'].map((d) => `https://www.alibaba.${d}/product-detail/subject-${t[1]}.html`);
   return /^https?:\/\//i.test(u) ? [u.split('#')[0]] : [];
 }
 const idDe = (url) => (String(url).match(/[_-](\d{8,})\.html/) || String(url).match(/\/(\d{8,})\//) || [])[1] || String(url).split('?')[0];
@@ -53,7 +56,8 @@ function textoDeHtml(html, max = 20000) {
 const tieneDatos = (t) => t.length > 1500 && /(US\s?\$|\$\s?\d|€)/.test(t) && /(kg|gross weight|package|peso|piece|pieces|unit)/i.test(t);
 
 const INSTRUCCION = `Te paso el texto de la publicación de un producto (Alibaba, 1688, etc.). Devolvé SOLO un JSON, sin texto alrededor, con lo que DICE la página (no inventes nada; si un dato no está, null):
-{"titulo":"...","precios":[{"desde":6,"hasta":499,"usd":26.33}],"pedido_minimo":6,"unidades_de_venta":"Artículo individual","tamano_paquete_cm":"24x12x45","peso_bruto_kg":2.0,"bateria":"si/no/no dice","material":"...","paquete_coherente":true,"nota":"..."}
+{"titulo":"...","precio_por":"pieza/metro/set/par/kg","precios":[{"desde":6,"hasta":499,"usd":26.33}],"pedido_minimo":6,"unidades_de_venta":"Artículo individual","unidades_por_paquete":1,"tamano_paquete_cm":"24x12x45","peso_bruto_kg":2.0,"caracteristicas":{"marca":"OEM","modelo":"CYD17","material":"...","bateria":"litio 12000 mAh / no / no dice","inalambrico":"Bluetooth/WiFi/no","voltaje":"12V","uso":"...","otras":"lo demás que sirva para clasificarlo, en una línea"},"paquete_coherente":true,"nota":"..."}
+"unidades_por_paquete": cuántas unidades de venta vienen en el paquete de "Empaque y entrega" (1 si es "Artículo individual"; si dice "caja de 2 unidades", 2). "precios": cada escalón con "hasta" null en el último.
 "paquete_coherente": false SOLO si es imposible para UNA unidad de venta (5 veces o más de lo razonable; por ejemplo, 25 kg o 30x30x30 cm para una polea chica). Si solo parece grande o generoso (por ejemplo, 24x12x45 cm para un arrancador con accesorios), es true, y en "nota" decí en una línea que puede estar exagerado y conviene confirmarlo con el proveedor. (16/11: Gustavo cotizó el arrancador con 24x12x45 cm.)`;
 
 async function llamarIA(body, fetchImpl, beta) {
@@ -114,33 +118,100 @@ async function leer(url, ctx = {}) {
   if (!datos || (!datos.titulo && !datos.precios)) {
     return { error: 'No pude leer la publicación. Pedile al cliente captura del precio y de "Empaque y entrega".', detalle: intentos.join(' | ') };
   }
-  const res = { ...datos, fuente, link: urls[0], instruccion: 'Datos de la publicación (no del cliente): el precio es por unidad según la cantidad; "Empaque y entrega" con "Artículo individual" es por unidad. Si paquete_coherente es false, no uses ese paquete: pedí la proforma o el peso y las medidas de la caja al proveedor.' };
+  const res = { ...datos, fuente, link: urls[0], instruccion_base: 'Datos de la publicación (no del cliente): el precio es por unidad según la cantidad; "Empaque y entrega" con "Artículo individual" es por unidad. Si paquete_coherente es false, no uses ese paquete: pedí la proforma o el peso y las medidas de la caja al proveedor.' };
   cache.set(id, res);
   if (cache.size > 200) cache.delete(cache.keys().next().value);
-  return res;
+  return conPedido(res, ctx.unidades);
+}
+
+/** "24x12x45", "25.00x21.00x7.00", "38*19*32cm (caja de 2)" → [24, 12, 45] o null. */
+function medidas(t) {
+  const m = String(t || '').replace(/,/g, '.').match(/(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+(?:\.\d+)?)/i);
+  return m ? m.slice(1, 4).map(Number) : null;
+}
+/** Escalón de precio que corresponde a una cantidad (16/11, Gustavo: "el precio dependiendo la cantidad"). */
+function escalon(precios, unidades) {
+  const ps = (precios || []).filter((p) => p && p.usd > 0).sort((a, b) => (a.desde || 0) - (b.desde || 0));
+  if (!ps.length) return null;
+  return ps.find((p) => unidades >= (p.desde || 0) && (p.hasta == null || unidades <= p.hasta)) || (unidades < (ps[0].desde || 0) ? ps[0] : ps[ps.length - 1]);
+}
+/**
+ * Con la cantidad del cliente, la cuenta hecha en código (no por la IA): precio del escalón, valor total, cantidad de
+ * paquetes, peso total y los datos listos para `cotizar` (16/11, Gustavo: "que reconozca las características y el precio
+ * dependiendo la cantidad y el peso y las medidas").
+ */
+function conPedido(res, unidades) {
+  const sin = { ...res, instruccion: `${res.instruccion_base} Cuando sepas cuántas unidades quiere, volvé a llamar leer_link con "unidades": te devuelve el precio que le toca, el valor total y los datos para cotizar.` };
+  delete sin.instruccion_base;
+  const u = Math.round(Number(unidades) || 0);
+  if (!(u > 0)) return sin;
+  const e = escalon(res.precios, u);
+  const upp = Math.max(1, Math.round(Number(res.unidades_por_paquete) || 1));
+  const med = medidas(res.tamano_paquete_cm);
+  const kgPaq = Number(res.peso_bruto_kg) || 0;
+  const paquetes = Math.ceil(u / upp);
+  const pedido = {
+    unidades: u,
+    ...(e ? { precio_unitario_usd: e.usd, escalon: `${e.desde ?? 1}${e.hasta == null ? ' o más' : ` a ${e.hasta}`}`, valor_total_usd: Math.round(u * e.usd * 100) / 100 } : {}),
+    ...(res.pedido_minimo && u < res.pedido_minimo ? { aviso_minimo: `El proveedor vende desde ${res.pedido_minimo}: con ${u} puede no aceptar el pedido o cobrar otro precio.` } : {}),
+    paquetes,
+    ...(kgPaq ? { kg_total: Math.round(paquetes * kgPaq * 100) / 100 } : {}),
+  };
+  if (e && med && kgPaq && res.paquete_coherente !== false) {
+    pedido.cotizar_con = { unidades: u, valor_factura_usd: pedido.valor_total_usd, kg: pedido.kg_total, bultos: [{ cantidad: paquetes, largo_cm: med[0], ancho_cm: med[1], alto_cm: med[2], kg_por_caja: kgPaq }] };
+  }
+  sin.para_tu_pedido = pedido;
+  sin.instruccion = `${res.instruccion_base} para_tu_pedido ya trae la cuenta: precio del escalón, valor total, paquetes y peso. ${pedido.cotizar_con ? 'Pasale a cotizar EXACTAMENTE los datos de para_tu_pedido.cotizar_con (más die/regimen y lo que corresponda, por ejemplo con_bateria_litio si tiene batería).' : 'Falta el peso o las medidas del paquete (o no son coherentes): pedí la proforma o el peso y las medidas de la caja al proveedor.'} Decile al cliente en una línea el precio que le toca ("con ${u} unidades el proveedor cobra USD X c/u").`;
+  return sin;
 }
 
 // Prueba al arrancar (una vez por versión): lee links reales de Alibaba de distintos rubros y formatos y sube una tabla
 // a la rama del aprendizaje (son publicaciones públicas, sin datos de clientes). Así Claude sabe si desde Railway se leen.
 // 16/11 16:15, Gustavo: "¿podemos hacer pruebas con enlaces aleatorios de Alibaba, a ver si funciona?"
-const VERSION_PRUEBA = 'v4-16-11';
+const VERSION_PRUEBA = 'v5-16-11'; // v5: 16 links nuevos + 4 charlas completas con la IA
 const LINKS_PRUEBA = [
   'https://www.alibaba.com/x/B2iQFj?ck=pdp', // link corto del Compartir (arrancador, el de Gustavo)
-  'https://www.alibaba.com/product-detail/DIY-Sport-Gym-Fitness-Equipment-Wheel_1600958949996.html?spm=a2700.prosearch',
-  'https://www.alibaba.com/product-detail/Fitness-Cable-Gym-Equipment-Steel-Wire_60734807345.html?spm=a2706',
-  'https://www.alibaba.com/product-introduction/Non-Slip-Custom-logo-print-Double_60747406011.html',
-  'https://www.alibaba.com/product-introduction/TOPKO-Exercise-Anti-Slip-Eco-Friendly_1600156426710.html',
-  'https://www.alibaba.co.uk/product-detail/Portable-Car-Jump-Starter-12v-with_1601273281314.html',
-  'https://www.alibaba.co.uk/product-detail/Newest-Multi-function-12V-Jump-Starter_1601726016174.html',
-  'https://www.alibaba.fr/product-detail/12V-Portable-6000mAh-Car-Battery-Booster_1601608136622.html',
-  'https://www.alibaba.com/product-detail/Car-Jump-Starter-1000A-3-in_1601148563519.html',
-  'https://www.alibaba.com/product-detail/_62020798193.html',
-  'https://www.alibaba.co.uk/product-detail/200LM-W-Flexible-SMD-2835-72_1601386148326.html',
-  'https://www.alibaba.com/product-detail/Smart-wifi-leds-5050-rgb-light_1600997656793.html',
-  'https://www.alibaba.com/product-introduction/China-Factory-Directly-Offer-Liquid-Silicon_1601323439529.html',
+  'https://www.alibaba.co.uk/product-detail/5Pcs-Damascus-Chef-Knife-Set-Stainless_1601596679880.html',
+  'https://www.alibaba.co.uk/product-detail/Sharp-Damascus-Steel-Kitchen-Chef-Utility_60824052177.html',
+  'https://www.alibaba.co.uk/product-detail/Amber-Japanese-Kitchen-Chef-Knife-Set_1600372376931.html',
+  'https://www.alibaba.co.uk/product-detail/KBW759-15-6-Inch-Waterproof-Durable_1601056565477.html',
+  'https://www.alibaba.com/product-introduction/380-Grams-Heavy-Weight-No-String_1601314826943.html',
+  'https://holyindustries.en.alibaba.com/product/60769949049-213989284/4PCS_stainless_steel_cutlery_kitchen_knife_set_with_forged_G10_handle.html',
+  'https://southking.en.alibaba.com/product/62215325213-807032536/12V_Portable_Multi_function_Car_Jump_Starter_with_air_compressor_start_3_0L_petrol_car.html',
+  'https://anma.m.en.alibaba.com/product/1601006813235-212796826/10000mAh_jump_starter_2_in_1_function_with_air_compressor_for_car_tyre_iife_time_1000_cycles.html',
+  'https://www.alibaba.co.uk/product-detail/24V-5-in-1-RGBCCT-840LEDs_1601595630097.html',
+  'https://www.alibaba.fr/product-detail/RGBW-RGBCCT-RGB-COB-LED-Strip_1601028895170.html',
+  'https://www.alibaba.com/product-introduction/Candy-Colour-Flexible-Silicon-TPU-Phone_60793853233.html',
+  'https://www.alibaba.com/product-introduction/Silicone-Phone-case-Microfiber-Inside-Custom_1601070339036.html',
+  'https://www.alibaba.com/product-introduction/6MM-Double-layers-TPE-Custom-Print_60747200979.html',
+  'https://www.alibaba.co.uk/product-detail/Car-jump-starter-with-air-compressor_1600984082737.html',
+  'https://www.alibaba.fr/product-detail/Car-Air-Pump-Tire-Inflator-12V_1601808632663.html',
+  'https://www.alibaba.fr/product-detail/Mini-Car-Jump-Starter-With-Air_1601270449501.html',
 ];
+// Charlas completas con la IA de verdad (16/11, "hacé más pruebas"): el cliente manda el link y contesta lo que le piden.
+const CHARLAS_PRUEBA = [
+  { nombre: 'Link corto del Compartir (arrancador)', msgs: ['Hola quiero traer esto https://www.alibaba.com/x/B2iQFj?ck=pdp', '20 unidades', 'sin marca'] },
+  { nombre: 'Mat de yoga (product-introduction)', msgs: ['Hola, cuánto me sale traer esto? https://www.alibaba.com/product-introduction/Non-Slip-Custom-logo-print-Double_60747406011.html', '100 unidades, sin marca'] },
+  { nombre: 'Poleas (paquete imposible en la publicación)', msgs: ['quiero traer estas poleas https://www.alibaba.com/product-detail/DIY-Sport-Gym-Fitness-Equipment-Wheel_1600958949996.html', '200 unidades'] },
+  { nombre: 'Publicación dada de baja', msgs: ['me cotizás esto? https://www.alibaba.com/product-detail/Car-Jump-Starter-1000A-3-in_1601148563519.html'] },
+];
+async function charlasDePrueba(fetchImpl) {
+  const { responder } = require('./agent');
+  const { crearStore } = require('./store');
+  const salida = [];
+  for (const [i, c] of CHARLAS_PRUEBA.entries()) {
+    const st = crearStore(null); const tel = `54900000099${i}`; const derivaciones = [];
+    salida.push(`### ${c.nombre}`, '');
+    for (const m of c.msgs) {
+      let r; try { r = await responder({ telefono: tel, texto: m, store: st, fetchImpl, derivaciones }); } catch (e) { r = `[ERROR ${e.message}]`; }
+      salida.push(`**Cliente:** ${m}`, '', `**Bot:** ${String(r || '(nada)').replace(/\n/g, '  \n')}`, '');
+    }
+    if (derivaciones.length) salida.push(`_Derivaciones: ${derivaciones.map((d) => d.motivo).join(', ')}_`, '');
+  }
+  return salida.join('\n');
+}
 const celda = (x) => String(x == null ? '—' : x).replace(/\|/g, '/').replace(/\s+/g, ' ').slice(0, 70);
-async function autoprueba({ store, fetchImpl = fetch, links = LINKS_PRUEBA, subirFn = null }) {
+async function autoprueba({ store, fetchImpl = fetch, links = LINKS_PRUEBA, subirFn = null, conCharlas = links === LINKS_PRUEBA }) {
   if (!store.meta || store.meta('pruebaLink') === VERSION_PRUEBA) return null;
   store.meta('pruebaLink', VERSION_PRUEBA);
   const filas = [];
@@ -155,10 +226,12 @@ async function autoprueba({ store, fetchImpl = fetch, links = LINKS_PRUEBA, subi
     filas.push(`| ${bien ? '✅' : '❌'} | ${celda(l.replace(/^https:\/\/(www\.)?/, '').slice(0, 60))} | ${celda(r.fuente && r.fuente.replace(/^https:\/\/(www\.)?/, '').split('/')[0])} | ${celda(r.titulo)} | ${p0 ? `USD ${p0.usd} desde ${p0.desde}` : '—'} | ${celda(r.unidades_de_venta)} | ${celda(r.tamano_paquete_cm)} | ${celda(r.peso_bruto_kg)} | ${r.paquete_coherente === false ? '⚠️ no' : r.paquete_coherente ? 'sí' : '—'} | ${celda(r.error ? `${r.error} ${r.detalle || ''}` : r.nota)} |`);
   }
   const fecha = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
-  const contenido = `# Prueba de lectura de links — ${fecha}\n\nLeídos: ${ok} de ${links.length} (desde el servidor de Railway).\n\n| | Link | Leído de | Producto | Precio | Unidad de venta | Paquete (cm) | Peso (kg) | ¿Coherente? | Nota |\n|---|---|---|---|---|---|---|---|---|---|\n${filas.join('\n')}\n`;
+  let charlas = '';
+  if (conCharlas) { try { charlas = `\n## Charlas completas con la IA\n\n${await charlasDePrueba(fetchImpl)}`; } catch (e) { charlas = `\n## Charlas completas con la IA\n\nFalló: ${e.message}\n`; } }
+  const contenido = `# Prueba de lectura de links — ${fecha}\n\nLeídos: ${ok} de ${links.length} (desde el servidor de Railway).\n\n| | Link | Leído de | Producto | Precio | Unidad de venta | Paquete (cm) | Peso (kg) | ¿Coherente? | Nota |\n|---|---|---|---|---|---|---|---|---|---|\n${filas.join('\n')}\n${charlas}`;
   const subir = subirFn || ((x) => require('./aprendizaje').subir(x));
   await subir({ fecha: `prueba-link-${fecha}`, contenido, fetchImpl }).catch((e) => console.error('Prueba link (subir):', e.message));
   return { ok, total: links.length, contenido };
 }
 
-module.exports = { autoprueba, leer, candidatas, textoDeHtml, tieneDatos, INSTRUCCION };
+module.exports = { conPedido, escalon, medidas, autoprueba, leer, candidatas, textoDeHtml, tieneDatos, INSTRUCCION };
