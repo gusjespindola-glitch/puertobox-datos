@@ -53,11 +53,13 @@ async function enviarInstagram(id, body, fetchImpl) {
 }
 
 /** Manda un PDF por WhatsApp desde el 6773 (YCloud). Lo usa solo Gustavo con el botón "Enviar presupuesto". */
-async function enviarDocumento(to, link, filename, caption, fetchImpl = fetch) {
+async function enviarDocumento(to, link, filename, caption, fetchImpl = fetch, tipo = 'document') {
+  // 16/11: las fotos salen como foto (se ven en el chat); el resto, como documento con su nombre.
+  const cuerpo = tipo === 'image' ? { type: 'image', image: { link, ...(caption ? { caption } : {}) } } : { type: 'document', document: { link, filename, ...(caption ? { caption } : {}) } };
   const r = await fetchImpl('https://api.ycloud.com/v2/whatsapp/messages/sendDirectly', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.YCLOUD_API_KEY || YCLOUD_API_KEY },
-    body: JSON.stringify({ from: `+${soloDigitos(process.env.BUSINESS_NUMBER || BUSINESS_NUMBER)}`, to: `+${soloDigitos(to)}`, type: 'document', document: { link, filename, caption } }),
+    body: JSON.stringify({ from: `+${soloDigitos(process.env.BUSINESS_NUMBER || BUSINESS_NUMBER)}`, to: `+${soloDigitos(to)}`, ...cuerpo }),
   });
   if (!r.ok) { const t = await r.text(); throw new Error(`YCloud ${r.status}: ${t.slice(0, 100)}`); }
 }
@@ -185,6 +187,32 @@ async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fe
  */
 // Archivos que mandan los clientes (15/11): se guardan junto a los datos y se sirven en /media/<nombre largo al azar>.
 const DIR_MEDIA = () => path.join(path.dirname(process.env.DATA_FILE || DATA_FILE), 'media');
+/** Lee un formulario con archivo (multipart/form-data) sin librerías. Devuelve { campos, archivo: { nombre, tipo, buf } | null }. */
+function leerMultipart(buf, contentType) {
+  const m = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType || '');
+  if (!m) return { campos: {}, archivo: null };
+  const sep = Buffer.from('--' + (m[1] || m[2]).trim());
+  const campos = {}; let archivo = null;
+  let i = buf.indexOf(sep);
+  while (i >= 0) {
+    const ini = i + sep.length;
+    if (buf.slice(ini, ini + 2).toString() === '--') break;
+    const fin = buf.indexOf(sep, ini);
+    if (fin < 0) break;
+    const parte = buf.slice(ini + 2, fin - 2); // sin el \r\n de cada lado
+    const corte = parte.indexOf('\r\n\r\n');
+    if (corte >= 0) {
+      const cab = parte.slice(0, corte).toString('utf8');
+      const cuerpo = parte.slice(corte + 4);
+      const nombre = (/name="([^"]*)"/i.exec(cab) || [])[1];
+      const fn = /filename="([^"]*)"/i.exec(cab);
+      if (fn) { if (fn[1] && cuerpo.length) archivo = { campo: nombre, nombre: path.basename(fn[1]), tipo: ((/content-type:\s*([^\r\n;]+)/i.exec(cab) || [])[1] || 'application/octet-stream').trim().toLowerCase(), buf: cuerpo }; }
+      else if (nombre) campos[nombre] = cuerpo.toString('utf8');
+    }
+    i = fin;
+  }
+  return { campos, archivo };
+}
 const BASE_URL = () => process.env.PUBLIC_URL || `https://${require('../src/negocio').datos().dominio}`;
 // Links firmados (avisos, charlas, responder). Auditoría 15/11: antes no vencían nunca y el tema de ntfy quedó publicado en el repo;
 // ahora cada link vence a los 7 días (los avisos nuevos traen links nuevos). Formato: <día de vencimiento>-<firma>.
@@ -788,15 +816,31 @@ function servidor() {
     if (req.method === 'POST' && url.pathname === '/responder') {
       const tel = soloDigitos(url.searchParams.get('tel') || '');
       if (!tel || !firmaOk('responder:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
-      let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 20000) req.destroy(); });
+      // 16/11 (Gustavo: "tengo que poder adjuntar archivos"): el formulario puede traer un archivo (PDF del presupuesto, foto, Excel...).
+      const TOPE = 16 * 1024 * 1024;
+      const partes = []; let largo = 0; let grande = false;
+      req.on('data', (c) => { largo += c.length; if (largo > TOPE) { grande = true; return; } partes.push(c); });
       return req.on('end', async () => {
-        const texto = (new URLSearchParams(raw).get('texto') || '').trim();
         const volver = (extra) => { res.writeHead(303, { location: `/charlas?t=${firma('charlas')}&abierto=${tel}${extra}#c-${tel}` }); res.end(); };
-        if (!texto) return volver('&error=' + encodeURIComponent('el mensaje está vacío'));
+        if (grande) return volver('&error=' + encodeURIComponent('el archivo pesa más de 16 MB'));
+        const cuerpo = Buffer.concat(partes);
+        const ct = String(req.headers['content-type'] || '');
+        const form = /multipart\/form-data/i.test(ct) ? leerMultipart(cuerpo, ct) : { campos: Object.fromEntries(new URLSearchParams(cuerpo.toString('utf8'))), archivo: null };
+        const texto = String(form.campos.texto || '').trim();
+        const archivo = form.archivo;
+        if (!texto && !archivo) return volver('&error=' + encodeURIComponent('el mensaje está vacío'));
         const c = store.chats().find((x) => x.telefono === tel);
         if (!c || Date.now() - (c.ultimoClienteEn || 0) > 24 * 3600e3) return volver('&error=' + encodeURIComponent('pasaron más de 24 h desde su último mensaje'));
-        try { await enviar(tel, texto, fetch, { lanzar: true }); } catch (e) { return volver('&error=' + encodeURIComponent(String(e.message).slice(0, 120))); }
-        store.agregar(tel, 'assistant', `[Gustavo] ${texto}`);
+        let marca = '';
+        try {
+          if (archivo) {
+            const ruta = require('./adjuntos').guardar(archivo.buf, archivo.tipo, DIR_MEDIA(), archivo.nombre);
+            const esFoto = /^image\/(jpeg|png|webp)$/.test(archivo.tipo);
+            await enviarDocumento(tel, `${BASE_URL()}${ruta}`, archivo.nombre, texto, fetch, esFoto ? 'image' : 'document');
+            marca = ` [archivo:${ruta}]`;
+          } else await enviar(tel, texto, fetch, { lanzar: true });
+        } catch (e) { return volver('&error=' + encodeURIComponent(String(e.message).slice(0, 120))); }
+        store.agregar(tel, 'assistant', `[Gustavo] ${texto || (archivo ? `Te mando ${archivo.nombre}` : '')}${marca}`);
         store.pausar(tel, 'gustavo_respondio');
         if (store.marcarVisto) store.marcarVisto(tel);
         // Si el cliente le contesta a Gustavo, que aparezca en pendientes y le llegue el aviso (el bot ya no lo atiende).
@@ -865,4 +909,4 @@ function pendientesSinResponder(st, ahora = Date.now()) {
     && (c.mensajes || []).length && c.mensajes[c.mensajes.length - 1].role === 'user');
 }
 
-module.exports = { firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo, ticArancel };
+module.exports = { leerMultipart, firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo, ticArancel };
