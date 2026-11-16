@@ -19,6 +19,11 @@ function getMotor() {
 
 const definiciones = [
   {
+    name: 'leer_link',
+    description: 'Lee la publicación de un link que mandó el cliente (Alibaba, 1688, etc.) y devuelve título, escalones de precio, pedido mínimo y "Empaque y entrega" (unidades de venta, tamaño del paquete, peso bruto). Usala SIEMPRE que el cliente mande un link de producto, antes de pedirle datos.',
+    input_schema: { type: 'object', properties: { url: { type: 'string', description: 'El link tal cual lo mandó el cliente' } }, required: ['url'] },
+  },
+  {
     name: 'clasificar_producto',
     description: 'Encuentra la posición arancelaria correcta como lo hace un despachante: busca el producto COMPLETO en internet, verifica el código en el arancel oficial de ARCA y devuelve la posición con su derecho de importación (die) e impuestos internos sacados de ARCA. Usala SIEMPRE antes del primer presupuesto de un producto. La posición queda fija en la charla: si la volvés a llamar con el mismo producto, devuelve la misma.',
     input_schema: {
@@ -99,6 +104,8 @@ function ejecutar(nombre, input, ctx) {
   switch (nombre) {
     case 'clasificar_producto':
       return require('./clasificador').clasificar(input, ctx); // async: busca en internet y en ARCA
+    case 'leer_link':
+      return require('./links').leer(input.url, ctx); // async (16/11)
     case 'buscar_posicion': {
       const m = getMotor();
       const res = m.buscar(input.producto, 15).filter((f) => !f.c.startsWith('00')).slice(0, 5).map((f) => ({

@@ -1,0 +1,116 @@
+'use strict';
+/**
+ * Leer el link de un producto (16/11/2026, Gustavo: "¿no hay manera de entrar a ver el enlace? ¿Ninguna manera?").
+ *
+ * alibaba.com no deja leer sus páginas desde un servidor (llega una página vacía), pero la MISMA publicación en
+ * alibaba.fr o alibaba.co.uk sí trae todo: título, escalones de precio, pedido mínimo y "Empaque y entrega"
+ * (unidades de venta, tamaño del paquete, peso bruto). Probado el 16/11 con el arrancador (USD 26,33 desde 6,
+ * 24×12×45 cm, 2,0 kg: igual que la captura de Gustavo).
+ *
+ * Orden: 1) el servidor baja la página (alibaba.fr, .co.uk, .com); 2) si no trae datos, la IA la lee con su
+ * herramienta web_fetch. La IA solo ordena lo que dice la página (no inventa) y controla que el paquete tenga sentido
+ * para una unidad (la publicación de las poleas decía 25 kg por polea).
+ */
+const MODELO = process.env.MODELO_LINKS || process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
+const cache = new Map();
+
+/** URLs a probar para un link. Alibaba: primero los espejos que sí se leen. Sin parámetros de seguimiento. */
+function candidatas(url) {
+  const u = String(url || '').trim();
+  const m = u.match(/alibaba\.[a-z.]+\/product-detail\/([^?#\s]+?\.html)/i) || u.match(/m\.alibaba\.com\/product\/(\d+)\/([^?#\s]+?\.html)/i);
+  if (m) {
+    const ruta = m[2] ? `${m[2].replace(/\.html$/, '')}_${m[1]}.html` : m[1];
+    return ['fr', 'co.uk', 'com'].map((d) => `https://www.alibaba.${d}/product-detail/${ruta}`);
+  }
+  return /^https?:\/\//i.test(u) ? [u.split('#')[0]] : [];
+}
+const idDe = (url) => (String(url).match(/_(\d{8,})\.html/) || String(url).match(/\/(\d{8,})\//) || [])[1] || String(url).split('?')[0];
+
+/** Texto visible de una página (sin scripts ni estilos), recortado. */
+function textoDeHtml(html, max = 20000) {
+  return String(html || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<br\s*\/?>|<\/(p|div|li|tr|h\d)>/gi, '\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim().slice(0, max);
+}
+/** ¿La página trae datos de producto (precio y algo del empaque o del producto)? */
+const tieneDatos = (t) => t.length > 1500 && /(US\s?\$|\$\s?\d|€)/.test(t) && /(kg|gross weight|package|peso|piece|pieces|unit)/i.test(t);
+
+const INSTRUCCION = `Te paso el texto de la publicación de un producto (Alibaba, 1688, etc.). Devolvé SOLO un JSON, sin texto alrededor, con lo que DICE la página (no inventes nada; si un dato no está, null):
+{"titulo":"...","precios":[{"desde":6,"hasta":499,"usd":26.33}],"pedido_minimo":6,"unidades_de_venta":"Artículo individual","tamano_paquete_cm":"24x12x45","peso_bruto_kg":2.0,"bateria":"si/no/no dice","material":"...","paquete_coherente":true,"nota":"..."}
+"paquete_coherente": false si el tamaño o el peso del paquete no tienen sentido para UNA unidad de venta (por ejemplo, 25 kg o 30x30x30 cm para una polea chica): en "nota" decí por qué en una línea.`;
+
+async function llamarIA(body, fetchImpl, beta) {
+  const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', ...(beta ? { 'anthropic-beta': beta } : {}) },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text()).slice(0, 150)}`);
+  return r.json();
+}
+const jsonDe = (j) => {
+  const t = (j.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n');
+  const m = t.match(/\{[\s\S]*\}/);
+  try { return m ? JSON.parse(m[0]) : null; } catch { return null; }
+};
+
+/** Lee un link y devuelve los datos de la publicación, o { error }. ctx: { fetchImpl, store }. */
+async function leer(url, ctx = {}) {
+  const fetchImpl = ctx.fetchImpl || fetch;
+  const urls = candidatas(url);
+  if (!urls.length) return { error: 'No es un link. Pedile al cliente el link de la publicación o una captura.' };
+  const id = idDe(urls[0]);
+  if (cache.has(id)) return { ...cache.get(id), ya_leido: true };
+  const intentos = [];
+  let texto = '';
+  let fuente = '';
+  // 1) El servidor baja la página (lo más barato).
+  for (const u of urls) {
+    try {
+      const r = await fetchImpl(u, { headers: { 'user-agent': UA, 'accept-language': 'es-AR,es;q=0.9,en;q=0.8', accept: 'text/html' }, redirect: 'follow', signal: AbortSignal.timeout(15000) });
+      const t = textoDeHtml(await r.text());
+      if (r.ok && tieneDatos(t)) { texto = t; fuente = u; break; }
+      intentos.push(`${u.replace(/^https:\/\/www\./, '').split('/')[0]}: ${r.status}${r.ok ? ' sin datos' : ''}`);
+    } catch (e) { intentos.push(`${u.split('/')[2]}: ${String(e.message).slice(0, 60)}`); }
+  }
+  let datos = null;
+  try {
+    if (texto) {
+      datos = jsonDe(await llamarIA({ model: MODELO, max_tokens: 1500, system: INSTRUCCION, messages: [{ role: 'user', content: `Publicación (${fuente}):\n${texto}` }] }, fetchImpl));
+    } else {
+      // 2) La IA la lee con su propia herramienta (web_fetch de Anthropic: desde ahí alibaba.fr sí se lee).
+      const j = await llamarIA({
+        model: MODELO, max_tokens: 3000, system: INSTRUCCION,
+        tools: [{ type: 'web_fetch_20250910', name: 'web_fetch', max_uses: 3 }],
+        messages: [{ role: 'user', content: `Leé esta publicación con web_fetch (probá en este orden hasta que traiga datos): ${urls.join(' , ')}` }],
+      }, fetchImpl, 'web-fetch-2025-09-10');
+      datos = jsonDe(j);
+      fuente = 'web_fetch';
+    }
+  } catch (e) { intentos.push(`IA: ${String(e.message).slice(0, 120)}`); }
+  if (!datos || (!datos.titulo && !datos.precios)) {
+    return { error: 'No pude leer la publicación. Pedile al cliente captura del precio y de "Empaque y entrega".', detalle: intentos.join(' | ') };
+  }
+  const res = { ...datos, fuente, link: urls[0], instruccion: 'Datos de la publicación (no del cliente): el precio es por unidad según la cantidad; "Empaque y entrega" con "Artículo individual" es por unidad. Si paquete_coherente es false, no uses ese paquete: pedí la proforma o el peso y las medidas de la caja al proveedor.' };
+  cache.set(id, res);
+  if (cache.size > 200) cache.delete(cache.keys().next().value);
+  return res;
+}
+
+// Prueba al arrancar (una vez por versión): lee el link real del arrancador y sube el resultado a la rama del
+// aprendizaje (es una publicación pública, sin datos de clientes). Así Claude sabe si desde Railway se lee.
+const VERSION_PRUEBA = 'v1-16-11';
+const LINK_PRUEBA = 'https://www.alibaba.com/product-detail/12V-Car-Jump-Starter-With-Air_1601952873179.html';
+async function autoprueba({ store, fetchImpl = fetch }) {
+  if (!store.meta || store.meta('pruebaLink') === VERSION_PRUEBA) return null;
+  store.meta('pruebaLink', VERSION_PRUEBA);
+  cache.delete(idDe(LINK_PRUEBA));
+  const r = await leer(LINK_PRUEBA, { fetchImpl });
+  const fecha = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+  const contenido = `# Prueba de lectura de links — ${fecha}\n\nLink: ${LINK_PRUEBA}\nEsperado (captura de Gustavo): USD 26,33 desde 6, artículo individual, 24x12x45 cm, 2,0 kg.\n\n\`\`\`json\n${JSON.stringify({ ...r, instruccion: undefined }, null, 1)}\n\`\`\`\n`;
+  await require('./aprendizaje').subir({ fecha: `prueba-link-${fecha}`, contenido, fetchImpl }).catch((e) => console.error('Prueba link (subir):', e.message));
+  return r;
+}
+
+module.exports = { autoprueba, leer, candidatas, textoDeHtml, tieneDatos, INSTRUCCION };

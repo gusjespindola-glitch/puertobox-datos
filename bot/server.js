@@ -967,7 +967,8 @@ if (require.main === module) {
   setInterval(ticAprendizaje, 15 * 60e3).unref();
   // ¿Podía el bot? (16/11, Gustavo: "revisá los chats en los que intervine yo"): una vez por versión, con reintentos.
   const ticIntervenciones = () => require('./intervenciones').tick({ store, owner: soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), reglas: require('./agent').SYSTEM, avisar: (t, titulo, prioridad) => avisarNtfy(t, titulo, prioridad, fetch) }).catch((e) => console.error('Intervenciones:', e.message));
-  setTimeout(ticIntervenciones, 4 * 60e3).unref(); setInterval(ticIntervenciones, 15 * 60e3).unref();
+  setTimeout(ticIntervenciones, 4 * 60e3).unref();
+  setTimeout(() => require('./links').autoprueba({ store }).catch((e) => console.error('Prueba link:', e.message)), 90e3).unref(); // 16/11: ¿se leen los links desde Railway? setInterval(ticIntervenciones, 15 * 60e3).unref();
   setTimeout(ticAprendizaje, 2 * 60e3).unref(); // 16/11: si el servidor reinició y quedó pendiente la revisión, la hace al arrancar
   // Dólar de referencia automático (antes se cambiaba a mano cada semana).
   const dol = require('../src/dolar'); dol.actualizar(); setInterval(() => dol.actualizar(), 12 * 3600e3).unref();
