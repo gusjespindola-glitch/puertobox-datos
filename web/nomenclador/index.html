@@ -121,7 +121,7 @@ button.ghost{background:transparent;color:var(--acc)}
 #doc .pie{display:flex;justify-content:space-between;gap:12px;margin-top:22px;font-size:11px;color:#3c4556;flex-wrap:wrap}
 #doc .firma{border-top:1px solid #1b2333;padding-top:6px;min-width:220px;text-align:center}
 @media (max-width:600px){#doc{padding:18px 14px}#doc .hd{grid-template-columns:1fr 70px}#doc .hd .cp{grid-column:1/-1;border-top:1.5px solid #1b2333}#doc .lt{border-right:0}#doc .bx{grid-template-columns:1fr}}
-@media print{body>*:not(#pres){display:none!important}#pres{position:static;background:none;padding:0;display:block;overflow:visible}#pres .bar{display:none}html,body{background:#fff!important;height:auto}#doc{max-width:none;width:100%;padding:0 1px;border-radius:0;font-size:12px}#doc .hd{grid-template-columns:1fr 84px 1fr}#doc h3{margin:12px 0 5px}#doc td{padding:5px 4px}@page{size:A4;margin:12mm}}
+@media print{body>*:not(#pres){display:none!important}#pres{position:static;background:none;padding:0;display:block;overflow:visible}#pres .bar{display:none}html,body{background:#fff!important;height:auto}#doc{-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:none;width:100%;padding:12mm 14mm;border-radius:0;font-size:12px}#doc table,#doc .total,#doc .imp,#doc .bx{break-inside:avoid}#doc h3{break-after:avoid}#doc .hd{grid-template-columns:1fr 84px 1fr}#doc h3{margin:12px 0 5px}#doc td{padding:5px 4px}@page{size:A4;margin:0}}
 @media (prefers-reduced-motion:no-preference){.res{transition:border-color .12s}}
 input.falta{border:2px solid #c8102e;background:#fff5f5}.charla{background:#eef5ff;border-left:4px solid #0b4f8a;padding:12px;border-radius:10px;margin:10px 0;line-height:1.5}.charla.mal{background:#fff1f0;border-color:#c8102e}.charla.bien{background:#eefaf0;border-color:#1a7f37}button.enviar{background:#1a7f37;color:#fff;font-size:17px;padding:14px 18px;width:100%;margin-bottom:8px}
 </style>
@@ -220,6 +220,8 @@ let N = null, sel = null, CRIT = { normas: [], criterios: [] };
 function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
 
 async function cargar() {
+  // 16/11: la clave no queda en la barra de direcciones (se imprimía en el pie del PDF del presupuesto). El acceso ya quedó guardado.
+  if (/[?&](key|t)=/.test(location.search)) { try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { /* sin historial */ } }
   const get = (f) => fetch('data/' + f).then((r) => { if (!r.ok) throw new Error(f); return r.json(); });
   const [sim, sufijos, intervenciones, sinonimos, notas, frecuentes] = await Promise.all(['sim.json', 'sufijos.json', 'intervenciones.json', 'sinonimos.json', 'notas.json', 'productos_frecuentes.json'].map(get));
   N = Nomenclador.crear({ sim, sufijos, intervenciones, sinonimos, notas, frecuentes });
@@ -443,7 +445,7 @@ function generarPresupuesto() {
 }
 $('c_pres').addEventListener('click', generarPresupuesto);
 $('p_close').addEventListener('click', () => $('pres').classList.remove('on'));
-$('p_print').addEventListener('click', () => window.print());
+$('p_print').addEventListener('click', () => { const t = document.title; const n = ($('doc').textContent.match(/N° (\d{4}-\d{8})/) || [])[1]; document.title = n ? `Presupuesto PuertoBox ${n}` : 'Presupuesto PuertoBox'; window.print(); document.title = t; });
 $('q').addEventListener('input', () => { clearTimeout(buscar.t); buscar.t = setTimeout(buscar, 140); });
 $('list').addEventListener('click', (e) => { const r = e.target.closest('.res'); if (r) abrir(r.dataset.c); });
 $('list').addEventListener('keydown', (e) => { const r = e.target.closest('.res'); if (r && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); abrir(r.dataset.c); } });
