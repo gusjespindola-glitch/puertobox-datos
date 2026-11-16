@@ -2,7 +2,7 @@
   "_meta": {
     "aviso": "Intervenciones ORIENTATIVAS curadas por PuertoBox (no vienen en los archivos de ARCA). Confirmar siempre en VUCE por posición. Gustavo valida y corrige esta tabla.",
     "fuentes": "Curso de despachante (Courier 2025 y SIDIP/Intervenciones, Lic. Padilla); criterios generales de organismos.",
-    "actualizado": "2026-11-16 (ropa usada Res. 461/2026; SIDIP verificado 13/11: solo celulares)"
+    "actualizado": "2026-11-16 (etiquetado textil en courier según Gustavo; ropa usada Res. 461/2026; SIDIP verificado 13/11: solo celulares)"
   },
   "organismos": {
     "SENASA": "Sanidad animal y vegetal. Productos de origen animal o vegetal, alimentos para animales, fitosanitarios.",
@@ -12,7 +12,8 @@
     "ENACOM": "Equipos de telecomunicaciones y radio (celulares, WiFi, Bluetooth): homologación.",
     "Seguridad eléctrica": "Reglamento técnico (Secretaría de Comercio). Desde 2025 se controla en plaza, no en Aduana.",
     "Seguridad de juguetes": "Reglamento técnico (Secretaría de Comercio). Control en plaza.",
-    "Etiquetado textil y calzado": "Reglamento técnico de etiquetado (Res. SCI 549/2021). Ingresa por courier; control en plaza.",
+    "Etiquetado textil": "Reglamento técnico de etiquetado (Res. SCI 549/2021). En courier también lo piden: hay que presentar el reglamento técnico de etiquetado y la etiqueta de la prenda (Gustavo, 16/11/2026). Avisar antes de que el cliente compre, para que el proveedor etiquete según la norma argentina.",
+    "Etiquetado calzado": "Reglamento técnico de etiquetado de calzado. A validar por Gustavo si en courier se pide igual que en textiles.",
     "ANMAC": "Armas, municiones, explosivos y materiales controlados.",
     "SEDRONAR": "Precursores químicos.",
     "Ropa usada (Res. 461/2026)": "Secretaría de Industria y Comercio, Res. 461/2026 (BO 11/11/2026): antes del envío, trámite TAD \"Solicitud para la importación de ropa usada\" con certificado de lavado/desinfección en origen (ISO/IEC 17065). Prohibidos calzado y ropa interior usados. Si no cumple: reembarco a origen. No aplica a ropa nueva.",
@@ -32,8 +33,8 @@
     {"prefijos": ["36"], "organismos": ["ANMAC"]},
     {"prefijos": ["3923", "3924", "4419", "4823.61", "4823.69", "6911", "6912", "7010", "7013", "7323", "7615", "8215", "8211.91"], "organismos": ["ANMAT/INAL envases"], "nota": "Solo si es para contacto con alimentos (vasos, vajilla, termos, utensilios, envases)."},
     {"prefijos": ["9617"], "organismos": ["ANMAT/INAL envases"], "nota": "Termos."},
-    {"prefijos": ["6401", "6402", "6403", "6404", "6405"], "organismos": ["Etiquetado textil y calzado"]},
-    {"prefijos": ["61", "62", "63"], "organismos": ["Etiquetado textil y calzado"]},
+    {"prefijos": ["6401", "6402", "6403", "6404", "6405"], "organismos": ["Etiquetado calzado"]},
+    {"prefijos": ["61", "62", "63"], "organismos": ["Etiquetado textil"]},
     {"prefijos": ["9503", "9504", "9505"], "organismos": ["Seguridad de juguetes"]},
     {"prefijos": ["8516", "8509", "8508", "8510", "8513", "8504.40", "8536", "8544", "9405", "8414.51", "8418", "8450", "8467", "8471.60", "8528"], "organismos": ["Seguridad eléctrica"]},
     {"prefijos": ["8517.13", "8517.14", "8517.62", "8517.69", "8518.30", "8525", "8526", "8527", "8529"], "organismos": ["ENACOM"], "nota": "Si transmite por radio (celular, WiFi, Bluetooth)."},

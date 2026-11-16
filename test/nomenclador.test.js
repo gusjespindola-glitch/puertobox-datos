@@ -31,7 +31,7 @@ test('ficha de 6404.19 trae DIE 20%, jerarquía e intervenciones', () => {
   assert.ok(f.posicion.startsWith('6404.19'));
   assert.strictEqual(f.die, 20);
   assert.ok(f.jerarquia.length >= 2);
-  assert.ok(f.intervenciones.some((i) => i.organismo === 'Etiquetado textil y calzado'));
+  assert.ok(f.intervenciones.some((i) => i.organismo === 'Etiquetado textil' || i.organismo === 'Etiquetado calzado'));
   assert.ok(!f.intervenciones.some((i) => i.organismo === 'SIDIP'), 'SIDIP hoy solo alcanza celulares');
   assert.ok(f.notas.includes('CAPITULO 64'));
 });
@@ -64,4 +64,11 @@ test('búsqueda general: "desmontados" va al final salvo que se pida', () => {
 test('todas las subpartidas de productos frecuentes existen en el arancel', () => {
   const fr = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'ncm', 'productos_frecuentes.json'), 'utf8'));
   for (const p of fr.productos) for (const pre of p.prefijos) assert.ok(N.buscar(pre, 1).length, `${pre} no existe`);
+});
+
+test('ropa (6211.43) avisa el reglamento de etiquetado textil en courier', () => {
+  const f = N.ficha('6211.43');
+  const e = f.intervenciones.find((i) => i.organismo === 'Etiquetado textil');
+  assert.ok(e, 'tiene que figurar el etiquetado textil');
+  assert.match(JSON.stringify(e), /courier/i);
 });
