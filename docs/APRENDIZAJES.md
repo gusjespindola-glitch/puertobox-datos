@@ -201,4 +201,4 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - 16/11/2026 14:43 (Gustavo): "mi idea es que la mayoría de las charlas las lleves vos, que solo intervenga yo cuando no puedas, y si intervengo, una opción para que la sigas vos". Regla: cada vez que Gustavo interviene es una señal de algo que le falta al bot; el objetivo es que solo le queden pagos, excepciones, reclamos de envíos pagados, posiciones o permisos dudosos y coordinar con Howard.
 - 16/11/2026 15:43 (Gustavo mandó la captura de /charlas sin texto): cuando Claude no puede ver algo (Railway), Gustavo manda la captura. Leerla entera y sacar los errores sin que tenga que explicarlos.
 - 16/11/2026 (charla de Leo, clamps): con un rango del proveedor (50–60 kg, 5–6 cajas), Gustavo cotizó con el número más alto (USD 1.120 + 320 a 350 de impuestos). Se toma como regla: rango → el mayor, aclarado.
-
+- 16/11/2026 15:53 (Gustavo): de una publicación de Alibaba, la captura que sirve es "Empaque y entrega" (tamaño del paquete y peso bruto; "Artículo individual" = por unidad). Él cotiza cada unidad como una caja con esas medidas (arrancador: 25 × 24×12×45 cm).
