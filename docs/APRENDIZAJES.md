@@ -211,3 +211,5 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - 16/11/2026 17:08 (Gustavo, capturas de Howard): trabaja con UPS y FedEx, no DHL. El costo de referencia es el más barato de esos dos para cada peso.
 - 16/11/2026 17:18 (Gustavo): quiere un "ejército de bots controladores" (web, IG, TikTok, Meta, competencia, precios, regulaciones, cotizador) con un jefe que en reunión decide y actúa. Se armó como una sola reunión diaria con 8 controladores en paralelo.
 - 16/11/2026 17:23 (Gustavo): descartó la reunión diaria del equipo de control: "con esas que hay está bien". No volver a proponer más tareas programadas sin que él lo pida.
+
+- 16/11/2026: Gustavo pidió darle prioridad a Meta ("es lo que trae clientes") y autorizó agregar las skills que falten (se sumaron conversion-tracking, ab-testing y video). Error a no repetir: editar el texto de un anuncio prendido reinicia el aprendizaje (16/11 la charla pasó de ARS 365 a 1.670): siempre anuncio nuevo y pausar el viejo.

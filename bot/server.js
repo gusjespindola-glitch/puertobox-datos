@@ -403,7 +403,7 @@ async function procesar(payload, deps = {}) {
     // ¿Vino del anuncio de Meta? El link del anuncio trae un texto precargado propio (negocio.json → mensaje_anuncio).
     if (st.marcar && (e.referral || (e.type === 'text' && esMensajeAnuncio(e.text.body)))) {
       // Anuncio clic a WhatsApp: WhatsApp manda los datos del anuncio (referral) en el primer mensaje.
-      st.marcar(tel, { origen: 'anuncio', origenEn: Date.now(), ...(e.referral ? { anuncioId: e.referral.sourceId || e.referral.source_id || null } : {}) });
+      st.marcar(tel, { origen: 'anuncio', origenEn: Date.now(), ...(e.referral ? { anuncioId: e.referral.sourceId || e.referral.source_id || null, ctwaClid: e.referral.ctwaClid || e.referral.ctwa_clid || null } : {}) });
     } else if (st.marcar && e.type === 'text' && esMensaje698(e.text.body)) {
       // Vino del link del mensaje automático del 698 (para medir si la gente pasa del 698 al bot).
       st.marcar(tel, { origen: '698', origenEn: Date.now() });
