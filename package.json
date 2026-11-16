@@ -8,7 +8,8 @@
     "bot": "node bot/server.js",
     "start": "node bot/server.js",
     "precios": "node src/analisis_precios.js",
-    "simular": "node bot/simulador.js"
+    "simular": "node bot/simulador.js",
+    "criterios": "node ncm/criterios_web.js"
   },
   "license": "UNLICENSED",
   "private": true,

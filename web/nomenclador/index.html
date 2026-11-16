@@ -212,7 +212,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const pct = (n) => (Number.isInteger(n) ? n : String(n).replace('.', ',')) + '%';
 const usd = (n) => 'USD ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const FREC = ['zapatillas', 'remeras', 'juguetes', 'auriculares', 'termo', 'mochila', 'cargador', 'reloj', 'lámpara led', 'repuestos auto'];
-let N = null, sel = null;
+let N = null, sel = null, CRIT = { normas: [], criterios: [] };
 
 function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
 
@@ -220,6 +220,7 @@ async function cargar() {
   const get = (f) => fetch('data/' + f).then((r) => { if (!r.ok) throw new Error(f); return r.json(); });
   const [sim, sufijos, intervenciones, sinonimos, notas, frecuentes] = await Promise.all(['sim.json', 'sufijos.json', 'intervenciones.json', 'sinonimos.json', 'notas.json', 'productos_frecuentes.json'].map(get));
   N = Nomenclador.crear({ sim, sufijos, intervenciones, sinonimos, notas, frecuentes });
+  try { CRIT = await get('criterios.json'); } catch (e) { CRIT = { normas: [], criterios: [] }; }
   $('src').textContent = `Arancel Integrado ARCA · archivos del ${N.meta.fecha_archivos.split('-').reverse().join('/')} · ${N.meta.posiciones_sim.toLocaleString('es-AR')} posiciones SIM`;
   $('frec').innerHTML = FREC.map((f) => `<button type="button" class="chip" data-q="${esc(f)}">${esc(f)}</button>`).join('');
   const h = location.hash.match(/^#p-(\d+)/);
@@ -273,6 +274,13 @@ function abrir(c) {
       ${k('Reint. extraz.', pct(f.re))}${k('Reint. intraz.', pct(f.ri))}${k('DIE mín. espec.', f.die_especifico_minimo || '—')}${k('Unidad estad.', f.unidad_estadistica || '—')}
     </div>
     <p class="note">* IVA general. Verificar si la posición tiene alícuota reducida del 10,5% (bienes de capital y otros). Tasa estadística general del 3%.</p>
+    ${(() => {
+      // Criterios de clasificación de ARCA de esta posición (16/11, tipo Tarifar/PCRAM).
+      const d8 = Nomenclador.digitos(f.posicion).slice(0, 8);
+      const cr = CRIT.criterios.filter((c) => c.pos.replace(/\D/g, '') === d8);
+      const url = (c) => (CRIT.normas.find((n) => n.id === c.norma) || {}).url;
+      return `<div class="sec"><h2>Criterios de clasificación de ARCA (${cr.length})</h2>${cr.length ? cr.map((c) => `<div style="margin:4px 0"><b>Criterio ${esc(c.criterio)}</b> · ${url(c) ? `<a href="${esc(url(c))}" target="_blank" rel="noopener">${esc(c.norma)}</a>` : esc(c.norma)}${c.expediente ? ` · ${esc(c.expediente)}` : ''}<br>${esc(c.desc)}</div>`).join('') : `<span class="none">Sin criterios cargados para esta posición.</span>`}<p class="note">Resumen de la mercadería: el texto oficial está en el anexo de la norma. Se suman criterios nuevos todas las semanas.</p></div>`;
+    })()}
     <div class="sec"><h2>Intervenciones posibles (orientativas)</h2>
       <div class="int">${f.intervenciones.length ? f.intervenciones.map((i) => `<div><b>${esc(i.organismo)}</b>: ${esc(i.detalle)}${i.nota ? ' <em>' + esc(i.nota) + '</em>' : ''}</div>`).join('') : '<span class="none">No hay intervenciones cargadas en la tabla de PuertoBox para esta posición.</span>'}</div>
       <p class="note">No vienen en los archivos de ARCA: es una tabla curada por PuertoBox. Confirmá siempre en <a href="https://www.vuce.gob.ar/" target="_blank" rel="noopener">VUCE</a> por posición.</p>

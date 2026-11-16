@@ -79,6 +79,7 @@ for line in raw.splitlines():
 
 # --- Intervenciones orientativas (curadas por PuertoBox) e impuestos internos
 (out / "intervenciones.json").write_text((here / "intervenciones.json").read_text(encoding="utf-8"), encoding="utf-8")
+(out / "criterios.json").write_text(json.dumps(json.loads((here / "criterios.json").read_text(encoding="utf-8")), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
 print(f"{len(pos)} posiciones, {len(textos)} textos, {len(notas)} capítulos con notas -> {out}")
 
