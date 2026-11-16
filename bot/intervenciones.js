@@ -17,7 +17,7 @@ const MODELO_RESPALDO = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 const DIAS = 7;
 const MAX_CHARLAS = 40;
 const MAX_INTENTOS = 4;
-const VERSION = 'v1-16-11'; // cambiar para que el servidor la vuelva a correr después de un deploy
+const VERSION = 'v2-16-11'; // cambiar para que el servidor la vuelva a correr después de un deploy
 
 const textoDe = (content) => (typeof content === 'string' ? content : Array.isArray(content) ? content.filter((b) => b && b.type === 'text').map((b) => b.text).join('\n') : '');
 
@@ -84,7 +84,7 @@ async function revisar({ store, owner, reglas, fetchImpl = fetch, ahora = Date.n
     const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-      signal: AbortSignal.timeout(300e3),
+      signal: AbortSignal.timeout(480e3),
       body: JSON.stringify({ model, max_tokens: 10000, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }),
     });
     if (!r.ok) { fallas.push(`${model}: Anthropic ${r.status} ${(await r.text()).slice(0, 150)}`); continue; }
@@ -118,7 +118,8 @@ async function tick({ store, owner, reglas, fetchImpl = fetch, ahora = Date.now(
   } catch (err) {
     store.meta('intervenciones', { ...e, error: String(err.message).slice(0, 300) });
     console.error(`Intervenciones (intento ${e.intentos}/${MAX_INTENTOS}):`, err.message);
-    if (e.intentos >= MAX_INTENTOS) await subir({ fecha: `intervenciones-${horaAR(ahora).fecha}`, contenido: `# ¿Podía el bot?\n\nNo se pudo armar después de ${MAX_INTENTOS} intentos.\n\nMotivo: ${anonimizar(String(err.message))}\n`, fetchImpl }).catch(() => {});
+    // 16/11: la primera versión falló sin que se supiera por qué (Claude no ve los registros de Railway): cada intento fallido sube el motivo.
+    await subir({ fecha: `intervenciones-${horaAR(ahora).fecha}-error`, contenido: `# ¿Podía el bot? — intento ${e.intentos} de ${MAX_INTENTOS} falló\n\nMotivo: ${anonimizar(String(err.message)).slice(0, 600)}\n`, fetchImpl }).catch((x) => console.error('Intervenciones (subir error):', x.message));
     return { error: err.message };
   } finally { corriendo = false; }
 }
