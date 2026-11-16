@@ -111,3 +111,9 @@ test('piezas de publicidad: el "desde X kg" sale de kg_desde_total, no del tramo
   const py = fs.readFileSync(path.join(__dirname, '..', '..', 'docs', 'marketing', 'piezas', 'precio_render.py'), 'utf8');
   assert.match(py, /desde:d\.kg_desde_total/);
 });
+
+test('anonimizar deja las fechas del informe (16/11: el título salía "[número]")', () => {
+  const { anonimizar } = require('../aprendizaje');
+  assert.strictEqual(anonimizar('# ¿Podía el bot? — 2026-11-16'), '# ¿Podía el bot? — 2026-11-16');
+  assert.strictEqual(anonimizar('llamame al 221 555-1234'), 'llamame al [número]');
+});

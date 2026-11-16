@@ -31,7 +31,7 @@ function anonimizar(texto, nombres = []) {
   s = s.replace(/\[archivo:[^\]]*\]/g, '[archivo]');
   s = s.replace(/https?:\/\/\S+|www\.\S+|wa\.me\/\S+/gi, '[link]');
   s = s.replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '[mail]');
-  s = s.replace(/\+?\d[\d\s().-]{6,}\d/g, '[número]'); // teléfonos, CUIT, DNI, CBU
+  s = s.replace(/\+?\d[\d\s().-]{6,}\d/g, (m) => (/^\d{4}-\d{2}-\d{2}$/.test(m) ? m : '[número]')); // teléfonos, CUIT, DNI, CBU (16/11: las fechas AAAA-MM-DD quedan)
   s = s.replace(/\b(me llamo|mi nombre es|soy)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?)/g, '$1 [nombre]');
   // 16/11 (revisión general): el bot saluda por el nombre ("Hola Agustín, ¿cómo estás?") aunque el lead no lo tenga guardado,
   // y el repo es público. Se saca el nombre que sigue a un saludo o a una despedida.
