@@ -364,10 +364,31 @@ test('charlas: Gustavo le contesta al cliente desde la página (sale por el 6773
     const pag2 = await (await fetchReal(`${base}/charlas?t=${srv.firma('charlas')}&abierto=5492364652566&ok=1`)).text();
     assert.match(pag2, /Vos:<\/b> Hola, soy Gustavo/);
     assert.match(pag2, /Mensaje enviado/);
+    // 16/11: con archivo adjunto (PDF del presupuesto) sale como documento con el texto, y queda en la charla.
+    assert.match(pag, /Adjuntar archivo/);
+    const fd = new FormData();
+    fd.append('texto', 'Te paso el presupuesto formal.');
+    fd.append('archivo', new Blob([Buffer.from('%PDF-1.4 prueba')], { type: 'application/pdf' }), 'Presupuesto PuertoBox 0001-00000001.pdf');
+    const a = await fetchReal(`${base}/responder?tel=5492364652566&t=${srv.firma('responder:5492364652566')}`, { method: 'POST', body: fd, redirect: 'manual' });
+    assert.match(a.headers.get('location'), /ok=1/);
+    const doc = enviados[1];
+    assert.strictEqual(doc.type, 'document');
+    assert.strictEqual(doc.document.filename, 'Presupuesto PuertoBox 0001-00000001.pdf');
+    assert.strictEqual(doc.document.caption, 'Te paso el presupuesto formal.');
+    const ruta = new URL(doc.document.link).pathname;
+    assert.match(ruta, /^\/media\/[0-9a-f]{32}\.pdf$/);
+    assert.strictEqual(await (await fetchReal(base + ruta)).text(), '%PDF-1.4 prueba');
+    // Una foto sale como foto.
+    const fd2 = new FormData();
+    fd2.append('archivo', new Blob([Buffer.from([0xff, 0xd8, 0xff])], { type: 'image/jpeg' }), 'caja.jpg');
+    await fetchReal(`${base}/responder?tel=5492364652566&t=${srv.firma('responder:5492364652566')}`, { method: 'POST', body: fd2, redirect: 'manual' });
+    assert.strictEqual(enviados[2].type, 'image');
+    const pag3 = await (await fetchReal(`${base}/charlas?t=${srv.firma('charlas')}&abierto=5492364652566`)).text();
+    assert.match(pag3, /Te paso el presupuesto formal[\s\S]*Abrir el archivo \(PDF\)/);
     // Fuera de la ventana de 24 h no se manda.
     const v = await fetchReal(`${base}/responder?tel=5491100000777&t=${srv.firma('responder:5491100000777')}`, { method: 'POST', body: new URLSearchParams({ texto: 'hola' }), redirect: 'manual' });
     assert.match(v.headers.get('location'), /error=/);
-    assert.strictEqual(enviados.length, 1);
+    assert.strictEqual(enviados.length, 3);
   } finally { globalThis.fetch = fetchReal; s.close(); delete process.env.YCLOUD_API_KEY; }
 });
 
