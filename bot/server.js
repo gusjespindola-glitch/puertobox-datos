@@ -260,7 +260,8 @@ function panelOk(req) {
   return !!(m && v && require('crypto').timingSafeEqual(Buffer.from(m[1]), Buffer.from(v)));
 }
 const cookiePanel = () => `pbp=${panelValor()}; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax`;
-const SIN_ACCESO = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>PuertoBox</title></head><body style="font-family:system-ui,sans-serif;padding:20px"><h1>Entrá una vez desde un aviso</h1><p>Abrí cualquier aviso de PuertoBox en el celular y tocá un botón (por ejemplo "Ver pendientes"). Desde ese momento, esta página abre directo en este celular.</p></body></html>';
+const intentosEntrar = { lista: [] };
+const SIN_ACCESO = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>PuertoBox</title></head><body style="font-family:system-ui,sans-serif;padding:20px"><h1>Entrá una vez desde un aviso</h1><p>Abrí cualquier aviso de PuertoBox en el celular y tocá un botón (por ejemplo "Ver pendientes"). Desde ese momento, esta página abre directo en este celular.</p><h2 style="font-size:18px;margin-top:28px">¿Abriste la app PuertoBox del celular?</h2><p>La primera vez escribí tu clave (la de Railway, ADMIN_KEY). Queda guardada en la app.</p><form method="post" action="/entrar"><input name="clave" type="password" autocomplete="current-password" style="font-size:16px;padding:10px;width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:10px"><button style="margin-top:10px;padding:12px;width:100%;font-size:16px;border:0;border-radius:10px;background:#1a7f37;color:#fff">Entrar</button></form></body></html>';
 function firmaOk(que, dada) {
   const m = /^([0-9a-z]+)-([0-9a-f]{24})$/.exec(String(dada || ''));
   if (!m) return false;
@@ -322,7 +323,7 @@ async function avisoMensajeNuevo(st, tel, texto, owner, fetchImpl = fetch, ahora
   const l = (st.lead && st.lead(tel)) || {};
   // 16/11: sin códigos internos ("[Audio del cliente…] [archivo:/media/…]") y en la primera línea, que es lo que se ve sin abrir el aviso.
   const linea = rec.resumenVista(String(texto || '')).replace(/\s+/g, ' ').trim().slice(0, 160);
-  return avisarNtfy(`💬 ${l.nombre ? l.nombre + ' (+' + tel + ')' : '+' + tel}: ${linea}`, 'PuertoBox: mensaje nuevo', rec.silencio(ahora) ? 'low' : 'high', fetchImpl, tel);
+  return avisarNtfy(`💬 ${l.nombre ? l.nombre + ' (+' + tel + ')' : '+' + tel}: ${linea}`, `🔴 Sin contestar: ${l.nombre || '+' + tel}`, rec.silencio(ahora) ? 'low' : 'high', fetchImpl, tel);
 }
 
 async function ticArancel(fetchImpl = fetch) {
@@ -751,6 +752,29 @@ function servidor() {
       if (abierto && store.marcarVisto) store.marcarVisto(abierto); // la abrió desde un aviso: ya la ve
       if (abierto) borrarAvisosNtfy(abierto);
       return res.end(htmlCharlas);
+    }
+    // Charlas como app en la pantalla de inicio (16/11): manifiesto e íconos son públicos y no llevan ningún acceso.
+    if (req.method === 'GET' && url.pathname === '/app/manifest.json') {
+      res.writeHead(200, { 'content-type': 'application/manifest+json; charset=utf-8', 'cache-control': 'public, max-age=3600' });
+      return res.end(JSON.stringify({ name: 'PuertoBox Charlas', short_name: 'PuertoBox', start_url: '/charlas', scope: '/', display: 'standalone', background_color: '#f5f5f5', theme_color: '#1a7f37', icons: [{ src: '/app/icono-192.png', sizes: '192x192', type: 'image/png' }, { src: '/app/icono-512.png', sizes: '512x512', type: 'image/png' }] }));
+    }
+    if (req.method === 'GET' && /^\/app\/icono-(180|192|512)\.png$/.test(url.pathname)) {
+      res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'public, max-age=86400' });
+      return fs.createReadStream(path.join(__dirname, '..', 'web', 'app', path.basename(url.pathname))).pipe(res);
+    }
+    // La app del celular guarda su propio acceso la primera vez, con la clave (como ?key=). Como mucho 10 intentos por hora.
+    if (req.method === 'POST' && url.pathname === '/entrar') {
+      let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 2000) req.destroy(); });
+      return req.on('end', () => {
+        const ahora = Date.now(); intentosEntrar.lista = intentosEntrar.lista.filter((t) => ahora - t < 3600e3);
+        const clave = process.env.ADMIN_KEY || ADMIN_KEY;
+        if (intentosEntrar.lista.length >= 10) { res.writeHead(429, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Demasiados intentos. Probá en una hora.'); }
+        intentosEntrar.lista.push(ahora);
+        const dada = (new URLSearchParams(raw).get('clave') || '').trim();
+        const ok = clave && dada.length === clave.length && require('crypto').timingSafeEqual(Buffer.from(dada), Buffer.from(clave));
+        if (!ok) { res.writeHead(401, { 'content-type': 'text/html; charset=utf-8' }); return res.end(SIN_ACCESO.replace('<h1>', '<p style="color:#a40000">Clave incorrecta.</p><h1>')); }
+        res.writeHead(303, { location: '/charlas', 'set-cookie': cookiePanel() }); return res.end();
+      });
     }
     // Gustavo marca que ya le pasó presupuesto (16/11): la tarjeta queda en verde.
     if (req.method === 'POST' && url.pathname === '/marcar-presu') {
