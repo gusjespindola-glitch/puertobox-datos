@@ -171,7 +171,8 @@ async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fe
   const acciones = accionesNtfy(tel, tipo);
   // 16/11 (Gustavo: "contesto y sigue la notificación"): los avisos de un cliente van con el mismo número de serie,
   // así el nuevo reemplaza al anterior y, cuando Gustavo contesta o lo marca atendido, se borran (borrarAvisosNtfy).
-  const seq = tel ? seqNtfy(tel) : null;
+  // 16/11 12:14: en el iPhone, ntfy no borra: cada borrado aparecía como un aviso vacío. Se desactiva (queda la función por si cambia).
+  const seq = null;
   const intentar = async (cuerpo, conSeq) => {
     const r = await fetchImpl('https://ntfy.sh/', { method: 'POST', headers: { 'content-type': 'application/json; charset=utf-8', ...(conSeq ? { 'X-Sequence-ID': seq } : {}) }, body: JSON.stringify(conSeq ? { ...cuerpo, sequence_id: seq } : cuerpo) });
     if (r && r.ok === false) throw new Error(`ntfy ${r.status}: ${r.text ? (await r.text()).slice(0, 200) : ''}`);
@@ -187,9 +188,9 @@ async function avisarNtfy(texto, titulo = 'PuertoBox', prioridad = 'default', fe
 }
 const seqNtfy = (tel) => `cli-${String(tel).replace(/[^0-9A-Za-z_-]/g, '').slice(0, 60)}`;
 /** Saca del celular los avisos de ese cliente (Gustavo ya contestó, lo marcó atendido o abrió la charla). */
-async function borrarAvisosNtfy(tel, fetchImpl = fetch) {
+async function borrarAvisosNtfy(tel, fetchImpl = fetch, forzar = false) {
   const topic = process.env.NTFY_TOPIC;
-  if (!topic || !tel) return false;
+  if (!topic || !tel || !(forzar || process.env.NTFY_BORRAR === '1')) return false;
   try { const r = await fetchImpl(`https://ntfy.sh/${encodeURIComponent(topic)}/${seqNtfy(tel)}`, { method: 'DELETE' }); return !!(r && r.ok !== false); } catch (e) { console.error('ntfy borrar', e.message); return false; }
 }
 
