@@ -92,7 +92,7 @@ async function revisar({ store, owner, reglas, fetchImpl = fetch, ahora = Date.n
     const j = await r.json();
     const informe = (j.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
     if (informe) {
-      const pie = `\n\n---\nGenerado por el servidor del bot (bot/intervenciones.js) con ${model}. ${charlas.length} charlas de los últimos ${DIAS} días (${charlas.filter((c) => c.escribio).length} con mensajes de Gustavo). Sin datos personales.\n`;
+      const pie = `\n\n---\nGenerado por el servidor del bot (bot/intervenciones.js) con ${model}${fallas.length ? ` (antes falló: ${fallas.join(' | ').slice(0, 300)})` : ''}. ${charlas.length} charlas de los últimos ${DIAS} días (${charlas.filter((c) => c.escribio).length} con mensajes de Gustavo). Sin datos personales.\n`;
       return { fecha, charlas: charlas.length, contenido: anonimizar(informe) + pie };
     }
     fallas.push(`${model}: sin texto (stop_reason=${j.stop_reason || '?'})`);

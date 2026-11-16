@@ -151,7 +151,7 @@ async function revisarDia({ store, owner, fetchImpl = fetch, ahora = Date.now(),
     fallas.push(`${model}: sin texto (stop_reason=${j.stop_reason || '?'}, bloques=${(j.content || []).map((b) => b.type).join('+') || 'ninguno'})`);
   }
   if (!informe) throw new Error(`La IA no devolvió el informe. ${fallas.join(' | ')}`);
-  const pie = `\n\n---\nGenerado a las ${HORA} h por el servidor del bot (bot/aprendizaje.js) con ${usado}. ${charlas.length} charlas, ${corr.length} correcciones. Sin datos personales.\n`;
+  const pie = `\n\n---\nGenerado a las ${HORA} h por el servidor del bot (bot/aprendizaje.js) con ${usado}${fallas.length ? ` (antes falló: ${fallas.join(' | ').slice(0, 300)})` : ''}. ${charlas.length} charlas, ${corr.length} correcciones. Sin datos personales.\n`;
   return { fecha, contenido: anonimizar(informe) + pie, charlas: charlas.length };
 }
 

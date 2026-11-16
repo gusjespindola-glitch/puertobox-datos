@@ -63,7 +63,9 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
   // mientras el bot le contesta el anterior, el historial queda terminado en la respuesta del bot y la API rechaza el
   // pedido (no acepta terminar en un mensaje del asistente). Se agrega una nota para que conteste lo que falte.
   if (!messages.length || messages[messages.length - 1].role !== 'user') {
-    messages.push({ role: 'user', content: `[Sistema: el cliente mandó esto mientras le contestabas el mensaje anterior: "${texto}". Respondé lo que falte; si ya quedó contestado, respondé en una línea.]` });
+    // 16/11 (captura de /charlas, poleas y consolidado): el bot mandaba dos mensajes casi iguales seguidos. Ahora, si lo
+    // nuevo ya quedó contestado, no se manda nada.
+    messages.push({ role: 'user', content: `[Sistema: el cliente mandó esto mientras le contestabas el mensaje anterior: "${texto}". Contestá SOLO lo nuevo que no hayas contestado, en 1 o 2 líneas, sin repetir nada de tu mensaje anterior (ni preguntas, ni cálculos, ni el mensaje en inglés). Si tu mensaje anterior ya lo contesta, respondé exactamente: (nada)]` });
   }
   const ctx = { telefono, store, derivaciones, fetchImpl };
 
@@ -103,6 +105,7 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
       contenido.splice(0, contenido.length, { type: 'text', text: (completas ? completas + '\n' : '') + resto });
     }
     const respuesta = limpiar(contenido.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim());
+    if (/^\(?nada\)?\.?$/i.test(respuesta || '')) return null; // ya estaba contestado: no se manda un mensaje repetido
     if (respuesta) { store.agregar(telefono, 'assistant', respuesta); return respuesta; }
     // Nunca dejar al cliente sin respuesta: si la IA terminó sin texto, se le pide que conteste.
     if (!pedidoTexto) {
