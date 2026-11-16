@@ -16,3 +16,15 @@ test('el cotizador a mano suma cada tamaño de caja', async () => {
     assert.strictEqual(una.kg_presupuestado, 4); // sin los otros tamaños: solo la primera caja (1,2 kg vol) vs 3,9 real
   } finally { s.close(); }
 });
+
+test('al cotizador le habla a Gustavo: si faltan medidas no muestra el mensaje interno del bot', async () => {
+  process.env.ADMIN_KEY = 'clave-cajas';
+  delete require.cache[require.resolve('../bot/server')];
+  const s = require('../bot/server').servidor().listen(0); await new Promise((r) => s.once('listening', r));
+  try {
+    const r = await (await fetch(`http://127.0.0.1:${s.address().port}/nomenclador/api/cotizar?key=clave-cajas&valor=300&kg=10&die=16&cajas=3&ancho=0`)).json();
+    assert.match(r.error, /Cargá el largo, el ancho y el alto/);
+    assert.doesNotMatch(r.error, /cliente|No cotices/);
+    assert.strictEqual(r.falta, 'medidas');
+  } finally { s.close(); }
+});

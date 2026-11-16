@@ -508,7 +508,15 @@ function cotizarAMano(q) {
   const vol = input.bultos ? Math.round(input.bultos.reduce((t, b) => t + (b.largo_cm * b.ancho_cm * b.alto_cm / div) * b.cantidad, 0) * 100) / 100
     : input.largo_cm && input.ancho_cm && input.alto_cm ? Math.round((input.largo_cm * input.ancho_cm * input.alto_cm / div) * input.cantidad_cajas * 100) / 100 : null;
   if (input.bultos) input.cantidad_cajas = input.bultos.reduce((t, b) => t + b.cantidad, 0);
-  if (r.error) return r;
+  // Al cotizador le hablamos a Gustavo, no al bot (15/11 y 16/11: le aparecía "no cotices... pedíselas al cliente").
+  if (r.error) {
+    const e = String(r.error);
+    if (/medidas|medir/i.test(e)) return { error: 'Cargá el largo, el ancho y el alto de la caja (en cm). Si hay cajas de distintos tamaños, tocá "+ Otro tamaño de caja".', falta: 'medidas' };
+    if (/cajas/i.test(e)) return { error: 'Cargá cuántas cajas son.', falta: 'cajas' };
+    if (/peso o el valor/i.test(e)) return { error: 'Cargá el valor al proveedor y el peso.', falta: 'valor_kg' };
+    if (/No cierran unidades y peso/i.test(e)) return { error: 'Las unidades y el peso no cierran: revisalos.', falta: 'unidades' };
+    return { error: e.replace(/\s*No cotices[^.]*\.?/gi, '').replace(/pregunt[aá]selo[s]? al cliente[^.]*\.?/gi, '').trim() || 'Faltan datos para calcular.' };
+  }
   const NEG = require('../src/negocio').datos();
   const avisos = [];
   if (!vol) avisos.push('Sin medidas: el flete se confirma con las medidas de la caja (no es precio cerrado).');
