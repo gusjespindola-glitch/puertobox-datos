@@ -1,3 +1,5 @@
+> **Descartado el 16/11/2026 17:23** (Gustavo: "con esas que hay está bien, dejémoslo"). Queda como referencia.
+
 # Equipo de control de PuertoBox (pedido de Gustavo, 16/11/2026)
 
 > "Quiero que seas el jefe de un ejército de bots controladores: web, Insta, TikTok, Meta, publicidades, competencia, precios, regulaciones y mi cotizador. Cada bot se encarga de una, y en reunión de trabajo el jefe actúa en consecuencia para mejorar y optimizar."
