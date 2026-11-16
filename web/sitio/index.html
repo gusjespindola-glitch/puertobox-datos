@@ -813,7 +813,7 @@ footer{
   <div class="hero-bottom">
     <div class="hstat">
       <div class="hstat-num" id="cnt1">{{usd_kg_total_desde}}</div>
-      <div class="hstat-lbl">USD/kg desde {{kg_desde}} kg, gestión incluida</div>
+      <div class="hstat-lbl">USD/kg desde {{kg_desde_total}} kg, gestión incluida</div>
     </div>
     <div class="hstat">
       <div class="hstat-num" id="cnt2">100%</div>
@@ -928,7 +928,7 @@ footer{
       <div class="big-num-fill" id="bigFill">{{usd_kg_total_desde}}</div>
     </div>
     <div class="big-stat-label">
-      <strong>USD por kilo</strong> desde {{kg_desde}} kg, de China a tu puerta, con la gestión incluida.<br>
+      <strong>USD por kilo</strong> desde {{kg_desde_total}} kg, de China a tu puerta, con la gestión incluida.<br>
       Courier aéreo express · Precio de flete firme · Entrega a domicilio.
     </div>
   </div>
@@ -978,7 +978,7 @@ footer{
   <div class="tar-intro rev">
     <div class="s-num">03 — Tarifas</div>
     <h2 class="s-title">PRECIOS<br><span class="r">CLAROS</span></h2>
-    <p class="s-body">Tarifa base de flete China → tu domicilio, por kilo cobrable (el mayor entre peso real y volumétrico). A eso se suman USD {{gestion_usd}} de gestión por envío, que incluye la revisión de un despachante de aduana matriculado. El flete es precio cerrado. Los impuestos se pagan aparte a la empresa de transporte, al recibir el paquete, y te los estimamos antes de comprar.</p>
+    <p class="s-body">Tarifa base de flete China → tu domicilio, por kilo cobrable (el mayor entre peso real y volumétrico). A eso se suma la gestión por envío ({{gestion_texto}}), que incluye la revisión de un despachante de aduana matriculado. El flete es precio cerrado. Los impuestos se pagan aparte a la empresa de transporte, al recibir el paquete, y te los estimamos antes de comprar.</p>
   </div>
   <table class="tar-table rev">
     {{tabla_html}}

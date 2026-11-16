@@ -34,7 +34,7 @@
   "_dolar_referencia_ars": "Respaldo. El servidor actualiza el dólar oficial (venta) solo cada 12 h desde dolarapi.com (src/dolar.js) y lo guarda en /data/dolar.json; este valor se usa si eso falla y como control (se descarta un dólar menor a la mitad o mayor al doble de este). Valor del 15/11/2026.",
   "deposito_china": "Shenzhen",
   "envio_interno_china": "El envío de la fábrica al depósito en Shenzhen lo paga el cliente. Lo ideal es que lo incluya el proveedor. Si lo paga PuertoBox, se le suma al cliente aparte, a lo que cueste.",
-  "anuncio_vigente": "Importá de China desde USD {{usd_kg_total_desde}} el kilo (flete + gestión, desde {{kg_desde}} kg). Envíos chicos desde USD {{envio_minimo_usd}}.\n\nAntes de que compres, te decimos la posición arancelaria y cuánto vas a pagar de impuestos.\n\nDespachante de aduana matriculado.",
+  "anuncio_vigente": "Importá de China desde USD {{usd_kg_total_desde}} el kilo (flete + gestión, desde {{kg_desde_total}} kg). Envíos chicos desde USD {{envio_minimo_usd}}.\n\nAntes de que compres, te decimos la posición arancelaria y cuánto vas a pagar de impuestos.\n\nDespachante de aduana matriculado.",
   "_anuncio_vigente": "Texto EXACTO de los anuncios de Meta activos (15/11/2026). Los números salen de precios_venta.json: si cambia un precio, cambia acá, en el bot y en las piezas (docs/marketing/piezas/precio_render.py). Si se cambia el texto del anuncio en Meta, cambiarlo acá. Test: test/negocio.test.js.",
   "precios_anteriores": [
     "USD 15 el kilo a partir de 10 kg (posteos de marzo 2026)",
@@ -45,5 +45,7 @@
     "USD 450 el metro cúbico marítimo (consolidado, ya no se ofrece)"
   ],
   "_precios_anteriores": "Precios de publicaciones viejas que siguen visibles en Facebook/Instagram/TikTok. El bot los reconoce y explica que eran tarifas anteriores. Sacar de acá cuando se archiven los posteos.",
+  "anuncio_anterior": { "hasta": "2026-11-23", "desde_kg": 20, "hasta_kg": 39, "gestion_usd": 20, "texto": "USD 19 el kilo con gestión incluida desde 20 kg" },
+  "_anuncio_anterior": "16/11/2026, Gustavo: con la gestión escalonada (USD 40 en más de 5 kg) el anuncio que corre (USD 19/kg con gestión desde 20 kg) deja de ser cierto entre 20 y 39 kg. Hasta que cambie el texto en Meta (como mucho hasta la fecha \"hasta\"), a los que vienen del anuncio con 20 a 39 kg cobrables se les cobra gestión USD 20 para respetar el precio publicado.",
   "_caja_max_kg": "Máximo por bulto del régimen courier (Gustavo 15/11: la regulación permite hasta 50 kg; antes estaba en 23 por un recargo del forwarder)."
 }

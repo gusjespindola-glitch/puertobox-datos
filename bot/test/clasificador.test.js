@@ -103,7 +103,7 @@ test('base única: el bot sabe lo que dice el anuncio y los precios viejos que c
   const fs = require('fs');
   const path = require('path');
   const d = require('../../src/negocio').datos();
-  assert.match(d.anuncio_vigente, new RegExp(`USD ${d.usd_kg_total_desde} el kilo \\(flete \\+ gestión, desde ${d.kg_desde} kg\\)`));
+  assert.match(d.anuncio_vigente, new RegExp(`USD ${d.usd_kg_total_desde} el kilo \\(flete \\+ gestión, desde ${d.kg_desde_total} kg\\)`));
   assert.match(d.anuncio_vigente, new RegExp(`desde USD ${d.envio_minimo_usd}`));
   const prompt = require('../../src/negocio').render(fs.readFileSync(path.join(__dirname, '..', 'prompt.md'), 'utf8'));
   assert.ok(prompt.includes(d.anuncio_vigente_una_linea));
@@ -127,7 +127,7 @@ test('recargos que cobra la aerolínea: cajas de más de 23 kg y batería de lit
   const ctx = () => ({ telefono: 'r', store: crearStore(null), derivaciones: [] });
   const caja = ejecutar('cotizar', { kg: 30, valor_factura_usd: 300, die: 20, regimen: 'comercial', largo_cm: 50, ancho_cm: 40, alto_cm: 50 , cantidad_cajas: 1 }, ctx());
   assert.strictEqual(caja.recargo_cajas_usd, 45);
-  assert.strictEqual(caja.total_puertobox_usd, caja.flete_puertobox_usd + 20 + 45);
+  assert.strictEqual(caja.total_puertobox_usd, caja.flete_puertobox_usd + 40 + 45); // gestión USD 40 (más de 5 kg, 16/11)
   const dos = ejecutar('cotizar', { kg: 40, cantidad_cajas: 2, valor_factura_usd: 300, die: 20, regimen: 'comercial' , largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx());
   assert.ok(!dos.recargo_cajas_usd); // 2 cajas de 20 kg: sin recargo
   const lit = ejecutar('cotizar', { kg: 23, valor_factura_usd: 500, die: 18, regimen: 'comercial', con_bateria_litio: true , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx());
@@ -140,7 +140,7 @@ test('con el CUIT de PuertoBox: gestión USD 50 y aviso de envío en Argentina e
   assert.strictEqual(r.total_puertobox_usd, r.flete_puertobox_usd + 50);
   assert.match(r.aviso, /envío dentro de Argentina se cobra aparte/);
   const normal = ejecutar('cotizar', { kg: 10, valor_factura_usd: 300, die: 20, regimen: 'comercial' , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, { telefono: 'd', store: crearStore(null), derivaciones: [] });
-  assert.strictEqual(normal.handling_puertobox_usd, 20);
+  assert.strictEqual(normal.handling_puertobox_usd, 40); // 10 kg: más de 5 kg (16/11)
   assert.match(require('../../src/negocio').datos().faq_texto, /CUIT de PuertoBox: la gestión es USD 50/);
 });
 

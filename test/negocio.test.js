@@ -12,7 +12,11 @@ test('base única: los valores derivados salen de los precios', () => {
   const d = negocio.datos();
   assert.strictEqual(d.envio_minimo_usd, presupuesto({ kg: 1, valorFactura: 100 }).flete_puertobox_usd + d.gestion_usd);
   const p20 = presupuesto({ kg: d.kg_desde, valorFactura: 100 });
-  assert.strictEqual(d.usd_kg_total_desde, Math.round((p20.flete_puertobox_usd + p20.handling_puertobox_usd) / d.kg_desde));
+  // Lo que se publica es cierto: desde kg_desde_total, flete + gestión dividido kilos no pasa de usd_kg_total_desde (16/11).
+  const pt = presupuesto({ kg: d.kg_desde_total, valorFactura: 100 });
+  assert.ok((pt.flete_puertobox_usd + pt.handling_puertobox_usd) / d.kg_desde_total <= d.usd_kg_total_desde);
+  const pa = presupuesto({ kg: d.kg_desde_total - 1, valorFactura: 100 });
+  assert.ok((pa.flete_puertobox_usd + pa.handling_puertobox_usd) / (d.kg_desde_total - 1) > d.usd_kg_total_desde);
 });
 
 test('render: nunca deja {{...}} y falla si falta un dato', () => {
