@@ -75,3 +75,16 @@ test('link de Alibaba: como la página no se puede leer, pide la captura del pre
   assert.match(p, /Artículo individual/);
   assert.match(require('../adjuntos').INSTRUCCIONES, /Empaque y entrega/);
 });
+
+test('presupuesto: cuando se cobra por volumen, lo dice y explica por qué (Gustavo 16/11, arrancadores 20 kg → 26 kg)', () => {
+  const { ejecutar } = require('../tools');
+  const ctx = (t) => ({ telefono: t, store: crearStore(null), derivaciones: [] });
+  const r = ejecutar('cotizar', { kg: 20, valor_factura_usd: 263.3, die: 18, regimen: 'comercial', unidades: 10, cantidad_cajas: 10, largo_cm: 24, ancho_cm: 12, alto_cm: 45, con_bateria_litio: true }, ctx('v1'));
+  assert.strictEqual(r.aplica_volumetrico, true);
+  assert.strictEqual(r.kg_cobrable, 26);
+  assert.match(r.linea_volumetrico, /Peso cobrable: 26 kg por \*peso volumétrico\*: pesa 20 kg, pero las cajas ocupan como 25,9 kg \(10 × 24×12×45 cm ÷ 5000\)/);
+  const real = ejecutar('cotizar', { kg: 30, valor_factura_usd: 300, die: 18, regimen: 'comercial', unidades: 10, cantidad_cajas: 1, largo_cm: 40, ancho_cm: 30, alto_cm: 30 }, ctx('v2'));
+  assert.strictEqual(real.aplica_volumetrico, false);
+  assert.strictEqual(real.linea_volumetrico, undefined);
+  assert.match(require('../agent').SYSTEM, /linea_volumetrico, tal cual/);
+});
