@@ -161,3 +161,19 @@ test('si la IA no entiende la página bajada, prueba con web_fetch (16/11, v6)',
   assert.strictEqual(r.titulo, 'Garwin 5-piece knife set');
   assert.strictEqual(r.fuente, 'web_fetch');
 });
+
+test('pide sin "pensar" y, si el modelo no acepta el parámetro, repite sin él', async () => {
+  const cuerpos = [];
+  const fetchImpl = async (url, opt = {}) => {
+    if (url.includes('anthropic')) {
+      const b = JSON.parse(opt.body); cuerpos.push(b);
+      if (b.thinking) return { ok: false, status: 400, text: async () => 'thinking: unsupported' };
+      return { ok: true, json: async () => ({ content: [{ type: 'text', text: JSON.stringify(JSON_IA) }] }) };
+    }
+    return { ok: true, status: 200, text: async () => HTML_FR };
+  };
+  const r = await leer('https://www.alibaba.com/product-detail/Otra_1609999999999.html', { fetchImpl });
+  assert.strictEqual(r.precios[0].usd, 26.33);
+  assert.deepStrictEqual(cuerpos[0].thinking, { type: 'disabled' });
+  assert.strictEqual(cuerpos[1].thinking, undefined);
+});
