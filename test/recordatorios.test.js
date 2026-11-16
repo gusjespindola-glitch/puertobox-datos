@@ -383,12 +383,18 @@ test('charlas: Gustavo le contesta al cliente desde la página (sale por el 6773
     fd2.append('archivo', new Blob([Buffer.from([0xff, 0xd8, 0xff])], { type: 'image/jpeg' }), 'caja.jpg');
     await fetchReal(`${base}/responder?tel=5492364652566&t=${srv.firma('responder:5492364652566')}`, { method: 'POST', body: fd2, redirect: 'manual' });
     assert.strictEqual(enviados[2].type, 'image');
+    // Una foto grande del celular (más de 4,5 MB) va como archivo: como foto WhatsApp no la entrega (16/11, "no llegó nada").
+    const fd3 = new FormData();
+    fd3.append('archivo', new Blob([Buffer.alloc(5 * 1024 * 1024, 1)], { type: 'image/jpeg' }), 'IMG_1156.jpeg');
+    await fetchReal(`${base}/responder?tel=5492364652566&t=${srv.firma('responder:5492364652566')}`, { method: 'POST', body: fd3, redirect: 'manual' });
+    assert.strictEqual(enviados[3].type, 'document');
+    assert.strictEqual(enviados[3].document.filename, 'IMG_1156.jpeg');
     const pag3 = await (await fetchReal(`${base}/charlas?t=${srv.firma('charlas')}&abierto=5492364652566`)).text();
     assert.match(pag3, /Te paso el presupuesto formal[\s\S]*Abrir el archivo \(PDF\)/);
     // Fuera de la ventana de 24 h no se manda.
     const v = await fetchReal(`${base}/responder?tel=5491100000777&t=${srv.firma('responder:5491100000777')}`, { method: 'POST', body: new URLSearchParams({ texto: 'hola' }), redirect: 'manual' });
     assert.match(v.headers.get('location'), /error=/);
-    assert.strictEqual(enviados.length, 3);
+    assert.strictEqual(enviados.length, 4);
   } finally { globalThis.fetch = fetchReal; s.close(); delete process.env.YCLOUD_API_KEY; }
 });
 
