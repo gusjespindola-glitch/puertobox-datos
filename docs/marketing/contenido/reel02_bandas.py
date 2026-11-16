@@ -1,4 +1,4 @@
-"""reel02 — 'Sale USD 2 en China, se vende a $25.000': voz de Gustavo + escenas animadas.
+"""reel02 — 'Sale USD 2 en China, se vende a $25.000': escenas animadas + subtítulos + música propia (sin voz: el audio original se perdió).
 Números: motor del bot (cotizar: 100 kits, USD 200, 25 kg en 2 cajas 40x30x30, DIE 35% 9506.91) y dólar oficial BNA $1.570."""
 import subprocess, sys, math, os
 from PIL import Image, ImageDraw, ImageFont
@@ -96,7 +96,7 @@ def s2(t):  # 2.1–5.3  Mercado Libre $25.000
     centro(d, 1046, 'de verdad puesto en tu casa?', f(SEMI, 40), GREY)
     subtitulo(im, T + 2.1); return im
 
-FILAS = [('Producto', 'USD 2,00'), ('Envío a tu casa + gestión', 'USD 4,70'), ('Impuestos (estimado)', 'USD 2,46')]
+FILAS = [('Producto', 'USD 2,00'), ('Envío a tu casa + gestión', 'USD 4,90'), ('Impuestos (estimado)', 'USD 2,46')]
 def s3(t):  # 5.3–9.2  la cuenta
     T = t - 5.3; im = BASE.copy(); d = ImageDraw.Draw(im, 'RGBA'); marca(d)
     centro(d, 380, 'LA CUENTA REAL, POR KIT', f(XB, 50), RED)
@@ -113,20 +113,20 @@ def s3(t):  # 5.3–9.2  la cuenta
     if al > 0:
         d.line([150, y + 4, 930, y + 4], fill=GREY + (int(200 * al),), width=3)
         d.text((150, y + 34), 'PUESTO EN TU CASA', font=f(BLACK, 44), fill=YEL + (int(255 * al),))
-        b = 'USD 9,16'; w = d.textlength(b, font=f(BLACK, 54)); d.text((930 - w, y + 26), b, font=f(BLACK, 54), fill=YEL + (int(255 * al),))
-        texto_escalado(im, y + 120, '≈ $14.400', f(BLACK, 120), YEL, pop((T - 2.0) / 0.45) if T > 2.0 else 0)
+        b = 'USD 9,36'; w = d.textlength(b, font=f(BLACK, 54)); d.text((930 - w, y + 26), b, font=f(BLACK, 54), fill=YEL + (int(255 * al),))
+        texto_escalado(im, y + 120, '≈ $14.700', f(BLACK, 120), YEL, pop((T - 2.0) / 0.45) if T > 2.0 else 0)
     subtitulo(im, T + 5.3); return im
 
 def s4(t):  # 9.2–13.7  comparación + llamado
     T = t - 9.2; im = BASE.copy(); d = ImageDraw.Draw(im, 'RGBA'); marca(d)
     tarjeta(d, [100, 340, 980, 760])
     d.text((150, 390), 'Te queda en', font=f(SEMI, 44), fill=GREY)
-    w = d.textlength('$14.400', font=f(BLACK, 74)); d.text((930 - w, 376), '$14.400', font=f(BLACK, 74), fill=YEL)
+    w = d.textlength('$14.700', font=f(BLACK, 74)); d.text((930 - w, 376), '$14.700', font=f(BLACK, 74), fill=YEL)
     d.text((150, 500), 'Lo vendés a', font=f(SEMI, 44), fill=GREY)
     w = d.textlength('$25.000', font=f(BLACK, 74)); d.text((930 - w, 486), '$25.000', font=f(BLACK, 74), fill=WHITE)
     d.line([150, 610, 930, 610], fill=GREY, width=3)
     d.text((150, 640), 'Diferencia por kit', font=f(BOLD, 44), fill=WHITE)
-    w = d.textlength('$10.600', font=f(BLACK, 74)); d.text((930 - w, 626), '$10.600', font=f(BLACK, 74), fill=GREEN)
+    w = d.textlength('$10.300', font=f(BLACK, 74)); d.text((930 - w, 626), '$10.300', font=f(BLACK, 74), fill=GREEN)
     centro(d, 790, 'antes de comisiones y envío de Mercado Libre', f(MED, 30), GREY)
     a = ease((T - 0.6) / 0.4)
     if a > 0:
@@ -136,7 +136,7 @@ def s4(t):  # 9.2–13.7  comparación + llamado
         centro(d, y0 + bh / 2 - 34, 'Cotizá gratis por WhatsApp', f(XB, 52), (10, 30, 20))
         centro(d, 1070, 'Link en la bio · te lo calculamos antes de que compres', f(SEMI, 34), WHITE)
     centro(d, 1200, 'Ejemplo: 100 kits, 25 kg en 2 cajas. Impuestos estimados, los confirma', f(MED, 26), GREY)
-    centro(d, 1236, 'nuestro despachante. Dólar oficial BNA $1.570 (6/11/2026).', f(MED, 26), GREY)
+    centro(d, 1236, 'nuestro despachante. Dólar oficial BNA $1.570 (15/11/2026).', f(MED, 26), GREY)
     subtitulo(im, T + 9.2); return im
 
 ESCENAS = [('s1', s1, 0.0, 2.1), ('s2', s2, 2.1, 5.3), ('s3', s3, 5.3, 9.2), ('s4', s4, 9.2, 13.7)]
