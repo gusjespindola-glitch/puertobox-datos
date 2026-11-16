@@ -47,7 +47,7 @@ function crearStore(archivo) {
       }
       c.ultimo = Date.now();
       if (role === 'user') { c.ultimoClienteEn = c.ultimo; c.avisoVentana = false; } // ventana de 24 h nueva
-      c.mensajes.push({ role, content });
+      c.mensajes.push({ role, content, en: Date.now() }); // en: para marcar en /charlas lo que Gustavo todavía no vio (15/11)
       if (c.mensajes.length > HISTORIAL_MAX) c.mensajes = c.mensajes.slice(-HISTORIAL_MAX);
       while (c.mensajes.length && c.mensajes[0].role !== 'user') c.mensajes.shift();
       guardar();
@@ -56,6 +56,8 @@ function crearStore(archivo) {
       const c = chat(tel); c.pausadoHasta = Date.now() + horas * 3600e3; c.motivoPausa = motivo; guardar();
     },
     borrar(tel) { delete db.chats[tel]; guardar(); },
+    /** Gustavo abrió la charla en /charlas: lo anterior deja de figurar como nuevo. */
+    marcarVisto(tel, ahora = Date.now()) { if (db.chats[tel]) { db.chats[tel].vistoEn = ahora; guardar(); } },
     reanudar(tel) { const c = chat(tel); c.pausadoHasta = 0; c.motivoPausa = null; guardar(); },
     estaPausado: (tel) => chat(tel).pausadoHasta > Date.now(),
     motivoPausa: (tel) => chat(tel).motivoPausa,

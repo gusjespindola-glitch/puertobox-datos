@@ -265,6 +265,17 @@ function avisoCorto(d, st) {
   return lineas.join('\n');
 }
 
+async function avisoMensajeNuevo(st, tel, texto, owner, fetchImpl = fetch, ahora = Date.now()) {
+  const rec = require('./recordatorios');
+  if (!process.env.NTFY_TOPIC || rec.esGustavo(tel, owner) || String(tel).startsWith('ig:')) return false;
+  const c = st.chats().find((x) => x.telefono === tel) || {};
+  if (c.avisoNuevoEn && ahora - c.avisoNuevoEn < 10 * 60e3) return false;
+  if (st.marcar) st.marcar(tel, { avisoNuevoEn: ahora });
+  const l = (st.lead && st.lead(tel)) || {};
+  const linea = rec.vistaCliente(String(texto || '')).split('\n')[0].slice(0, 160);
+  return avisarNtfy(`💬 ${l.nombre ? l.nombre + ' (+' + tel + ')' : '+' + tel} te escribió:\n${linea}`, 'PuertoBox: mensaje nuevo', rec.silencio(ahora) ? 'low' : 'high', fetchImpl, tel);
+}
+
 async function avisarGustavo(owner, texto, fetchImpl = fetch, titulo = 'PuertoBox: cliente para atender', tel = null, tipo = null) {
   if (process.env.NTFY_TOPIC) return avisarNtfy(texto, titulo, 'high', fetchImpl, tel, tipo);
   if (owner) await enviar(owner, texto, fetchImpl);
@@ -349,6 +360,10 @@ async function procesar(payload, deps = {}) {
     }
     if (st.estaPausado(tel)) {
       st.agregar(tel, 'user', texto);
+      // 15/11 21:40 (Gustavo: "las notificaciones no me llegan"): con el chat en manos de Gustavo, el bot no contesta y
+      // antes el aviso recién salía a la hora. Ahora sale al instante (uno cada 10 min por chat, para no llenar el celu
+      // cuando mandan varios archivos seguidos). De 22 a 8, sin sonido.
+      await avisoMensajeNuevo(st, tel, texto, owner, fetchImpl);
       // Chat derivado a Gustavo: nunca clavar el visto. Aviso de espera, como mucho uno cada 3 horas.
       if (st.motivoPausa(tel) === 'derivado' && st.avisoEsperaVencido(tel, 3)) {
         const r = 'Tu consulta ya la tiene nuestro despachante de aduana y te escribe por este mismo chat. Si querés sumar algún dato, dejalo acá.';
@@ -638,7 +653,16 @@ function servidor() {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'set-cookie': cookiePanel() });
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
       const aviso = url.searchParams.get('corregido') === '1' ? 'Corrección guardada. El bot la aplica desde su próximo mensaje.' : url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
-      return res.end(require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`));
+      const htmlCharlas = require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`, (tel) => `/visto?tel=${tel}&t=${firma('visto:' + tel)}`);
+      if (abierto && store.marcarVisto) store.marcarVisto(abierto); // la abrió desde un aviso: ya la ve
+      return res.end(htmlCharlas);
+    }
+    // Gustavo abrió una charla en /charlas: sus mensajes dejan de figurar como nuevos (15/11).
+    if (req.method === 'POST' && url.pathname === '/visto') {
+      const tel = soloDigitos(url.searchParams.get('tel') || '');
+      if (!tel || !firmaOk('visto:' + tel, url.searchParams.get('t'))) { res.writeHead(401); return res.end(); }
+      if (store.marcarVisto) store.marcarVisto(tel);
+      res.writeHead(204); return res.end();
     }
     // Circuito de aprendizaje (15/11): Gustavo corrige al bot desde /charlas; no le llega nada al cliente.
     if (req.method === 'POST' && url.pathname === '/corregir') {
@@ -732,6 +756,7 @@ function servidor() {
         try { await enviar(tel, texto, fetch, { lanzar: true }); } catch (e) { return volver('&error=' + encodeURIComponent(String(e.message).slice(0, 120))); }
         store.agregar(tel, 'assistant', `[Gustavo] ${texto}`);
         store.pausar(tel, 'gustavo_respondio');
+        if (store.marcarVisto) store.marcarVisto(tel);
         // Si el cliente le contesta a Gustavo, que aparezca en pendientes y le llegue el aviso (el bot ya no lo atiende).
         const ahora = Date.now();
         if (store.marcar) store.marcar(tel, { gustavoRespondioEn: ahora, recordatorios: 0, ...(c.derivadoEn ? {} : { derivadoEn: ahora - 1, derivadoMotivo: 'pide_humano', derivadoResumen: 'Le escribiste desde la página de charlas.' }) });

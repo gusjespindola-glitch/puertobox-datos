@@ -359,3 +359,21 @@ test('pedido de más de USD 3.000: se divide en envíos de hasta USD 3.000 y cad
   assert.match(p, /Se dividen en varios envíos comerciales/);
   assert.match(p, /cotizá igual, normal, sin advertencias/);
 });
+
+test('chat en manos de Gustavo: el cliente escribe y el aviso sale al instante, uno cada 10 min (15/11 21:40)', async () => {
+  process.env.NTFY_TOPIC = 'prueba-avisos';
+  try {
+    const store = crearStore(null);
+    store.agregar('5491166600000', 'user', 'hola');
+    store.pausar('5491166600000', 'gustavo_respondio');
+    store.guardarLead('5491166600000', { nombre: 'Gian' });
+    const { fetchImpl, llamadas } = mock([]);
+    await procesar(msg('5491166600000', 'te paso las facturas'), { fetchImpl, store, debounceMs: 0 });
+    const avisos = llamadas.whatsapp.filter((b) => b.topic === 'prueba-avisos');
+    assert.strictEqual(avisos.length, 1);
+    assert.match(avisos[0].message, /Gian \(\+5491166600000\) te escribió:\nte paso las facturas/);
+    assert.strictEqual(llamadas.claude.length, 0, 'el bot no contesta: el chat es de Gustavo');
+    await procesar(msg('5491166600000', 'y otra cosa'), { fetchImpl, store, debounceMs: 0 });
+    assert.strictEqual(llamadas.whatsapp.filter((b) => b.topic === 'prueba-avisos').length, 1, 'no repite el aviso en 10 min');
+  } finally { delete process.env.NTFY_TOPIC; }
+});

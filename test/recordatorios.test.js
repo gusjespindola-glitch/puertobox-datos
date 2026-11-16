@@ -429,3 +429,22 @@ test('charlas: si el cliente manda un archivo, se ve solo el archivo (sin la lec
   assert.doesNotMatch(html, /Es un packing list de PHYSIOTAPING/);
   assert.doesNotMatch(html, /Pedile por texto|leído automáticamente/);
 });
+
+test('charlas: lo que el cliente escribió y Gustavo no vio va en rojo y arriba; al abrirla deja de serlo (15/11 21:40)', () => {
+  const { paginaCharlas: pagina } = require('../bot/recordatorios');
+  const st = crearStore(null);
+  st.meta('vistoBase', 1); // como si la página ya existiera antes
+  st.agregar('5491100000081', 'user', 'charla vieja');
+  st.marcarVisto('5491100000081');
+  st.agregar('5491100000082', 'user', 'hola, ¿me pasás el presupuesto?');
+  st.agregar('5491100000082', 'user', 'te mando la factura');
+  const h = pagina(st, OWNER, Date.now() + 1000, 3, null, null, '', null, null, (tel) => `/visto?tel=${tel}&t=x`);
+  assert.match(h, /🔴 2 mensajes nuevos/);
+  assert.match(h, /1 cliente te escribió/);
+  assert.ok(h.indexOf('5491100000082') < h.indexOf('5491100000081'), 'el que tiene mensajes nuevos va primero');
+  assert.match(h, /class="m cliente nuevo"/);
+  assert.match(h, /data-visto="\/visto\?tel=5491100000082&amp;t=x"/);
+  st.marcarVisto('5491100000082', Date.now() + 2000);
+  const h2 = pagina(st, OWNER, Date.now() + 3000);
+  assert.doesNotMatch(h2, /mensajes? nuevos?/);
+});
