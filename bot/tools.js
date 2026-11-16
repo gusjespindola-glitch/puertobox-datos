@@ -132,6 +132,12 @@ function ejecutar(nombre, input, ctx) {
       // un cliente de difusores recibió un presupuesto sin medidas de la caja).
       // Cajas de distintos tamaños (16/11): se normalizan los renglones y se reemplazan cantidad y medidas.
       const bultosOk = Array.isArray(input.bultos) ? input.bultos.filter((b) => b && b.cantidad > 0) : [];
+      // 16/11: si mandó un solo tipo de caja como "bultos", es lo mismo que cajas iguales (el presupuesto dice "las 20 cajas de…").
+      if (bultosOk.length === 1 && bultosOk[0].largo_cm > 0 && bultosOk[0].ancho_cm > 0 && bultosOk[0].alto_cm > 0 && !(bultosOk[0].kg_por_caja > 0)) {
+        const b = bultosOk[0];
+        input = { ...input, cantidad_cajas: Math.round(b.cantidad), largo_cm: b.largo_cm, ancho_cm: b.ancho_cm, alto_cm: b.alto_cm, bultos: undefined };
+        bultosOk.length = 0;
+      }
       if (bultosOk.length) {
         if (bultosOk.some((b) => !(b.largo_cm > 0 && b.ancho_cm > 0 && b.alto_cm > 0))) return { error: 'Falta medir alguna caja: cada tipo de caja necesita largo, ancho y alto en cm. No cotices ni des ningún número: pedile al cliente las medidas que faltan.' };
         input = { ...input, cantidad_cajas: bultosOk.reduce((t, b) => t + Math.round(b.cantidad), 0), largo_cm: bultosOk[0].largo_cm, ancho_cm: bultosOk[0].ancho_cm, alto_cm: bultosOk[0].alto_cm, bultos: bultosOk.map((b) => ({ cantidad: Math.round(b.cantidad), largo_cm: b.largo_cm, ancho_cm: b.ancho_cm, alto_cm: b.alto_cm, ...(b.kg_por_caja > 0 ? { kg_por_caja: b.kg_por_caja } : {}) })) };
