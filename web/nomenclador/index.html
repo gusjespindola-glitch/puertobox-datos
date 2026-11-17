@@ -149,8 +149,8 @@ input.falta{border:2px solid #c8102e;background:#fff5f5}.charla{background:#eef5
       <h2>Cotizador PuertoBox (presupuesto a mano)</h2>
       <p class="note">Mismo cálculo que el bot: flete por kilo entero (real o volumétrico, el mayor), gestión, recargos e impuestos estimados. La posición y el DIE se toman de la ficha de arriba.</p>
       <div class="form">
-        <div><label for="c_valor">Valor al proveedor (USD)</label><input id="c_valor" type="number" min="0" step="0.01" value="300"></div>
-        <div><label for="c_kg">Peso real total (kg)</label><input id="c_kg" type="number" min="0" step="0.1" value="10"></div>
+        <div><label for="c_valor">Valor al proveedor (USD)</label><input id="c_valor" type="number" min="0" step="0.01" placeholder="ej. 300"></div>
+        <div><label for="c_kg">Peso real total (kg)</label><input id="c_kg" type="number" min="0" step="0.1" placeholder="ej. 10"></div>
         <div class="cajas" style="grid-column:1/-1">
           <label>Cajas (una fila por cada tamaño)</label>
           <table class="tcajas"><thead><tr><th>Cantidad</th><th>Largo (cm)</th><th>Ancho (cm)</th><th>Alto (cm)</th><th></th></tr></thead>
@@ -159,7 +159,7 @@ input.falta{border:2px solid #c8102e;background:#fff5f5}.charla{background:#eef5
         </div>
         <div><label for="c_unid">Unidades (opcional)</label><input id="c_unid" type="number" min="0" step="1" placeholder="para costo por unidad"></div>
         <div><label for="c_reg">Envío</label><select id="c_reg"><option value="comercial">Comercial (más de 3 iguales)</option><option value="personal">Pequeño envío (hasta 3 iguales)</option></select></div>
-        <div><label for="c_die">DIE %</label><input id="c_die" type="number" min="0" step="0.1" value="20"></div>
+        <div><label for="c_die">DIE %</label><input id="c_die" type="number" min="0" step="0.1" placeholder="de la posición"></div>
         <div><label for="c_ii">Internos %</label><input id="c_ii" type="number" min="0" step="0.1" value="0"></div>
         <div class="chk"><input id="c_litio" type="checkbox"><label for="c_litio">Trae batería de litio</label></div>
         <div class="chk"><input id="c_cuit" type="checkbox"><label for="c_cuit">Con CUIT de PuertoBox</label></div>
@@ -189,10 +189,10 @@ input.falta{border:2px solid #c8102e;background:#fff5f5}.charla{background:#eef5
             <option value="pequenos">Pequeños envíos (uso propio)</option>
             <option value="general">Régimen general (despacho)</option>
           </select></div>
-        <div><label for="fob">FOB USD</label><input id="fob" type="number" min="0" step="0.01" value="1168.75"></div>
-        <div><label for="flete">Flete USD</label><input id="flete" type="number" min="0" step="0.01" value="46.46"></div>
+        <div><label for="fob">FOB USD</label><input id="fob" type="number" min="0" step="0.01" placeholder="ej. 1000"></div>
+        <div><label for="flete">Flete USD</label><input id="flete" type="number" min="0" step="0.01" placeholder="ej. 50"></div>
         <div><label for="seg">Seguro USD (vacío = 1%)</label><input id="seg" type="number" min="0" step="0.01" placeholder="1% de FOB + flete"></div>
-        <div><label for="die">DIE %</label><input id="die" type="number" min="0" step="0.1" value="2"></div>
+        <div><label for="die">DIE %</label><input id="die" type="number" min="0" step="0.1" placeholder="de la posición"></div>
         <div><label for="te">Tasa estadística %</label><input id="te" type="number" min="0" step="0.1" value="3"></div>
         <div><label for="iva">IVA %</label><select id="iva"><option value="21">21</option><option value="10.5">10,5</option></select></div>
         <div><label for="ii">Internos %</label><input id="ii" type="number" min="0" step="0.1" value="0"></div>
@@ -230,7 +230,7 @@ async function cargar() {
   $('frec').innerHTML = FREC.map((f) => `<button type="button" class="chip" data-q="${esc(f)}">${esc(f)}</button>`).join('');
   const h = location.hash.match(/^#p-(\d+)/);
   if (h) { const r = N.buscar(h[1], 1); if (r[0]) { $('q').value = r[0].c; buscar(); abrir(r[0].c); } }
-  else { $('q').value = 'zapatillas'; buscar(); const r = N.buscar('zapatillas', 30).find((f) => f.die > 0); if (r) abrir(r.c); }
+  // 17/11 (Gustavo): que abra en blanco, sin búsqueda ni posición precargada.
   verHist();
   verCambios();
 }
@@ -337,6 +337,11 @@ function agregarCaja() {
 // ---- Cotizador a mano (mismo motor que el bot, en el servidor) ----
 const kgs = (n) => Number(n).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' kg';
 async function cotizar() {
+  // 17/11 (Gustavo): los campos abren en blanco; sin valor, peso y DIE no se muestra ningún número.
+  const faltan = [!(parseFloat($('c_valor').value) > 0) && 'el valor al proveedor (USD)', !(parseFloat($('c_kg').value) > 0) && 'el peso', $('c_die').value === '' && 'el DIE (elegí la posición arriba o escribilo)'].filter(Boolean);
+  ['c_valor', 'c_kg'].forEach((id) => $(id).classList.toggle('falta', !(parseFloat($(id).value) > 0)));
+  $('c_die').classList.toggle('falta', $('c_die').value === '');
+  if (faltan.length) { cotizar.n = (cotizar.n || 0) + 1; $('c_pesos').innerHTML = ''; $('c_tabla').innerHTML = ''; $('c_avisos').innerHTML = `<div>Para calcular, cargá ${faltan.join(', ').replace(/, ([^,]*)$/, ' y $1')} (marcado en rojo).</div>`; cotizar.ultimo = null; return; }
   const p = new URLSearchParams({ valor: $('c_valor').value, kg: $('c_kg').value, cajas: $('c_cajas').value || 1, largo: $('c_largo').value, ancho: $('c_ancho').value, alto: $('c_alto').value, bultos: bultosTexto(),
     unidades: $('c_unid').value, regimen: $('c_reg').value, die: $('c_die').value || 0, internos: $('c_ii').value || 0,
     litio: $('c_litio').checked ? 1 : 0, cuit_pb: $('c_cuit').checked ? 1 : 0, sin_franquicia: $('c_sinfr').checked ? 1 : 0 });
