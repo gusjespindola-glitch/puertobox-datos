@@ -17,7 +17,7 @@ Estado: ✅ leído y resumido · ⏳ pendiente · ➖ no aplica a PuertoBox (exp
 - ➖ IDA4, importación temporaria con y sin transformación
 
 ## Módulo III (régimen legal) · ⏳ Manual de régimen legal 1ª y 2ª parte
-## Módulo IV (clasificación) · 🟡 **PRIORIDAD 1 (Gustavo 17/11: "ultra importantes")** → [clasificacion.md](clasificacion.md). ✅ Manual 1.ª parte (unidades 3 a 6), clase de RGI, tipos de textos de partida, ejemplo de individualización, capítulo 1 SA. 🟡 Manual 2.ª parte (unidades 4 y 9). ⏳ Anexo del manual, cuadros .zip (Res. 1394/97, declaraciones inexactas, consultas y controversias).
+## Módulo IV (clasificación) · 🟡 **PRIORIDAD 1 (Gustavo 17/11: "ultra importantes")** → [clasificacion.md](clasificacion.md). ✅ Manual 1.ª parte (unidades 3 a 6), clase de RGI, tipos de textos de partida, ejemplo de individualización, capítulo 1 SA. ✅ Anexo del manual (RGI con Notas Explicativas, por OCR), Res. 1394/97 y ejemplo de declaración comprometida, RG 2127/06, cuadros de inexactitudes y de consultas/controversias. 🟡 Manual 2.ª parte (unidades 4 y 9).
 ## Módulo V (Incoterms) · ⏳
 ## Módulo VI (sistemas y operativa) · ⏳ liquidaciones, formulario de valor, VUCE, SIM
 ## Normativa · ⏳ Intervención ANMAT · Declaración anticipada · Envases en contacto con alimentos
