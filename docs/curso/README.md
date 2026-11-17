@@ -17,9 +17,9 @@ Estado: ✅ leído y resumido · ⏳ pendiente · ➖ no aplica a PuertoBox (exp
 - ➖ IDA4, importación temporaria con y sin transformación
 
 ## Módulo III (régimen legal) · ⏳ Manual de régimen legal 1ª y 2ª parte
-## Módulo IV (clasificación) · ⏳ Manual de clasificación, RGI, NCM, declaraciones inexactas, Res. 1394/97 — **PRIORIDAD 1 (Gustavo 17/11: "ultra importantes")**. 17/11 no se pudo leer: el conector de Drive no devuelve archivos de la cuenta trevan.oficial. Mientras tanto el clasificador usa las RGI (texto oficial) y las notas de ARCA.
+## Módulo IV (clasificación) · 🟡 **PRIORIDAD 1 (Gustavo 17/11: "ultra importantes")** → [clasificacion.md](clasificacion.md). ✅ Manual 1.ª parte (unidades 3 a 6), clase de RGI, tipos de textos de partida, ejemplo de individualización, capítulo 1 SA. 🟡 Manual 2.ª parte (unidades 4 y 9). ⏳ Anexo del manual, cuadros .zip (Res. 1394/97, declaraciones inexactas, consultas y controversias).
 ## Módulo V (Incoterms) · ⏳
 ## Módulo VI (sistemas y operativa) · ⏳ liquidaciones, formulario de valor, VUCE, SIM
 ## Normativa · ⏳ Intervención ANMAT · Declaración anticipada · Envases en contacto con alimentos
-## Anotaciones · 🟡 Resumen del curso (.docx): leída la parte de courier y aplicada en `docs/auditoria/2026-11-13-oferta.md` (monotributo, IVA no computable, domisanitarios, proforma "pequeños envíos", volumétrico /5000). Falta el resto.
+## Anotaciones · 🟡 Resumen del curso (.docx): leída la parte de courier y la de clasificación arancelaria (clases 1 a 3, volcada en clasificacion.md) y aplicada en `docs/auditoria/2026-11-13-oferta.md` (monotributo, IVA no computable, domisanitarios, proforma "pequeños envíos", volumétrico /5000). Falta el resto.
 ## Vademecum · ⏳
