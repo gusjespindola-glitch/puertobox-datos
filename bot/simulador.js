@@ -57,6 +57,10 @@ const ESCENARIOS = [
   { nombre: 'Pregunta aéreo o marítimo', msgs: ['remeras de algodón sin marca para vender, 50 remeras, 300 usd, 5 kilos, una caja de 40x30x30', 'es aereo o es maritimo?'], espera: { ultima: { contiene: /^\s*(Es )?a[ée]reo/i, noContiene: /medidas|c[oó]digo postal/i } } },
   { nombre: 'Dice que no', msgs: ['quiero traer ropa replica de marcas para vender', 'no graciass igualmente'], espera: { ultima: { noContiene: /presupuesto|sin marca|\?/i } } },
   { nombre: 'Repuestos de auto', msgs: ['repuestos de auto genericos para vender, 40 unidades, 800 dolares, 20 kilos, 2 cajas de 50x40x40'], espera: { presupuesto: true } },
+  // Revisión nocturna del 16/11 (charlas 1, 6 y 10): cierre con "ok gracias", courier más barato y peso estimado por el bot.
+  { nombre: 'Ok gracias después del presupuesto', msgs: ['bombachas de nylon sin marca, 360 unidades, 700 usd, 21 kilos, 1 caja de 50x50x60', 'ok gracias'], espera: { ultima: { noContiene: /\?|\*Total/i } } },
+  { nombre: 'Otro courier le cobra menos', msgs: ['bombachas de nylon sin marca, 360 unidades, 700 usd, 21 kilos, 1 caja de 50x50x60', 'mi courier sigue siendo mas economico'], espera: { ultima: { noContiene: /\?|ahorr|amazon|mercado ?libre|USD \d/i } } },
+  { nombre: 'No estima el peso', msgs: ['quiero traer 40 scrubs de poliester sin marca, pago 515 dolares'], espera: { sinPresupuesto: true, ultima: { noContiene: /(unos|aprox\w*|alrededor de|ronda)\s+(los\s+)?\d+\s*(kg|kilos)/i } } },
 ];
 
 const MULETILLAS = /^(¡?genial|¡?anotado|¡?perfecto|¡?buen[ií]simo|¡?excelente|gracias(?! por escribir)|joya|dale|tranqui|entendido|entiendo|comprendido|correcto)\b/i;

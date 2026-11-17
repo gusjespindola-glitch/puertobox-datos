@@ -10,7 +10,7 @@
  * igual que la revisión nocturna, y Claude lo lee desde ahí (Claude no llega a Railway).
  */
 const { horaAR, esGustavo } = require('./recordatorios');
-const { anonimizar, subir } = require('./aprendizaje');
+const { anonimizar, subir, pedirSinPensar } = require('./aprendizaje');
 
 const MODELO = process.env.APRENDIZAJE_MODEL || process.env.CLASIFICADOR_MODEL || 'claude-sonnet-5-5';
 const MODELO_RESPALDO = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
@@ -81,13 +81,8 @@ async function revisar({ store, owner, reglas, fetchImpl = fetch, ahora = Date.n
   const cuerpo = `## Reglas del bot\n${reglas}\n\n## Charlas\n${charlas.map((c) => `### Charla ${c.n} (${c.meta})\n${c.texto}`).join('\n\n')}`;
   const fallas = [];
   for (const model of [...new Set([MODELO, MODELO_RESPALDO])]) {
-    const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-      signal: AbortSignal.timeout(480e3),
-      // 16/11: con stop_reason=max_tokens y sin texto, la IA se gastaba todo el espacio pensando. Sin pensar y con más lugar.
-      body: JSON.stringify({ model, max_tokens: 16000, thinking: { type: 'disabled' }, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }),
-    });
+    // 16/11: sin pensar y con más lugar; si el modelo no acepta "sin pensar", se repite sin ese parámetro (pedirSinPensar).
+    const r = await pedirSinPensar(fetchImpl, { model, max_tokens: 16000, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }, AbortSignal.timeout(480e3));
     if (!r.ok) { fallas.push(`${model}: Anthropic ${r.status} ${(await r.text()).slice(0, 150)}`); continue; }
     const j = await r.json();
     const informe = (j.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();

@@ -24,6 +24,25 @@ const HORA = Number(process.env.APRENDIZAJE_HORA || 23);
 const MAX_CORRECCIONES = 20;
 const MAX_CHARLAS = 40;
 
+/**
+ * Pide a la IA sin "pensar" (16/11: se gastaba el lugar pensando y no escribía). Si el modelo no acepta ese parámetro
+ * (revisión del 16/11: Sonnet 5.5 contestó 400 "To turn thinking off on this model…" y el informe salió con Haiku),
+ * se repite el mismo pedido sin él.
+ */
+async function pedirSinPensar(fetchImpl, body, signal) {
+  const pedir = (b) => fetchImpl('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+    ...(signal ? { signal } : {}),
+    body: JSON.stringify(b),
+  });
+  const r = await pedir({ ...body, thinking: { type: 'disabled' } });
+  if (r.ok || r.status !== 400) return r;
+  const t = await r.text();
+  if (!/thinking/i.test(t)) return { ok: false, status: 400, text: async () => t };
+  return pedir(body);
+}
+
 // ---------- Anonimizar ----------
 /** Saca todo lo que identifica a una persona. `nombres`: nombres conocidos del cliente (del lead). */
 function anonimizar(texto, nombres = []) {
@@ -31,7 +50,9 @@ function anonimizar(texto, nombres = []) {
   s = s.replace(/\[archivo:[^\]]*\]/g, '[archivo]');
   s = s.replace(/https?:\/\/\S+|www\.\S+|wa\.me\/\S+/gi, '[link]');
   s = s.replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '[mail]');
-  s = s.replace(/\+?\d[\d\s().-]{6,}\d/g, (m) => (/^\d{4}-\d{2}-\d{2}$/.test(m) ? m : '[número]')); // teléfonos, CUIT, DNI, CBU (16/11: las fechas AAAA-MM-DD quedan)
+  // Teléfonos, CUIT, DNI, CBU. Quedan las fechas AAAA-MM-DD (16/11) y las posiciones arancelarias (6108.22.00.110J):
+  // la revisión del 16/11 salió con "[número]J" en vez de la posición y no se podía controlar si el bot la había cambiado.
+  s = s.replace(/\+?\d[\d\s().-]{6,}\d/g, (m) => (/^\d{4}-\d{2}-\d{2}$/.test(m) || /^\d{4}\.\d{2}(\.\d{2}(\.\d{3})?)?$/.test(m) ? m : '[número]'));
   s = s.replace(/\b(me llamo|mi nombre es|soy)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?)/g, '$1 [nombre]');
   // 16/11 (revisión general): el bot saluda por el nombre ("Hola Agustín, ¿cómo estás?") aunque el lead no lo tenga guardado,
   // y el repo es público. Se saca el nombre que sigue a un saludo o a una despedida.
@@ -116,6 +137,8 @@ Lo que se repite en varias charlas (abandonos, preguntas que no sabe contestar, 
 ## Nada que tocar
 Una línea por charla que estuvo bien.
 
+Las líneas "Despachante:" las escribió Gustavo en persona: no las cuentes como errores del bot (si algo de lo que dijo contradice una regla, ponelo en Patrones como duda). Una reacción con emoji no es un mensaje del cliente.
+
 Reglas del informe: nunca escribas teléfonos, nombres, mails, links, CUIT ni direcciones. No inventes: si no estás seguro de que algo es un error, ponelo en Patrones como duda. Precios, normas aduaneras y posiciones arancelarias: marcalos "a validar por Gustavo".`;
 
 async function revisarDia({ store, owner, fetchImpl = fetch, ahora = Date.now(), reglas }) {
@@ -137,13 +160,9 @@ async function revisarDia({ store, owner, fetchImpl = fetch, ahora = Date.now(),
   let informe = '';
   let usado = MODELO;
   for (const model of modelos) {
-    const r = await fetchImpl('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-      signal: AbortSignal.timeout(240e3), // que no quede colgado si la IA no contesta
-      // 16/11: con stop_reason=max_tokens y sin texto, la IA se gastaba todo el espacio pensando. Sin pensar y con más lugar.
-      body: JSON.stringify({ model, max_tokens: 16000, thinking: { type: 'disabled' }, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }),
-    });
+    // 16/11: con stop_reason=max_tokens y sin texto, la IA se gastaba todo el espacio pensando. Sin pensar y con más lugar.
+    // AbortSignal: que no quede colgado si la IA no contesta.
+    const r = await pedirSinPensar(fetchImpl, { model, max_tokens: 16000, system: INSTRUCCION.replace('{{fecha}}', fecha), messages: [{ role: 'user', content: cuerpo }] }, AbortSignal.timeout(240e3));
     if (!r.ok) { fallas.push(`${model}: Anthropic ${r.status} ${(await r.text()).slice(0, 150)}`); continue; }
     const j = await r.json();
     informe = (j.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
@@ -241,4 +260,4 @@ async function tick({ store, owner, reglas, fetchImpl = fetch, ahora = Date.now(
   } finally { corriendo = false; }
 }
 
-module.exports = { fechaPendiente, MAX_INTENTOS, anonimizar, agregarCorreccion, textoCorrecciones, correcciones, charlasDelDia, revisarDia, subir, tick, RAMA };
+module.exports = { pedirSinPensar, fechaPendiente, MAX_INTENTOS, anonimizar, agregarCorreccion, textoCorrecciones, correcciones, charlasDelDia, revisarDia, subir, tick, RAMA };

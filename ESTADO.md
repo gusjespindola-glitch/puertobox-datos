@@ -1,6 +1,14 @@
-# PuertoBox — estado al 16/11/2026
+# PuertoBox — estado al 17/11/2026
 
 Leer también `docs/APRENDIZAJES.md` (decisiones) y `docs/curso/README.md` (material del curso).
+
+## Revisión nocturna del 16/11 (arreglada el 17/11)
+11 charlas, 9 con errores. Arreglado con prueba (`bot/test/revision-noche-16-11.test.js`) y 3 escenarios nuevos en el simulador: saludo a mitad de charla y mensajes repetidos los frena el código; reacciones con emoji no se contestan; reglas nuevas en el prompt (fallas internas, proveedor, ahorros/otros couriers, "ok gracias", peso estimado, captura, pesos); la revisión nocturna ya no falla con Sonnet 5.5 y deja ver las posiciones.
+**A validar por Gustavo:**
+- Recargo por batería de litio: el bot usa +30% del flete (falta el número exacto de Howard).
+- Factura B por el 100% y cargadores de 220 V (charla del consolidado): qué contestar.
+- Scrubs (uniformes médicos de poliéster): el bot derivó para que confirmes la posición; ver si la clasificación de textiles tiene que derivar o no.
+- Casco de marca (1 unidad, uso personal): hasta 3 unidades se cotiza; confirmar que no pide nada más.
 
 ## Equipo de control: descartado (16/11 17:23, Gustavo: "con esas que hay está bien, dejémoslo")
 No se crea la reunión diaria. Siguen las tareas que ya estaban: Mejora diaria del bot, Criterios ARCA, Novedades y precios (lunes) y Revisión de publicidad (martes). El diseño queda en `docs/equipo/README.md` por si algún día se retoma.

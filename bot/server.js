@@ -381,6 +381,9 @@ async function procesar(payload, deps = {}) {
     }
     if (st.yaVisto(e.id)) continue;
     const tel = e.from;
+    // Revisión nocturna del 16/11 (charla 9): una reacción (👍 a un mensaje) llegaba como "[El cliente mandó un reaction…]"
+    // y el bot le volvía a pedir datos. Una reacción no es un mensaje: no se contesta.
+    if (e.type === 'reaction') continue;
     // Pedidos simples de Gustavo desde su número (texto o audio, con o sin #): "borrar", "reiniciar", "empezar de nuevo", "pendientes".
     if (owner && tel === owner) {
       const dicho = e.type === 'text' ? e.text.body : (e.audio ? (e.transcripto = await transcribirAudio(e.audio, fetchImpl)) : '');
