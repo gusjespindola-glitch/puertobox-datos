@@ -601,6 +601,17 @@ function servirNomenclador(req, res, url) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
     return res.end(JSON.stringify(cotizarAMano(url.searchParams)));
   }
+  // Buscador con IA (17/11, Gustavo): pega lo que pidió el cliente y devuelve la posición exacta (mismo clasificador que el bot).
+  if (rel === 'api/clasificar' && req.method === 'POST') {
+    let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 20000) req.destroy(); });
+    req.on('end', async () => {
+      let texto = ''; try { texto = JSON.parse(raw || '{}').texto; } catch { texto = ''; }
+      const r = await require('./clasificador').clasificarManual(texto, servirNomenclador.fetchImpl || fetch);
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+      res.end(JSON.stringify(r));
+    });
+    return;
+  }
   // Arancel ARCA que se actualiza solo (16/11): historial de cambios y datos bajados, que mandan sobre los del repo.
   if (rel === 'api/cambios') {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
@@ -939,7 +950,7 @@ function servidor() {
       return correrEscenarios().then((txt) => { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }); res.end(txt); })
         .catch((e) => { res.writeHead(500); res.end('Error: ' + e.message); });
     }
-    if (req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) return servirNomenclador(req, res, url);
+    if ((req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) || (req.method === 'POST' && url.pathname === '/nomenclador/api/clasificar')) return servirNomenclador(req, res, url);
     if (req.method === 'GET' || req.method === 'HEAD') {
       const pag = paginas.servir(url.pathname, url.searchParams);
       if (pag) { res.writeHead(200, { 'content-type': pag.tipo, 'cache-control': 'public, max-age=60, s-maxage=60' }); return res.end(req.method === 'HEAD' ? undefined : pag.cuerpo); }
@@ -990,4 +1001,4 @@ function pendientesSinResponder(st, ahora = Date.now()) {
     && (c.mensajes || []).length && c.mensajes[c.mensajes.length - 1].role === 'user');
 }
 
-module.exports = { cotizarAMano, esMensajeAnuncio, borrarAvisosNtfy, avisarNtfy, avisoMensajeNuevo, leerMultipart, firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo, ticArancel };
+module.exports = { servirNomenclador, cotizarAMano, esMensajeAnuncio, borrarAvisosNtfy, avisarNtfy, avisoMensajeNuevo, leerMultipart, firmaOk, pendientesSinResponder, procesar, servidor, normalizar, firmaYCloudOk, transcribirAudio, avisarGustavo, accionesNtfy, firma, intencionGustavo, ticArancel };
