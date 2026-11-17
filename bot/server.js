@@ -55,7 +55,8 @@ async function enviarInstagram(id, body, fetchImpl) {
 /** Manda un PDF por WhatsApp desde el 6773 (YCloud). Lo usa solo Gustavo con el botón "Enviar presupuesto". */
 async function enviarDocumento(to, link, filename, caption, fetchImpl = fetch, tipo = 'document') {
   // 16/11: las fotos salen como foto (se ven en el chat); el resto, como documento con su nombre.
-  const cuerpo = tipo === 'image' ? { type: 'image', image: { link, ...(caption ? { caption } : {}) } } : { type: 'document', document: { link, filename, ...(caption ? { caption } : {}) } };
+  // 17/11: audios grabados por Gustavo en /charlas (WhatsApp no admite texto junto al audio: el texto va en un mensaje aparte).
+  const cuerpo = tipo === 'audio' ? { type: 'audio', audio: { link } } : tipo === 'image' ? { type: 'image', image: { link, ...(caption ? { caption } : {}) } } : { type: 'document', document: { link, filename, ...(caption ? { caption } : {}) } };
   const r = await fetchImpl('https://api.ycloud.com/v2/whatsapp/messages/sendDirectly', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.YCLOUD_API_KEY || YCLOUD_API_KEY },
@@ -931,14 +932,19 @@ function servidor() {
         let marca = '';
         try {
           if (archivo) {
-            const ruta = require('./adjuntos').guardar(archivo.buf, archivo.tipo, DIR_MEDIA(), archivo.nombre);
+            // Audio (17/11, Gustavo: "muchas veces me mandan audios"): WhatsApp acepta AAC/M4A, MP3, OGG (opus) y AMR, hasta 16 MB.
+            const AUDIO_OK = { 'audio/mp4': 'audio/mp4', 'audio/x-m4a': 'audio/mp4', 'audio/m4a': 'audio/mp4', 'audio/aac': 'audio/aac', 'audio/mpeg': 'audio/mpeg', 'audio/mp3': 'audio/mpeg', 'audio/ogg': 'audio/ogg', 'audio/opus': 'audio/ogg', 'audio/amr': 'audio/amr' };
+            if (/^audio\//.test(archivo.tipo) && !AUDIO_OK[archivo.tipo]) throw new Error('WhatsApp no acepta ese formato de audio (' + archivo.tipo + '). Grabalo desde el iPhone o mandá un MP3/M4A.');
+            const esAudio = !!AUDIO_OK[archivo.tipo];
+            const ruta = require('./adjuntos').guardar(archivo.buf, esAudio ? AUDIO_OK[archivo.tipo] : archivo.tipo, DIR_MEDIA(), archivo.nombre);
             // WhatsApp solo muestra como foto JPG o PNG de hasta 5 MB; lo demás (fotos grandes del celular, webp) va como archivo, que llega siempre.
             const esFoto = /^image\/(jpeg|png)$/.test(archivo.tipo) && archivo.buf.length <= 4.5 * 1024 * 1024;
-            await enviarDocumento(tel, `${BASE_URL()}${ruta}`, archivo.nombre, texto, fetch, esFoto ? 'image' : 'document');
+            if (esAudio && texto) await enviar(tel, texto, fetch, { lanzar: true });
+            await enviarDocumento(tel, `${BASE_URL()}${ruta}`, archivo.nombre, esAudio ? '' : texto, fetch, esAudio ? 'audio' : esFoto ? 'image' : 'document');
             marca = ` [archivo:${ruta}]`;
           } else await enviar(tel, texto, fetch, { lanzar: true });
         } catch (e) { return volver('&error=' + encodeURIComponent(String(e.message).slice(0, 120))); }
-        store.agregar(tel, 'assistant', `[Gustavo] ${texto || (archivo ? `Te mando ${archivo.nombre}` : '')}${marca}`);
+        store.agregar(tel, 'assistant', `[Gustavo] ${texto || (archivo ? (/^audio\//.test(archivo.tipo) ? '🎤 Audio' : `Te mando ${archivo.nombre}`) : '')}${marca}`);
         store.pausar(tel, 'gustavo_respondio');
         if (store.marcarVisto) store.marcarVisto(tel);
         borrarAvisosNtfy(tel);

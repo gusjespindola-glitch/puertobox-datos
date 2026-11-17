@@ -45,3 +45,12 @@ test('archivar: si el cliente vuelve a escribir, sube solo y avisa que estaba ar
   assert.ok(!h.includes('🗄️ Archivadas ('));
   assert.match(h, /Lo habías archivado \(No me interesa seguirlo\) y volvió a escribir/);
 });
+
+test('charlas: botón para grabar y mandar audio, y se pueden adjuntar audios (17/11)', () => {
+  const store = crearStore(null);
+  store.agregar('5494444', 'user', 'te mando un audio');
+  const h = paginaCharlas(store, 'x', Date.now(), 3, () => '/r');
+  assert.match(h, /🎤 Grabar audio/);
+  assert.match(h, /accept="[^"]*\.m4a[^"]*audio\/\*"/);
+  assert.match(h, /isTypeSupported/);
+});
