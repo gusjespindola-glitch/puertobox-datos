@@ -234,9 +234,8 @@ async function cargar() {
   try { CRIT = await get('criterios.json'); } catch (e) { CRIT = { normas: [], criterios: [] }; }
   $('src').textContent = `Arancel Integrado ARCA · archivos del ${N.meta.fecha_archivos.split('-').reverse().join('/')} · ${N.meta.posiciones_sim.toLocaleString('es-AR')} posiciones SIM`;
   $('frec').innerHTML = FREC.map((f) => `<button type="button" class="chip" data-q="${esc(f)}">${esc(f)}</button>`).join('');
-  const h = location.hash.match(/^#p-(\d+)/);
-  if (h) { const r = N.buscar(h[1], 1); if (r[0]) { $('q').value = r[0].c; buscar(); abrir(r[0].c); } }
-  // 17/11 (Gustavo): que abra en blanco, sin búsqueda ni posición precargada.
+  // 17/11 (Gustavo, 2 veces): siempre abre en blanco. Antes reabría la última posición porque quedaba en la dirección (#p-…).
+  if (location.hash) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* sin historial */ } }
   verHist();
   verCambios();
 }
