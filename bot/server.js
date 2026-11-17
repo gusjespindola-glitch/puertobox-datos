@@ -769,7 +769,7 @@ function servidor() {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'set-cookie': cookiePanel() });
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
       const aviso = url.searchParams.get('siguebot') ? (url.searchParams.get('siguebot') === '2' ? 'Listo: el bot sigue con este cliente y ya le está contestando su último mensaje.' : 'Listo: el bot sigue con este cliente. Contesta apenas el cliente escriba.') : url.searchParams.get('corregido') === '1' ? 'Corrección guardada. El bot la aplica desde su próximo mensaje.' : url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
-      const htmlCharlas = require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`, (tel) => `/visto?tel=${tel}&t=${firma('visto:' + tel)}`, (tel, v) => `/marcar-presu?tel=${tel}&v=${v}&t=${firma('marcarpresu:' + tel)}`, (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&a=charlas`);
+      const htmlCharlas = require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`, (tel) => `/visto?tel=${tel}&t=${firma('visto:' + tel)}`, (tel, v) => `/marcar-presu?tel=${tel}&v=${v}&t=${firma('marcarpresu:' + tel)}`, (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&a=charlas`, (tel, v) => `/archivar?tel=${tel}&v=${v}&t=${firma('archivar:' + tel)}`);
       if (abierto && store.marcarVisto) store.marcarVisto(abierto); // la abrió desde un aviso: ya la ve
       if (abierto) borrarAvisosNtfy(abierto);
       return res.end(htmlCharlas);
@@ -806,6 +806,17 @@ function servidor() {
       if (si && store.guardarLead) { const l = store.lead(tel) || {}; if (!l.estado || l.estado === 'nuevo') store.guardarLead(tel, { estado: 'cotizado' }); }
       if (store.marcarVisto) store.marcarVisto(tel);
       res.writeHead(303, { location: `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}` }); return res.end();
+    }
+    // Archivar una charla (17/11, Gustavo): desistió, no le interesa o no sirve. v=0 la saca de archivadas.
+    if (req.method === 'POST' && url.pathname === '/archivar') {
+      const tel = soloDigitos(url.searchParams.get('tel') || '');
+      if (!tel || !firmaOk('archivar:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      const v = url.searchParams.get('v') || '';
+      const motivos = require('./recordatorios').MOTIVOS_ARCHIVO;
+      store.marcar(tel, motivos[v] ? { archivadoEn: Date.now(), archivoMotivo: v } : { archivadoEn: null, archivoMotivo: null });
+      if (store.marcarVisto) store.marcarVisto(tel);
+      if (motivos[v]) borrarAvisosNtfy(tel);
+      res.writeHead(303, { location: `/charlas?t=${firma('charlas')}${motivos[v] ? '' : `&abierto=${tel}`}#c-${tel}` }); return res.end();
     }
     // Gustavo abrió una charla en /charlas: sus mensajes dejan de figurar como nuevos (15/11).
     if (req.method === 'POST' && url.pathname === '/visto') {
