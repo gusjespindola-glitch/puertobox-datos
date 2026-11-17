@@ -982,6 +982,7 @@ function servidor() {
 
 if (require.main === module) {
   servidor().listen(PORT, () => console.log(`Bot escuchando en :${PORT}`));
+  require('./bibliografia').precargar();
   // 15/11: los links vencen a los 7 días; al arrancar, si hace más de 20 h que no recibió accesos nuevos, le llegan por ntfy
   // (botones "Ver pendientes" y "Ver charlas"), así nunca se queda sin poder entrar.
   setTimeout(() => {
