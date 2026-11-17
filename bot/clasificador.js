@@ -21,7 +21,7 @@ function getMotor() {
   if (motorVersion !== arancel.version()) { motor = null; motorVersion = arancel.version(); }
   if (!motor) {
     const d = (f) => JSON.parse(require('fs').readFileSync(arancel.ruta(f), 'utf8'));
-    motor = crear({ sim: d('sim.json'), sufijos: {}, intervenciones: d('intervenciones.json'), sinonimos: d('sinonimos.json'), notas: {}, frecuentes: d('productos_frecuentes.json') });
+    motor = crear({ sim: d('sim.json'), sufijos: {}, intervenciones: d('intervenciones.json'), sinonimos: d('sinonimos.json'), notas: d('notas.json'), frecuentes: d('productos_frecuentes.json') });
   }
   return motor;
 }
@@ -42,6 +42,35 @@ function aperturas(codigo) {
   });
 }
 
+// Secciones del Sistema Armonizado: primer y último capítulo de cada una (las notas de sección vienen en el texto del primer capítulo).
+const SECCIONES = [['I', 1, 5], ['II', 6, 14], ['III', 15, 15], ['IV', 16, 24], ['V', 25, 27], ['VI', 28, 38], ['VII', 39, 40], ['VIII', 41, 43], ['IX', 44, 46], ['X', 47, 49], ['XI', 50, 63], ['XII', 64, 67], ['XIII', 68, 70], ['XIV', 71, 71], ['XV', 72, 83], ['XVI', 84, 85], ['XVII', 86, 89], ['XVIII', 90, 92], ['XIX', 93, 93], ['XX', 94, 96], ['XXI', 97, 97]];
+
+/**
+ * Notas legales de la sección y del capítulo (17/11/2026, Gustavo: "tomar en cuenta las notas de exclusión y la jerarquía").
+ * Salen del Arancel Integrado de ARCA (notas.json). Son la base de la RGI 1: la partida se elige por su texto Y por estas notas.
+ */
+function notasDe(codigo) {
+  const dig = String(codigo || '').replace(/\D/g, '');
+  if (dig.length < 2) return { error: 'Pasá el capítulo (2 dígitos) o una posición.' };
+  const cap = Number(dig.slice(0, 2));
+  const notas = require('../src/arancel').leer('notas.json') || {};
+  const dos = (n) => String(n).padStart(2, '0');
+  const sec = SECCIONES.find(([, a, b]) => cap >= a && cap <= b);
+  if (!sec) return { error: `El capítulo ${dos(cap)} no existe.` };
+  const textoCap = notas[dos(cap)] || '';
+  const primero = notas[dos(sec[1])] || '';
+  const iCap = primero.search(new RegExp('(?:^|\\n)\\s*CAPITULO\\s+' + sec[1] + '\\s*\\n'));
+  const deSeccion = /SECCION/i.test(primero) ? (iCap > 0 ? primero.slice(0, iCap) : primero) : '';
+  let delCapitulo = textoCap;
+  if (cap === sec[1] && iCap > 0) delCapitulo = textoCap.slice(iCap);
+  const corto = (t, n) => (t.length > n ? t.slice(0, n) + '\n[…sigue: el texto completo está en el arancel de ARCA]' : t);
+  return {
+    seccion: sec[0], capitulos_de_la_seccion: `${dos(sec[1])} a ${dos(sec[2])}`,
+    notas_de_seccion: corto(deSeccion.trim(), 9000) || 'Sin notas de sección en el archivo de ARCA.',
+    notas_de_capitulo: corto(delCapitulo.trim(), 12000) || 'Sin notas de capítulo en el archivo de ARCA.',
+  };
+}
+
 /** Una posición exacta de la base de ARCA (o null). */
 function exacta(pos) {
   const lista = aperturas(String(pos).replace(/[^\dA-Z.]/gi, '').slice(0, 13));
@@ -51,16 +80,27 @@ function exacta(pos) {
 
 const clave = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/https?:\/\/\S+/g, (u) => u.split('?')[0]).replace(/[^a-z0-9/.:]+/g, ' ').trim().slice(0, 300);
 
-const INSTRUCCIONES = `Sos un despachante de aduana argentino experto en clasificación arancelaria (Nomenclatura Común del MERCOSUR, Sistema Armonizado, Reglas Generales Interpretativas).
+const INSTRUCCIONES = `Sos un despachante de aduana argentino experto en clasificación arancelaria (Nomenclatura Común del MERCOSUR, Sistema Armonizado y sus Reglas Generales Interpretativas, RGI).
 Tenés que encontrar la posición arancelaria correcta del producto que te pasan, completa, para importarlo a Argentina.
-Cómo trabajás (igual que un despachante con Google y Tarifar):
-1. Leé el producto COMPLETO: qué es, para qué sirve, de qué está hecho, si tiene batería, motor, Bluetooth/WiFi, si es un conjunto o juego (RGI 3 b: carácter esencial).
-2. Buscá en internet el producto tal cual (nombre, modelo, link) y "HS code" / "partida arancelaria": fichas de proveedores, fallos de aduana (CBP rulings, BTI de la UE), nomencladores. Si el proveedor da un código, verificalo: muchas veces está mal.
-3. Con el código de 6 dígitos más probable, usá la herramienta buscar_codigo para ver TODAS las aperturas argentinas reales (con su derecho de importación). Si dudás entre dos partidas, buscá las dos.
-4. Elegí la apertura argentina que corresponde. Nunca elijas una apertura especial que no aplica (por ejemplo "presentados desmontados", "para uso aeronáutico", capacidades o tensiones que no son las del producto); si no hay una específica, la de "Las demás".
+Clasificás como un despachante, respetando la JERARQUÍA de las reglas y las NOTAS LEGALES. Un código que aparece en internet es solo una pista: nunca alcanza por sí solo.
+
+Reglas Generales Interpretativas (en este orden; una regla se usa solo si la anterior no resuelve):
+- RGI 1: los títulos de secciones, capítulos y subcapítulos son solo indicativos. La clasificación la determinan legalmente los TEXTOS DE LAS PARTIDAS y las NOTAS DE SECCIÓN Y DE CAPÍTULO. Si una nota dice que la sección o el capítulo "no comprende" algo, ese producto NO puede ir ahí, aunque el texto parezca encajar.
+- RGI 2 a): un artículo incompleto o sin terminar va en la partida del artículo completo si ya tiene sus características esenciales; también si viene desmontado o sin montar. RGI 2 b): una materia incluye sus mezclas o artículos que la contienen; si hay más de una materia, se sigue la RGI 3.
+- RGI 3 (cuando dos o más partidas sirven): a) la partida más específica gana sobre la más genérica (pero si cada una se refiere solo a una parte de las materias o de los artículos de un juego, se consideran igual de específicas); b) mezclas, manufacturas de varias materias y juegos o surtidos para la venta al por menor: por la materia o el artículo que les da el CARÁCTER ESENCIAL; c) si ninguna de las anteriores resuelve, la última partida por orden de numeración entre las que pueden tenerse en cuenta.
+- RGI 4: lo que no se puede clasificar con las reglas anteriores va en la partida de los artículos más análogos.
+- RGI 5: a) estuches y continentes hechos para un artículo determinado, de uso prolongado y presentados con él, van con el artículo (salvo que den el carácter esencial al conjunto); b) los envases que vienen con la mercadería van con ella si son los que se usan normalmente para ese tipo de mercadería.
+- RGI 6: dentro de una partida, la subpartida se elige por los textos de las subpartidas y las notas de subpartida, aplicando las reglas anteriores, y SOLO se comparan subpartidas del mismo nivel (un guion con un guion, dos guiones con dos guiones). Las notas de sección y capítulo también valen salvo disposición en contrario.
+- Regla General Complementaria (MERCOSUR): las RGI se aplican igual para elegir el ítem y el subítem de la NCM (8 dígitos) dentro de la subpartida, comparando solo los del mismo nivel.
+
+Cómo trabajás:
+1. Leé el producto COMPLETO: qué es, para qué sirve, de qué está hecho, si tiene batería, motor, Bluetooth/WiFi, si es un juego o conjunto, si es parte o accesorio de otra cosa.
+2. Buscá en internet el producto tal cual (nombre, modelo, link) y "HS code" / "partida arancelaria": fichas de proveedores, fallos de aduana (CBP rulings, BTI de la UE), criterios de clasificación de ARCA. Si el proveedor da un código, verificalo: muchas veces está mal.
+3. OBLIGATORIO: con la herramienta ver_notas leé las notas de sección y de capítulo de CADA capítulo candidato. Revisá las exclusiones ("no comprende…") y las definiciones, y descartá los capítulos donde el producto está excluido. En las partes y accesorios (secciones XVI y XVII, capítulo 90) las notas de la sección dicen dónde van: seguilas.
+4. Elegí la partida (4 dígitos) por RGI 1 y, solo si hace falta, RGI 2 a 5. Después la subpartida (6 dígitos) por RGI 6 y la apertura argentina (8 dígitos y sufijo) con la Regla Complementaria: usá buscar_codigo para ver TODAS las aperturas argentinas reales con su derecho. Nunca elijas una apertura especial que no aplica (por ejemplo "presentados desmontados", "para uso aeronáutico", capacidades o tensiones que no son las del producto); si no hay una específica, la de "Las demás".
 Respondé SOLO con un JSON, sin texto alrededor:
-{"posicion":"XXXX.XX.XX.XXXL","nombre_tecnico":"...","por_que":"una o dos líneas","confianza":"alta|media|baja","alternativas":[{"posicion":"...","por_que":"..."}],"fuentes":["url", "..."]}
-"alta" solo si el producto es claro y las fuentes coinciden. Si falta un dato que cambia la posición (material, si tiene batería, etc.), confianza "baja" y decí qué dato falta en por_que.`;
+{"posicion":"XXXX.XX.XX.XXXL","nombre_tecnico":"...","por_que":"una o dos líneas","rgi_aplicadas":"por ejemplo: RGI 1 y 6","notas_revisadas":"qué notas de sección/capítulo leíste y qué exclusión descartó algún capítulo (o 'sin exclusiones que apliquen')","confianza":"alta|media|baja","alternativas":[{"posicion":"...","por_que":"..."}],"fuentes":["url", "..."]}
+"alta" solo si el producto es claro, revisaste las notas y las fuentes coinciden. Si falta un dato que cambia la posición (material, si tiene batería, etc.), confianza "baja" y decí qué dato falta en por_que.`;
 
 // Criterios que validó Gustavo (ncm/productos_frecuentes.json): el clasificador los respeta antes que cualquier fuente de internet.
 function criteriosValidados() {
@@ -70,6 +110,12 @@ function criteriosValidados() {
   } catch { return ''; }
 }
 const SYSTEM = () => `${INSTRUCCIONES}\n\nCriterios validados por nuestro despachante (si el producto es uno de estos, seguilos y no hace falta buscar en internet):\n${criteriosValidados()}`;
+
+const herramientaNotas = {
+  name: 'ver_notas',
+  description: 'Devuelve las notas legales de la SECCIÓN y del CAPÍTULO del arancel (ARCA) para un capítulo: exclusiones ("no comprende"), definiciones y reglas de partes y accesorios. Usala para cada capítulo candidato ANTES de elegir la posición (RGI 1).',
+  input_schema: { type: 'object', properties: { capitulo: { type: 'string', description: 'Capítulo de 2 dígitos o una posición (por ejemplo 95 o 9503.00)' } }, required: ['capitulo'] },
+};
 
 const herramientaCodigo = {
   name: 'buscar_codigo',
@@ -95,7 +141,8 @@ function sacarJSON(t) {
 
 /** Clasificación con IA + búsqueda web + base de ARCA. Devuelve { posicion, die, ... } o { error }. */
 async function clasificarConIA(producto, fetchImpl, conWeb = true) {
-  const tools = [herramientaCodigo];
+  const tools = [herramientaNotas, herramientaCodigo];
+  const capsVistos = new Set(); let reclamoNotas = false;
   if (conWeb) tools.unshift({ type: 'web_search_20250305', name: 'web_search', max_uses: 3 });
   const messages = [{ role: 'user', content: `Producto (tal cual lo pasó el cliente):\n${producto}` }];
   for (let vuelta = 0; vuelta < 8; vuelta++) {
@@ -110,13 +157,32 @@ async function clasificarConIA(producto, fetchImpl, conWeb = true) {
     const contenido = res.content || [];
     messages.push({ role: 'assistant', content: contenido });
     if (res.stop_reason === 'pause_turn') continue; // la búsqueda web sigue en otra vuelta
-    const usos = contenido.filter((b) => b.type === 'tool_use' && b.name === 'buscar_codigo');
+    const usos = contenido.filter((b) => b.type === 'tool_use' && (b.name === 'buscar_codigo' || b.name === 'ver_notas'));
     if (usos.length) {
-      messages.push({ role: 'user', content: usos.map((b) => ({ type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(aperturas(b.input && b.input.codigo)) })) });
+      messages.push({ role: 'user', content: usos.map((b) => {
+        if (b.name === 'ver_notas') {
+          const cap = String((b.input && b.input.capitulo) || '').replace(/\D/g, '').slice(0, 2);
+          if (cap.length === 2) capsVistos.add(cap);
+          return { type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(notasDe(b.input && b.input.capitulo)) };
+        }
+        return { type: 'tool_result', tool_use_id: b.id, content: JSON.stringify(aperturas(b.input && b.input.codigo)) };
+      }) });
       continue;
     }
     const texto = contenido.filter((b) => b.type === 'text').map((b) => b.text).join('\n');
-    return sacarJSON(texto) || { error: 'El clasificador no devolvió una posición.' };
+    const r = sacarJSON(texto);
+    if (!r) return { error: 'El clasificador no devolvió una posición.' };
+    // 17/11 (Gustavo): no se elige una posición sin leer las notas de su sección y capítulo (RGI 1).
+    const capElegido = String(r.posicion || '').replace(/\D/g, '').slice(0, 2);
+    if (capElegido.length === 2 && !capsVistos.has(capElegido)) {
+      if (!reclamoNotas) {
+        reclamoNotas = true;
+        messages.push({ role: 'user', content: `Antes de confirmar: no leíste las notas del capítulo ${capElegido}. Usá ver_notas con ${capElegido}, revisá las exclusiones y respondé de nuevo con el JSON.` });
+        continue;
+      }
+      return { ...r, notas_no_revisadas: true, confianza: 'baja' };
+    }
+    return r;
   }
   return { error: 'El clasificador no terminó.' };
 }
@@ -159,7 +225,7 @@ async function clasificar(input, ctx) {
     if (!fila) return sinClasificar(`la posición ${ia.posicion} no existe en el arancel de ARCA`);
     r = {
       posicion: fila.posicion, die: fila.die, internos: fila.impuestos_internos, descripcion_arancel: fila.descripcion,
-      intervenciones_posibles: fila.intervenciones_posibles, nombre_tecnico: ia.nombre_tecnico, por_que: ia.por_que,
+      intervenciones_posibles: fila.intervenciones_posibles, nombre_tecnico: ia.nombre_tecnico, por_que: ia.por_que, rgi_aplicadas: ia.rgi_aplicadas, notas_revisadas: ia.notas_revisadas,
       confianza: ['alta', 'media', 'baja'].includes(ia.confianza) ? ia.confianza : 'baja',
       alternativas: (ia.alternativas || []).slice(0, 3).map((a) => { const f = exacta(a.posicion); return f ? { posicion: f.posicion, die: f.die, por_que: a.por_que } : null; }).filter(Boolean),
       fuentes: (ia.fuentes || []).slice(0, 3),
@@ -172,7 +238,7 @@ async function clasificar(input, ctx) {
   // 5. Si no está segura, Gustavo confirma (aviso sin pausar el chat).
   if (r.confianza !== 'alta' && ctx.derivaciones && !r.confirmada) {
     const alt = r.alternativas.map((a) => `${a.posicion} (${a.die}%)`).join(', ');
-    ctx.derivaciones.push({ telefono: ctx.telefono, motivo: 'confirmar_posicion', resumen: `Producto: ${producto.slice(0, 200)}\nPropuesta: ${r.posicion} (DIE ${r.die}%) – ${r.por_que || ''}${alt ? `\nOtras: ${alt}` : ''}\nConfianza: ${r.confianza}` });
+    ctx.derivaciones.push({ telefono: ctx.telefono, motivo: 'confirmar_posicion', resumen: `Producto: ${producto.slice(0, 200)}\nPropuesta: ${r.posicion} (DIE ${r.die}%) – ${r.por_que || ''}${r.rgi_aplicadas ? `\nReglas: ${r.rgi_aplicadas}` : ''}${r.notas_revisadas ? `\nNotas: ${String(r.notas_revisadas).slice(0, 200)}` : ''}${alt ? `\nOtras: ${alt}` : ''}\nConfianza: ${r.confianza}` });
   }
   return {
     ...fija,
@@ -182,4 +248,4 @@ async function clasificar(input, ctx) {
   };
 }
 
-module.exports = { clasificar, aperturas, exacta, clave, clasificarConIA, INSTRUCCIONES };
+module.exports = { clasificar, aperturas, exacta, clave, clasificarConIA, notasDe, INSTRUCCIONES };
