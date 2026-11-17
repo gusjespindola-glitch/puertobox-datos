@@ -17,7 +17,7 @@ Estado: ✅ leído y resumido · ⏳ pendiente · ➖ no aplica a PuertoBox (exp
 - ➖ IDA4, importación temporaria con y sin transformación
 
 ## Módulo III (régimen legal) · ⏳ Manual de régimen legal 1ª y 2ª parte
-## Módulo IV (clasificación) · ⏳ Manual de clasificación, RGI, NCM, declaraciones inexactas, Res. 1394/97
+## Módulo IV (clasificación) · ⏳ Manual de clasificación, RGI, NCM, declaraciones inexactas, Res. 1394/97 — **PRIORIDAD 1 (Gustavo 17/11: "ultra importantes")**. 17/11 no se pudo leer: el conector de Drive no devuelve archivos de la cuenta trevan.oficial. Mientras tanto el clasificador usa las RGI (texto oficial) y las notas de ARCA.
 ## Módulo V (Incoterms) · ⏳
 ## Módulo VI (sistemas y operativa) · ⏳ liquidaciones, formulario de valor, VUCE, SIM
 ## Normativa · ⏳ Intervención ANMAT · Declaración anticipada · Envases en contacto con alimentos

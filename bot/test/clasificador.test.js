@@ -8,10 +8,22 @@ const { ejecutar } = require('../tools');
 const { limpiar } = require('../agent');
 
 const respuesta = (content, stop = 'end_turn') => ({ ok: true, json: async () => ({ stop_reason: stop, content }) });
+// 17/11: el clasificador exige leer las notas del capítulo elegido (RGI 1). Si la IA de prueba contesta sin leerlas,
+// el mock hace lo que haría la IA real: pide ver_notas y repite la respuesta.
 function mockIA(pasos) {
   const llamadas = [];
-  let i = 0;
-  const fetchImpl = async (url, opt) => { llamadas.push(JSON.parse(opt.body)); return pasos[i++](JSON.parse(opt.body)); };
+  let i = 0; let ultima = null; let repetir = false;
+  const fetchImpl = async (url, opt) => {
+    const body = JSON.parse(opt.body); llamadas.push(body);
+    const fin = body.messages[body.messages.length - 1];
+    if (typeof fin.content === 'string' && fin.content.startsWith('Antes de confirmar')) {
+      repetir = true;
+      return respuesta([{ type: 'tool_use', id: 'n' + i, name: 'ver_notas', input: { capitulo: fin.content.match(/capítulo (\d\d)/)[1] } }], 'tool_use');
+    }
+    if (repetir) { repetir = false; return ultima; }
+    ultima = await pasos[i++](body);
+    return ultima;
+  };
   return { fetchImpl, llamadas };
 }
 
@@ -44,7 +56,7 @@ test('clasificar: busca en internet con el producto completo, verifica en ARCA y
   const r2 = await clasificar({ producto_completo: 'arrancador 23 kg' }, ctx);
   assert.strictEqual(r2.posicion, '8507.60.00.990V');
   assert.strictEqual(r2.ya_fijada, true);
-  assert.strictEqual(llamadas.length, 2);
+  assert.strictEqual(llamadas.length, 4); // 2 + las 2 vueltas para leer las notas del capítulo (17/11)
 
   // cotizar usa el derecho fijado aunque la IA del chat pase otro.
   const q = ejecutar('cotizar', { kg: 23, valor_factura_usd: 500, die: 35, regimen: 'comercial', unidades: 25 , cantidad_cajas: 1, largo_cm: 10, ancho_cm: 10, alto_cm: 10 }, ctx);
@@ -88,7 +100,7 @@ test('clasificar: el mismo producto en otra charla sale del caché (no se paga d
   await clasificar({ producto_completo: 'Trípode 170 cm' }, { telefono: 'a', store, derivaciones: [], fetchImpl });
   const r = await clasificar({ producto_completo: 'Trípode 170 cm' }, { telefono: 'b', store, derivaciones: [], fetchImpl });
   assert.strictEqual(r.posicion, '9620.00.00.000J');
-  assert.strictEqual(llamadas.length, 1);
+  assert.strictEqual(llamadas.length, 3); // 1 + las 2 vueltas para leer las notas del capítulo (17/11)
 });
 
 test('limpiar: nunca deja frases mochas como "Por el dato."', () => {
@@ -162,4 +174,30 @@ test('reclasifica una vez si el cliente aclara el material (bombachas sintética
 
 test('WhatsApp: negrita con un asterisco (llegaba "**USD 478,14**")', () => {
   assert.strictEqual(limpiar('Los impuestos estimados son **USD 478,14**.'), 'Los impuestos estimados son *USD 478,14*.');
+});
+
+test('clasificar: no confirma una posición sin leer las notas de sección y capítulo (RGI 1, Gustavo 17/11)', async () => {
+  const { notasDe, INSTRUCCIONES } = require('../clasificador');
+  // Las notas salen del arancel de ARCA: exclusiones del capítulo 95 y notas de la sección XVI para el 85.
+  assert.match(notasDe('9503.00').notas_de_capitulo, /no comprende/i);
+  assert.strictEqual(notasDe('85').seccion, 'XVI');
+  assert.match(notasDe('85').notas_de_seccion, /Seccion no comprende/i);
+  assert.match(INSTRUCCIONES, /RGI 1/); assert.match(INSTRUCCIONES, /RGI 6/); assert.match(INSTRUCCIONES, /ver_notas/);
+  const store = crearStore(null);
+  const final = { type: 'text', text: '{"posicion":"8507.60.00.990V","nombre_tecnico":"Batería de litio","por_que":"x","rgi_aplicadas":"RGI 1 y 6","notas_revisadas":"Sección XVI y capítulo 85","confianza":"alta","alternativas":[]}' };
+  const llamadas = [];
+  let n = 0;
+  const fetchImpl = async (url, opt) => {
+    const body = JSON.parse(opt.body); llamadas.push(body); n++;
+    if (n === 1) return respuesta([final]); // contesta sin leer notas
+    if (n === 2) return respuesta([{ type: 'tool_use', id: 'v', name: 'ver_notas', input: { capitulo: '85' } }], 'tool_use');
+    return respuesta([final]);
+  };
+  const r = await clasificar({ producto_completo: 'Batería de litio 12V para arrancador' }, { telefono: '549222', store, derivaciones: [], fetchImpl });
+  assert.match(llamadas[1].messages[llamadas[1].messages.length - 1].content, /no leíste las notas del capítulo 85/);
+  const resultadoNotas = llamadas[2].messages[llamadas[2].messages.length - 1].content[0].content;
+  assert.match(resultadoNotas, /notas_de_seccion/);
+  assert.strictEqual(r.posicion, '8507.60.00.990V');
+  assert.strictEqual(r.rgi_aplicadas, 'RGI 1 y 6');
+  assert.ok(llamadas[0].tools.some((t) => t.name === 'ver_notas'));
 });

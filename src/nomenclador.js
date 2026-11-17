@@ -88,7 +88,20 @@
       }
       return [...vistos.values()];
     }
-    const notasDe = (f) => notas[f.d.slice(0, 2)] || '';
+    // 17/11 (Gustavo): las notas de la SECCIÓN están en el texto del primer capítulo de cada sección; se muestran también
+    // en los demás capítulos (por ejemplo, las de la Sección XVI en el 85), porque sus exclusiones valen para todos.
+    const PRIMERO = [1, 6, 15, 16, 25, 28, 39, 41, 44, 47, 50, 64, 68, 71, 72, 84, 86, 90, 93, 94, 97];
+    const notasDe = (f) => {
+      const cap = Number(f.d.slice(0, 2));
+      const propio = notas[f.d.slice(0, 2)] || '';
+      const pri = PRIMERO.filter((x) => x <= cap).pop();
+      if (!pri || pri === cap) return propio;
+      const t = notas[String(pri).padStart(2, '0')] || '';
+      if (!/SECCION/.test(t)) return propio;
+      const i = t.search(new RegExp('(?:^|\\n)\\s*CAPITULO\\s+' + pri + '\\s*\\n'));
+      const sec = (i > 0 ? t.slice(0, i) : t).trim();
+      return sec ? `${sec}\n\n────────\n\n${propio}` : propio;
+    };
 
     function ficha(codigo) {
       const f = porCodigo.get(codigo) || filas.find((x) => x.d.startsWith(digitos(codigo)));
