@@ -252,4 +252,36 @@ async function clasificar(input, ctx) {
   };
 }
 
-module.exports = { clasificar, aperturas, exacta, clave, clasificarConIA, notasDe, INSTRUCCIONES };
+/**
+ * Buscador con IA del nomenclador (17/11/2026, Gustavo: "que si pego lo que pide el cliente se busque la posición como en la IA de Chrome").
+ * Mismo clasificador que el bot (internet + notas legales + marcha sistemática), pero sin charla: devuelve la posición exacta de ARCA.
+ */
+const cacheManual = new Map(); const usoManual = { dia: '', n: 0 };
+const TOPE_MANUAL = Number(process.env.CLASIFICACIONES_MANUAL_DIA || 40);
+async function clasificarManual(texto, fetchImpl = fetch) {
+  const producto = String(texto || '').trim().slice(0, 3000);
+  if (producto.length < 3) return { error: 'Pegá lo que pidió el cliente (producto, materiales, para qué sirve, link si hay).' };
+  const k = clave(producto);
+  if (cacheManual.has(k)) return { ...cacheManual.get(k), de_cache: true };
+  const hoy = new Date().toISOString().slice(0, 10);
+  if (usoManual.dia !== hoy) { usoManual.dia = hoy; usoManual.n = 0; }
+  if (usoManual.n >= TOPE_MANUAL) return { error: `Llegaste al tope de ${TOPE_MANUAL} búsquedas con IA por hoy (cuida el saldo). Mañana se renueva.` };
+  usoManual.n++;
+  let ia;
+  try { ia = await clasificarConIA(producto, fetchImpl, true); } catch (e) { return { error: 'La IA no respondió: ' + String(e.message).slice(0, 160) }; }
+  if (!ia || ia.error) return { error: (ia && ia.error) || 'La IA no devolvió una posición.' };
+  const fila = exacta(ia.posicion);
+  if (!fila) return { error: `La IA propuso ${ia.posicion}, pero esa posición no existe en el arancel de ARCA. Probá agregando más datos del producto.`, propuesta: ia };
+  const r = {
+    posicion: fila.posicion, die: fila.die, internos: fila.impuestos_internos, descripcion_arancel: fila.descripcion,
+    intervenciones_posibles: fila.intervenciones_posibles, nombre_tecnico: ia.nombre_tecnico, por_que: ia.por_que, marcha: ia.marcha,
+    rgi_aplicadas: ia.rgi_aplicadas, notas_revisadas: ia.notas_revisadas,
+    confianza: ['alta', 'media', 'baja'].includes(ia.confianza) ? ia.confianza : 'baja', notas_no_revisadas: !!ia.notas_no_revisadas,
+    alternativas: (ia.alternativas || []).slice(0, 3).map((a) => { const f = exacta(a.posicion); return f ? { posicion: f.posicion, die: f.die, descripcion_arancel: f.descripcion, por_que: a.por_que } : null; }).filter(Boolean),
+    fuentes: (ia.fuentes || []).slice(0, 4),
+  };
+  cacheManual.set(k, r);
+  return r;
+}
+
+module.exports = { clasificarManual, clasificar, aperturas, exacta, clave, clasificarConIA, notasDe, INSTRUCCIONES };
