@@ -59,6 +59,8 @@ test('la ficha del nomenclador muestra la sección de criterios con el link a la
   vm.runInContext(fs.readFileSync(path.join(W, 'nomenclador.js'), 'utf8'), ctx);
   try { vm.runInContext(script, ctx); } catch (e) { /* lo que no es de la ficha puede faltar en este DOM de prueba */ }
   await new Promise((r) => setTimeout(r, 300));
+  // 17/11: el nomenclador ya no abre solo la posición de la dirección (#p-…): se elige a mano.
+  vm.runInContext("abrir(N.buscar('30051090', 1)[0].c)", ctx);
   assert.match(els.ficha.innerHTML, /Criterios de clasificación de ARCA \(1\)/);
   assert.match(els.ficha.innerHTML, /Criterio 201\/99/);
   assert.match(els.ficha.innerHTML, /norma-59645/);
