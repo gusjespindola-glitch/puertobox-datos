@@ -183,6 +183,8 @@ test('clasificar: no confirma una posición sin leer las notas de sección y cap
   assert.strictEqual(notasDe('85').seccion, 'XVI');
   assert.match(notasDe('85').notas_de_seccion, /Seccion no comprende/i);
   assert.match(INSTRUCCIONES, /RGI 1/); assert.match(INSTRUCCIONES, /RGI 6/); assert.match(INSTRUCCIONES, /ver_notas/);
+  // Marcha sistemática del curso (Módulo IV): individualizar, criterio por origen/composición/aplicabilidad, notas antes que partidas.
+  assert.match(INSTRUCCIONES, /MARCHA SISTEMÁTICA/); assert.match(INSTRUCCIONES, /APLICABILIDAD/); assert.match(INSTRUCCIONES, /notas de sección, notas de capítulo, textos de partida/);
   const store = crearStore(null);
   const final = { type: 'text', text: '{"posicion":"8507.60.00.990V","nombre_tecnico":"Batería de litio","por_que":"x","rgi_aplicadas":"RGI 1 y 6","notas_revisadas":"Sección XVI y capítulo 85","confianza":"alta","alternativas":[]}' };
   const llamadas = [];
