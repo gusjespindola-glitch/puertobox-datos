@@ -139,7 +139,7 @@ input.falta{border:2px solid #c8102e;background:#fff5f5}.ia textarea{width:100%;
       <input id="q" placeholder="Ej: zapatillas, termo, 8518.30" autocomplete="off">
     </div>
     <div class="sec ia">
-      <label for="ia_txt">🤖 Buscar posición con IA</label>
+      <label for="ia_txt">🤖 Buscar posición con IA · se basa en tu Tarifar y tu bibliografía, y te cita la fuente</label>
       <textarea id="ia_txt" rows="4" placeholder="Pegá acá lo que pidió el cliente (producto, materiales, para qué sirve, link si hay)"></textarea>
       <button type="button" id="ia_btn">Buscar posición exacta</button>
       <div id="ia_res" aria-live="polite"></div>
@@ -484,6 +484,7 @@ $('ia_btn').addEventListener('click', async () => {
     <div><span class="pos" data-pos="${esc(r.posicion)}">${esc(r.posicion)}</span> · DIE ${esc(r.die)}%${r.internos ? ' · internos ' + esc(+(r.internos * 100).toFixed(2)) + '%' : ''}</div>
     <div class="mut">${esc(r.descripcion_arancel || '')}</div>
     <div>${conf}${r.de_cache ? ' · ya buscado antes' : ''}</div>
+    ${r.informe ? `<div class="informe" style="white-space:pre-wrap;margin:8px 0;line-height:1.45">${esc(r.informe).replace(/\[([^\]]+)\]/g, '<span style="background:#eef3ff;border-radius:4px;padding:0 4px;font-size:.85em">📖 $1</span>')}</div>` : ''}
     ${linea('Qué es', r.nombre_tecnico)}${linea('Por qué', r.por_que)}${linea('Marcha', r.marcha)}${linea('Reglas', r.rgi_aplicadas)}${linea('Notas revisadas', r.notas_revisadas)}
     ${r.intervenciones_posibles && r.intervenciones_posibles.length ? linea('Intervenciones posibles', r.intervenciones_posibles.join(', ')) : ''}
     ${r.alternativas && r.alternativas.length ? '<div><b>Otras posibles:</b> ' + r.alternativas.map((a) => `<span class="pos" data-pos="${esc(a.posicion)}">${esc(a.posicion)}</span> (DIE ${esc(a.die)}%) <span class="mut">${esc(a.por_que || '')}</span>`).join('<br>') + '</div>' : ''}
