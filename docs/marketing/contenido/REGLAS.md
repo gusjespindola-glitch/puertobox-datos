@@ -21,4 +21,4 @@ La cuenta lleva el nombre de Gustavo y su matrícula de despachante. Cada public
 - [ ] Lo dicho es lo que PuertoBox hace hoy.
 - [ ] Se entiende sin saber de importación.
 - [ ] Nada de la lista "Nunca".
-- [ ] Se lo mostré a Gustavo (archivo + texto) con al menos 24 h de anticipación; si dice que no o pide cambios, no sale.
+- [ ] Se le avisa a Gustavo qué se programó (no hace falta esperar su OK: 17/11/2026 pidió que se publique siempre, 3 por semana, con su voz si la manda y si no con texto en pantalla). Si pide cambios, se corrige.
