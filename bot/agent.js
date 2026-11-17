@@ -44,6 +44,35 @@ function limpiar(t) {
     .replace(/([?!])\.(?=\s|$)/g, '$1'); // "¿...logo?." → "¿...logo?"
 }
 
+// Revisión nocturna del 16/11 (charlas 9 y 10): el bot volvía a saludar a mitad de charla ("Hola, ¿cómo estás? Para
+// avanzar necesito…") aunque el prompt lo prohíbe. Ahora el código saca el saludo si el bot ya había hablado.
+const SALUDO = /^\s*¡?\s*(hola|buen[oa]s?\s+(d[ií]as?|tardes|noches)|buen\s+d[ií]a)\b[^\n.!?¿]{0,30}[.!,]?\s*(¿\s*c[oó]mo\s+(est[aá]s|and[aá]s|va|le va)[^?\n]{0,15}\?\s*)?/i;
+function sacarSaludo(t, yaHablo) {
+  if (!t || !yaHablo) return t;
+  const s = t.replace(SALUDO, '');
+  return s.trim() ? s : t;
+}
+
+// Revisión nocturna del 16/11 (charlas 1, 6, 7 y 11): el mismo mensaje (presupuesto, mensaje en inglés, "Sin problema.
+// Cuando puedas…") salía dos o tres veces. Si la respuesta es igual o casi igual a una de las últimas del bot, no se manda,
+// salvo que el cliente pida que se la reenvíe.
+const palabras = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+function parecido(a, b) {
+  const A = new Set(palabras(a)); const B = new Set(palabras(b));
+  if (!A.size || !B.size) return 0;
+  let comun = 0; for (const w of A) if (B.has(w)) comun++;
+  return comun / (A.size + B.size - comun);
+}
+const PIDE_REENVIO = /reenvi|repet|de nuevo|otra vez|no me lleg|no lo veo|mand[aá](me|lo|melo)/i;
+function esRepetido(resp, historial, textoCliente) {
+  if (!resp || PIDE_REENVIO.test(textoCliente || '')) return false;
+  const anteriores = historial.filter((m) => m.role === 'assistant' && typeof m.content === 'string').slice(-3);
+  return anteriores.some((m) => {
+    const n = palabras(resp).length;
+    return palabras(m.content).join(' ') === palabras(resp).join(' ') || (n >= 8 && parecido(resp, m.content) >= 0.85);
+  });
+}
+
 /** Procesa un mensaje del cliente y devuelve el texto de respuesta (o null si no corresponde responder). */
 async function responder({ telefono, texto, store, fetchImpl = fetch, derivaciones = [], guardado = false }) {
   if (!guardado) store.agregar(telefono, 'user', texto); // guardado: el servidor ya lo guardó al llegar (15/11)
@@ -104,8 +133,11 @@ async function responder({ telefono, texto, store, fetchImpl = fetch, derivacion
       const resto = (sigue.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('').replace(/^\s+/, '');
       contenido.splice(0, contenido.length, { type: 'text', text: (completas ? completas + '\n' : '') + resto });
     }
-    const respuesta = limpiar(contenido.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim());
+    const previos = store.historial(telefono);
+    const yaHablo = previos.some((m) => m.role === 'assistant');
+    const respuesta = limpiar(sacarSaludo(contenido.filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim(), yaHablo));
     if (/^\(?nada\)?\.?$/i.test(respuesta || '')) return null; // ya estaba contestado: no se manda un mensaje repetido
+    if (esRepetido(respuesta, previos, texto)) return null; // igual a lo que ya le mandamos: no se repite
     if (respuesta) { store.agregar(telefono, 'assistant', respuesta); return respuesta; }
     // Nunca dejar al cliente sin respuesta: si la IA terminó sin texto, se le pide que conteste.
     if (!pedidoTexto) {
@@ -145,10 +177,11 @@ async function empujon({ telefono, store, horas, cotizado, fetchImpl = fetch }) 
   if (!messages.length || messages[messages.length - 1].role !== 'assistant') return null;
   messages.push({ role: 'user', content: INSTRUCCION_EMPUJON(horas, cotizado) });
   const res = await llamarClaude(messages, fetchImpl, 3, true, store.meta ? require('./aprendizaje').textoCorrecciones(store) : '');
-  const txt = limpiar((res.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim());
+  const txt = limpiar(sacarSaludo((res.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim(), true));
   if (!txt) return null;
+  if (esRepetido(txt, store.historial(telefono), '')) return null; // charlas 2 y 3 del 16/11: no repetir el mismo seguimiento
   store.agregar(telefono, 'assistant', txt);
   return txt;
 }
 
-module.exports = { responder, limpiar, empujon, SYSTEM };
+module.exports = { responder, limpiar, empujon, SYSTEM, sacarSaludo, esRepetido };
