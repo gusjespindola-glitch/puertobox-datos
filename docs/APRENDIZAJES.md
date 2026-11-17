@@ -220,3 +220,5 @@ Memoria del proyecto. Cada vez que Gustavo decide o corrige algo, se anota acá 
 - 16/11/2026 (Gustavo): las proformas/presupuestos en PDF se guardan en el teléfono con el nombre del cliente, o el del producto si no hay nombre ("Presupuesto 0001-00000012 - Juan Pérez.pdf"). El link termina en ese nombre porque el iPhone guarda con el último tramo del link.
 - 16/11/2026 (Gustavo): quiere sumar el servicio Estados Unidos → Argentina (traer de EE.UU.), no operar en EE.UU. Estudio completo en Docs (link en ESTADO.md).
 - 16/11/2026 (Gustavo, enojado): NUNCA proponer revenderle el servicio a otro courier que le vende al público (Aerobox, Del Mundo, Tiendamia, etc.): son la competencia. Para EE.UU., el esquema es el de China: operador mayorista (como Howard) + UPS/FedEx con tarifa de cuenta.
+
+- **17/11/2026 — Nada de "tenés razón".** Gustavo: basta de darle la razón y recalcular. Respuesta cruda y directa con la solución, aunque sea fea; investigar a fondo antes y hacerlo bien de la primera. Error que lo provocó: le recomendé SkyPostal y MailAmericas sin verificar que sirvieran para importar a Argentina como él necesita.
