@@ -136,12 +136,11 @@ input.falta{border:2px solid #c8102e;background:#fff5f5}.ia textarea{width:100%;
   <aside class="panel side">
     <div class="sec">
       <label for="q">Buscar por producto o posición</label>
-      <input id="q" placeholder="Ej: zapatillas, termo, 8518.30" autocomplete="off">
+      <input id="q" placeholder="Producto, posición o lo que pidió el cliente" autocomplete="off">
     </div>
     <div class="sec ia">
-      <label for="ia_txt">🤖 Buscar posición con IA · se basa en tu Tarifar y tu bibliografía, y te cita la fuente</label>
-      <textarea id="ia_txt" rows="4" placeholder="Pegá acá lo que pidió el cliente (producto, materiales, para qué sirve, link si hay)"></textarea>
-      <button type="button" id="ia_btn">Buscar posición exacta</button>
+      <button type="button" id="ia_btn">🤖 Buscar posición exacta con IA</button>
+      <div class="mut" style="font-size:.8rem;margin-top:4px">Usa lo que escribiste arriba. Se basa en tu Tarifar y tu bibliografía y te cita la fuente.</div>
       <div id="ia_res" aria-live="polite"></div>
     </div>
     <div class="chips" id="frec" aria-label="Búsquedas frecuentes"></div>
@@ -471,14 +470,14 @@ window.addEventListener('hashchange', () => { const h = location.hash.match(/^#p
 // Buscador con IA (17/11, Gustavo): mismo clasificador que el bot, con internet, notas legales y marcha sistemática.
 $('ia_btn').addEventListener('click', async () => {
   // 17/11 21:06 (Gustavo escribió "Paragolpes" arriba y tocó el botón): si la caja de la IA está vacía, usa lo de arriba.
-  let texto = $('ia_txt').value.trim();
-  if (texto.length < 3) { texto = $('q').value.trim(); if (texto.length >= 3) $('ia_txt').value = texto; }
-  if (texto.length < 3) { $('ia_res').innerHTML = '<div class="card baja">Escribí o pegá lo que pidió el cliente.</div>'; return; }
+  // 17/11 21:07 (Gustavo: "esa caja no sirve para nada"): una sola caja, la de arriba.
+  const texto = $('q').value.trim();
+  if (texto.length < 3) { $('ia_res').innerHTML = '<div class="card baja">Escribí arriba el producto o pegá lo que pidió el cliente.</div>'; return; }
   $('ia_btn').disabled = true; $('ia_btn').textContent = 'Buscando… (puede tardar hasta 1 minuto)'; $('ia_res').innerHTML = '';
   let r;
   try { r = await fetch('api/clasificar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ texto }) }).then((x) => x.json()); }
   catch (e) { r = { error: 'No se pudo conectar. Probá de nuevo.' }; }
-  $('ia_btn').disabled = false; $('ia_btn').textContent = 'Buscar posición exacta';
+  $('ia_btn').disabled = false; $('ia_btn').textContent = '🤖 Buscar posición exacta con IA';
   if (r.error) { $('ia_res').innerHTML = `<div class="card baja">${esc(r.error)}</div>`; return; }
   const linea = (t, v) => (v ? `<div><b>${t}:</b> ${esc(v)}</div>` : '');
   const conf = { alta: '✅ Segura', media: '🟡 Revisala', baja: '⚠️ Dudosa: revisala vos' }[r.confianza] || r.confianza;
