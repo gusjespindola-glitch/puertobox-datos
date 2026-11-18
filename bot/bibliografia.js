@@ -33,21 +33,21 @@ function trozosTarifar() {
   const out = [];
   const crit = datoNomenclador('criterios.json');
   if (crit && Array.isArray(crit.criterios)) {
-    for (const c of crit.criterios) out.push({ f: `Tarifar – Criterio de clasificación ARCA ${c.criterio || ''} (${c.norma || ''})`.trim(), p: null, t: `Posición ${c.pos}: ${c.desc}. Criterio ${c.criterio || ''}, expediente ${c.expediente || ''}, ${c.norma || ''}.` });
+    for (const c of crit.criterios) out.push({ f: `Base de datos – Criterio de clasificación ARCA ${c.criterio || ''} (${c.norma || ''})`.trim(), p: null, t: `Posición ${c.pos}: ${c.desc}. Criterio ${c.criterio || ''}, expediente ${c.expediente || ''}, ${c.norma || ''}.` });
   }
   const inter = datoNomenclador('intervenciones.json');
   if (inter) {
-    for (const [org, txt] of Object.entries(inter.organismos || {})) out.push({ f: `Tarifar – Intervenciones: ${org}`, p: null, t: `${org}: ${txt}` });
-    for (const r of inter.reglas || []) out.push({ f: 'Tarifar – Intervenciones por posición', p: null, t: JSON.stringify(r) });
+    for (const [org, txt] of Object.entries(inter.organismos || {})) out.push({ f: `Base de datos – Intervenciones: ${org}`, p: null, t: `${org}: ${txt}` });
+    for (const r of inter.reglas || []) out.push({ f: 'Base de datos – Intervenciones por posición', p: null, t: JSON.stringify(r) });
   }
   const reg = leer(path.join(raizRepo, 'data/regimenes.json'));
-  if (reg) for (const [k, v] of Object.entries(reg)) if (k !== '_meta') out.push({ f: `Tarifar – Régimen ${k.replace(/_/g, ' ')} (${((reg._meta || {}).normativa || []).join(', ')})`, p: null, t: JSON.stringify(v) });
+  if (reg) for (const [k, v] of Object.entries(reg)) if (k !== '_meta') out.push({ f: `Base de datos – Régimen ${k.replace(/_/g, ' ')} (${((reg._meta || {}).normativa || []).join(', ')})`, p: null, t: JSON.stringify(v) });
   const mod = leer(path.join(raizRepo, 'ncm/modificaciones.json'));
-  if (mod) for (const ii of mod.impuestos_internos || []) out.push({ f: `Tarifar – Impuestos internos (${ii.norma})`, p: null, t: JSON.stringify(ii) });
+  if (mod) for (const ii of mod.impuestos_internos || []) out.push({ f: `Base de datos – Impuestos internos (${ii.norma})`, p: null, t: JSON.stringify(ii) });
   const dirNov = path.join(raizRepo, 'docs/novedades');
   try {
     for (const f of fs.readdirSync(dirNov).filter((x) => /^\d{4}-\d\d-\d\d\.md$/.test(x))) {
-      for (const sec of fs.readFileSync(path.join(dirNov, f), 'utf8').split(/\n(?=##+ )/)) out.push({ f: `Tarifar – Novedades normativas ${f.replace('.md', '')}`, p: null, t: sec.slice(0, 1800) });
+      for (const sec of fs.readFileSync(path.join(dirNov, f), 'utf8').split(/\n(?=##+ )/)) out.push({ f: `Base de datos – Novedades normativas ${f.replace('.md', '')}`, p: null, t: sec.slice(0, 1800) });
     }
   } catch { /* sin novedades */ }
   return out.filter((x) => x.t && x.t.length > 30);
@@ -123,7 +123,7 @@ function precargar() { return cargar().then((i) => console.log(`📚 bibliograf�
 async function consultar(consulta) {
   const deTarifar = buscar(indiceTarifar(), consulta, 3, 1 / 3); // del Tarifar, solo lo que coincide en serio
   let deLibros = []; let aviso;
-  try { deLibros = buscar(await cargar(), consulta, 6); } catch (e) { aviso = 'Bibliografía del curso no disponible ahora (' + e.message + '): respondé con el Tarifar, las notas y ARCA.'; }
+  try { deLibros = buscar(await cargar(), consulta, 6); } catch (e) { aviso = 'Bibliografía del curso no disponible ahora (' + e.message + '): respondé con la base de datos, las notas y ARCA.'; }
   const fragmentos = [...deTarifar, ...deLibros];
   if (!fragmentos.length) aviso = aviso || 'No hay nada sobre eso: probá con otras palabras (nombre técnico, partida, nota).';
   return aviso ? { fragmentos, aviso } : { fragmentos };

@@ -123,7 +123,7 @@ button.ghost{background:transparent;color:var(--acc)}
 @media (max-width:600px){#doc{padding:18px 14px}#doc .hd{grid-template-columns:1fr 70px}#doc .hd .cp{grid-column:1/-1;border-top:1.5px solid #1b2333}#doc .lt{border-right:0}#doc .bx{grid-template-columns:1fr}}
 @media print{body>*:not(#pres){display:none!important}#pres{position:static;background:none;padding:0;display:block;overflow:visible}#pres .bar{display:none}html,body{background:#fff!important;height:auto}#doc{-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:none;width:100%;padding:12mm 14mm;border-radius:0;font-size:12px}#doc table,#doc .total,#doc .imp,#doc .bx{break-inside:avoid}#doc h3{break-after:avoid}#doc .hd{grid-template-columns:1fr 84px 1fr}#doc h3{margin:12px 0 5px}#doc td{padding:5px 4px}@page{size:A4;margin:0}}
 @media (prefers-reduced-motion:no-preference){.res{transition:border-color .12s}}
-input.falta{border:2px solid #c8102e;background:#fff5f5}.ia textarea{width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;margin:6px 0;resize:vertical}.ia button{width:100%}.ia .card{margin-top:10px;padding:10px;border-radius:8px;background:var(--acc-soft);line-height:1.45;font-size:.88rem}.ia .card.baja{background:#fff6e5;color:#4a3200}.ia .pos{font:700 1.05rem var(--f-mono,monospace);color:var(--acc);cursor:pointer;text-decoration:underline}.ia .mut{color:var(--mut)}.charla{background:#eef5ff;border-left:4px solid #0b4f8a;padding:12px;border-radius:10px;margin:10px 0;line-height:1.5}.charla.mal{background:#fff1f0;border-color:#c8102e}.charla.bien{background:#eefaf0;border-color:#1a7f37}button.enviar{background:#1a7f37;color:#fff;font-size:17px;padding:14px 18px;width:100%;margin-bottom:8px}
+input.falta{border:2px solid #c8102e;background:#fff5f5}.ia textarea{width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;margin:6px 0;resize:vertical}.ia button{width:100%}.ia .card{margin-top:10px;padding:10px;border-radius:8px;background:var(--acc-soft);line-height:1.45;font-size:.88rem}.ia .card.baja{background:#fff6e5;color:#4a3200}.ia .card.baja .mut{color:#6b5a3a}.ia .card{color:inherit}.ia .pos{font:700 1.05rem var(--f-mono,monospace);color:var(--acc);cursor:pointer;text-decoration:underline}.ia .mut{color:var(--mut)}.charla{background:#eef5ff;border-left:4px solid #0b4f8a;padding:12px;border-radius:10px;margin:10px 0;line-height:1.5}.charla.mal{background:#fff1f0;border-color:#c8102e}.charla.bien{background:#eefaf0;border-color:#1a7f37}button.enviar{background:#1a7f37;color:#fff;font-size:17px;padding:14px 18px;width:100%;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -140,7 +140,7 @@ input.falta{border:2px solid #c8102e;background:#fff5f5}.ia textarea{width:100%;
     </div>
     <div class="sec ia">
       <button type="button" id="ia_btn">🤖 Buscar posición exacta con IA</button>
-      <div class="mut" style="font-size:.8rem;margin-top:4px">Usa lo que escribiste arriba. Se basa en tu Tarifar y tu bibliografía y te cita la fuente.</div>
+      <div class="mut" style="font-size:.8rem;margin-top:4px">Usa lo que escribiste arriba. Se basa en tu base de datos y tu bibliografía y te cita la fuente.</div>
       <div id="ia_res" aria-live="polite"></div>
     </div>
     <div class="chips" id="frec" aria-label="Búsquedas frecuentes"></div>
@@ -480,16 +480,19 @@ $('ia_btn').addEventListener('click', async () => {
   $('ia_btn').disabled = false; $('ia_btn').textContent = '🤖 Buscar posición exacta con IA';
   if (r.error) { $('ia_res').innerHTML = `<div class="card baja">${esc(r.error)}</div>`; return; }
   const linea = (t, v) => (v ? `<div><b>${t}:</b> ${esc(v)}</div>` : '');
+  const pasos = Array.isArray(r.informe) ? r.informe : (r.informe ? [r.informe] : []);
+  const cita = (t) => esc(t).replace(/\[([^\]]+)\]/g, '<span style="background:#eef3ff;color:#123a6b;border-radius:4px;padding:0 4px;font-size:.8em;white-space:nowrap">📖 $1</span>');
   const conf = { alta: '✅ Segura', media: '🟡 Revisala', baja: '⚠️ Dudosa: revisala vos' }[r.confianza] || r.confianza;
   $('ia_res').innerHTML = `<div class="card ${r.confianza === 'alta' ? '' : 'baja'}">
     <div><span class="pos" data-pos="${esc(r.posicion)}">${esc(r.posicion)}</span> · DIE ${esc(r.die)}%${r.internos ? ' · internos ' + esc(+(r.internos * 100).toFixed(2)) + '%' : ''}</div>
     <div class="mut">${esc(r.descripcion_arancel || '')}</div>
     <div>${conf}${r.de_cache ? ' · ya buscado antes' : ''}</div>
-    ${r.informe ? `<div class="informe" style="white-space:pre-wrap;margin:8px 0;line-height:1.45">${esc(r.informe).replace(/\[([^\]]+)\]/g, '<span style="background:#eef3ff;color:#123a6b;border-radius:4px;padding:0 4px;font-size:.85em">📖 $1</span>')}</div>` : ''}
-    ${linea('Qué es', r.nombre_tecnico)}${linea('Por qué', r.por_que)}${linea('Marcha', r.marcha)}${linea('Reglas', r.rgi_aplicadas)}${linea('Notas revisadas', r.notas_revisadas)}
-    ${r.intervenciones_posibles && r.intervenciones_posibles.length ? linea('Intervenciones posibles', r.intervenciones_posibles.join(', ')) : ''}
+    ${r.por_que ? `<div style="margin:6px 0"><b>${esc(r.por_que)}</b></div>` : ''}
+    ${pasos.length ? `<ol style="margin:8px 0;padding-left:20px;line-height:1.45">${pasos.map((t) => `<li style="margin-bottom:6px">${cita(t).replace(/^([^:<]{2,25}):/, '<b>$1:</b>')}</li>`).join('')}</ol>` : ''}
     ${r.alternativas && r.alternativas.length ? '<div><b>Otras posibles:</b> ' + r.alternativas.map((a) => `<span class="pos" data-pos="${esc(a.posicion)}">${esc(a.posicion)}</span> (DIE ${esc(a.die)}%) <span class="mut">${esc(a.por_que || '')}</span>`).join('<br>') + '</div>' : ''}
-    ${r.fuentes && r.fuentes.length ? '<div class="mut">Fuentes: ' + r.fuentes.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(String(u).replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join(' · ') + '</div>' : ''}
+    ${r.intervenciones_posibles && r.intervenciones_posibles.length ? linea('Intervenciones posibles', r.intervenciones_posibles.join(', ')) : ''}
+    <details style="margin-top:6px"><summary class="mut">Más detalle</summary>${pasos.length ? '' : linea('Qué es', r.nombre_tecnico)}${linea('Marcha', r.marcha)}${linea('Reglas', r.rgi_aplicadas)}${linea('Notas revisadas', r.notas_revisadas)}
+    ${r.fuentes && r.fuentes.length ? '<div class="mut">Internet: ' + r.fuentes.map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(String(u).replace(/^https?:\/\//, '').slice(0, 40))}</a>`).join(' · ') + '</div>' : ''}</details>
     <div class="mut">Tocá la posición para abrir su ficha y pasar el DIE al cotizador.</div></div>`;
   $('ia_res').querySelectorAll('.pos').forEach((el) => el.addEventListener('click', () => {
     const f = N.buscar(el.dataset.pos, 1)[0]; if (f) { $('q').value = f.c; buscar(); abrir(f.c); }
