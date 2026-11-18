@@ -545,7 +545,7 @@ const fs = require('fs');
 const paginas = require('../src/paginas');
 const WEB = path.join(__dirname, '..', 'web', 'nomenclador');
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8' };
-function cotizarAMano(q) {
+function inputCotizador(q) {
   const n = (k) => { const v = parseFloat(String(q.get(k) || '').replace(',', '.')); return Number.isFinite(v) && v > 0 ? v : undefined; };
   const input = {
     kg: n('kg'), valor_factura_usd: n('valor'), die: parseFloat(q.get('die')) || 0, internos: parseFloat(q.get('internos')) || 0,
@@ -557,6 +557,11 @@ function cotizarAMano(q) {
   const bultos = String(q.get('bultos') || '').split(';').map((t) => t.split(/[x×*]/i).map((v) => parseFloat(String(v).replace(',', '.'))))
     .filter((v) => v.length === 4 && v.every((x) => x > 0)).map(([cantidad, largo_cm, ancho_cm, alto_cm]) => ({ cantidad, largo_cm, ancho_cm, alto_cm }));
   if (bultos.length > 1) input.bultos = bultos;
+  return input;
+}
+
+function cotizarAMano(q) {
+  const input = inputCotizador(q);
   const { crearStore } = require('./store');
   const r = require('./tools').ejecutar('cotizar', input, { telefono: 'cotizador', store: crearStore(null), derivaciones: [], manual: true });
   const div = require('../data/precios_venta.json').flete_directo.divisor_volumetrico;
@@ -602,6 +607,20 @@ function servirNomenclador(req, res, url) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
     return res.end(JSON.stringify(cotizarAMano(url.searchParams)));
   }
+  // Presupuesto para un cliente de /charlas (17/11): datos del cliente y envío del PDF a su chat. Link firmado por cliente.
+  if (rel === 'api/cliente' || (rel === 'api/presupuesto' && req.method === 'POST')) {
+    const tel = soloDigitos(url.searchParams.get('tel') || '');
+    if (!tel || !firmaOk('presu:' + tel, url.searchParams.get('pt'))) { res.writeHead(401, { 'content-type': 'application/json; charset=utf-8' }); return res.end('{"error":"Link vencido: volvé a entrar desde la charla."}'); }
+    if (rel === 'api/cliente') { res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); return res.end(JSON.stringify(clienteParaCotizador(tel))); }
+    let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 20000) req.destroy(); });
+    req.on('end', async () => {
+      let body = {}; try { body = JSON.parse(raw || '{}'); } catch { body = {}; }
+      let r; try { r = await presupuestoDesdeCotizador(tel, body); } catch (e) { r = { error: String(e.message).slice(0, 160) }; }
+      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+      res.end(JSON.stringify(r));
+    });
+    return;
+  }
   // Buscador con IA (17/11, Gustavo): pega lo que pidió el cliente y devuelve la posición exacta (mismo clasificador que el bot).
   if (rel === 'api/clasificar' && req.method === 'POST') {
     let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 20000) req.destroy(); });
@@ -629,6 +648,79 @@ function servirNomenclador(req, res, url) {
   if (dada === clave) headers['set-cookie'] = `pbk=${encodeURIComponent(clave)}; Path=/nomenclador; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax`;
   res.writeHead(200, headers);
   fs.createReadStream(archivo).pipe(res);
+}
+
+/**
+ * Presupuesto formal en PDF con la última cotización del cliente: lo arma y, si no es solo para ver, lo manda al chat.
+ * Lo usan /charlas (15/11) y el cotizador del nomenclador abierto desde una charla (17/11).
+ */
+async function presupuestoFormal(tel, cli, soloVer) {
+  const previo = store.presupuestoDe(tel);
+  const enCurso = (store.lead(tel) || {}).cotizacion;
+  if (!enCurso || !enCurso.r) return { error: 'ese cliente todavía no tiene una cotización completa' };
+  // Si el último presupuesto todavía no se mandó, se reusa su número con la cotización nueva (17/11: "ver" y "mandar" daban dos números).
+  if (previo && !previo.enviado && previo.cotizacionEn !== enCurso.en) store.actualizarPresupuesto(previo.token, { cotizacionEn: enCurso.en });
+  const p = previo && (previo.cotizacionEn === enCurso.en || !previo.enviado) ? store.presupuestoDe(tel) : store.crearPresupuesto(tel);
+  if (!p) return { error: 'ese cliente todavía no tiene una cotización completa' };
+  const limpio = (x) => String(x || '').trim();
+  store.actualizarPresupuesto(p.token, { cliente: { nombre: limpio(cli.nombre), doc: limpio(cli.doc), dom: limpio(cli.dom), iva: limpio(cli.iva) } });
+  const PP = require('../src/presupuesto_pdf');
+  const datosP = PP.armarDatos({ nro: p.nro, lead: store.lead(tel), cliente: (store.presupuesto(p.token) || p).cliente, ahora: new Date(p.creado) });
+  const nombre = datosP ? PP.nombreArchivo(datosP) : `Presupuesto ${p.nro}.pdf`;
+  const ruta = `/presupuesto/${p.token}/${encodeURIComponent(nombre)}`;
+  if (soloVer) return { ok: true, ruta, nro: p.nro };
+  const c = store.chats().find((x) => x.telefono === tel);
+  if (!c || Date.now() - (c.ultimoClienteEn || 0) > 24 * 3600e3) return { error: 'pasaron más de 24 h desde su último mensaje' };
+  const texto = `Te paso el presupuesto formal N° ${p.nro}. Cualquier duda, te la respondo por acá.`;
+  try { await enviarDocumento(tel, `${BASE_URL()}${ruta}`, nombre, texto); } catch (e) { return { error: String(e.message).slice(0, 120) }; }
+  store.agregar(tel, 'assistant', `[Gustavo] ${texto} (PDF)`);
+  store.pausar(tel, 'gustavo_respondio');
+  const ahora = Date.now();
+  if (store.marcar) store.marcar(tel, { gustavoRespondioEn: ahora, recordatorios: 0, presupuestoEnviadoEn: ahora, ...(c.derivadoEn ? {} : { derivadoEn: ahora - 1, derivadoMotivo: 'listo_para_cerrar', derivadoResumen: 'Le mandaste el presupuesto formal.' }) });
+  store.actualizarPresupuesto(p.token, { enviado: new Date(ahora).toISOString() });
+  require('./certeza').registrar(store, tel, p.token);
+  return { ok: true, ruta, nro: p.nro };
+}
+
+/**
+ * 17/11 21:21 (Gustavo: "desde el mismo chat poder entrar a mi base de datos, hacer el presupuesto, apretar un botón y que se suba"):
+ * el cotizador del nomenclador, abierto desde una charla, carga los datos del cliente y manda el PDF a ese chat.
+ */
+function clienteParaCotizador(tel) {
+  const l = store.lead(tel) || {};
+  const c = store.chats().find((x) => x.telefono === tel) || {};
+  const i = (l.cotizacion && l.cotizacion.input) || {};
+  const fija = l.posicion_fija || {};
+  const p = l.presupuesto && store.presupuesto ? store.presupuesto(l.presupuesto) : null;
+  const cli = (p && p.cliente) || {};
+  return {
+    tel, nombre: cli.nombre || l.nombre || c.nombre || '', doc: cli.doc || '', dom: cli.dom || '', iva: cli.iva || '',
+    producto: l.producto || '', posicion: fija.posicion || l.posicion || '',
+    valor: i.valor_factura_usd || l.valor_usd || '', kg: i.kg || l.kg || '', unidades: i.unidades || '',
+    cajas: i.cantidad_cajas || '', largo: i.largo_cm || '', ancho: i.ancho_cm || '', alto: i.alto_cm || '',
+    bultos: Array.isArray(i.bultos) ? i.bultos.map((b) => [b.cantidad, b.largo_cm, b.ancho_cm, b.alto_cm]) : [],
+    regimen: i.regimen || '', litio: !!i.con_bateria_litio, cuit_pb: !!i.con_cuit_puertobox,
+    abierta: !!c.ultimoClienteEn && Date.now() - c.ultimoClienteEn <= 24 * 3600e3,
+    volver: `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}`,
+  };
+}
+
+async function presupuestoDesdeCotizador(tel, body) {
+  if (!store.lead(tel) && !store.chats().some((x) => x.telefono === tel)) return { error: 'No encontré ese cliente.' };
+  const q = new URLSearchParams(body.params || '');
+  const input = inputCotizador(q);
+  if (!(input.kg > 0) || !(input.valor_factura_usd > 0)) return { error: 'Cargá el valor al proveedor y el peso.' };
+  // La posición de Gustavo manda: se valida en ARCA y queda fija en la charla (el bot la aprende para ese producto).
+  if (!String(body.posicion || '').trim()) return { error: 'Elegí la posición arancelaria arriba antes de mandar el presupuesto.' };
+  const corr = require('./certeza').aplicar(store, tel, body.posicion, null);
+  if (corr.error) return { error: corr.error };
+  const fija = (store.lead(tel) || {}).posicion_fija;
+  if (fija && !fija.confirmada) store.guardarLead(tel, { posicion_fija: { ...fija, confirmada: true, por_que: 'Confirmada por nuestro despachante.' } });
+  if (String(body.producto || '').trim()) store.guardarLead(tel, { producto: String(body.producto).trim().slice(0, 200) });
+  const r = require('./tools').ejecutar('cotizar', input, { telefono: tel, store, derivaciones: [], manual: true });
+  if (r.error) return { error: String(r.error).replace(/\s*No cotices[^.]*\.?/gi, '').replace(/pregunt[aá]selo[s]? al cliente[^.]*\.?/gi, '').trim() || 'Faltan datos para calcular.' };
+  const out = await presupuestoFormal(tel, body.cliente || {}, body.modo === 'ver');
+  return out.error ? out : { ...out, total: r.total_puertobox_usd, volver: `/charlas?t=${firma('charlas')}&abierto=${tel}&ok=1#c-${tel}` };
 }
 
 let pruebaEnCurso = false;
@@ -888,25 +980,9 @@ function servidor() {
         // Posición corregida por Gustavo: se valida en ARCA, se recalcula y el bot la aprende (15/11).
         const corr = require('./certeza').aplicar(store, tel, f.get('pos'), require('./tools').ejecutar);
         if (corr.error) return volver('&error=' + encodeURIComponent(corr.error));
-        const p = store.presupuestoDe(tel) && store.lead(tel).presupuesto && store.presupuestoDe(tel).cotizacionEn === (store.lead(tel).cotizacion || {}).en ? store.presupuestoDe(tel) : store.crearPresupuesto(tel);
-        if (!p) return volver('&error=' + encodeURIComponent('ese cliente todavía no tiene una cotización completa'));
-        store.actualizarPresupuesto(p.token, { cliente: { nombre: (f.get('nombre') || '').trim(), doc: (f.get('doc') || '').trim(), dom: (f.get('dom') || '').trim(), iva: (f.get('iva') || '').trim() } });
-        const PP = require('../src/presupuesto_pdf');
-        const datosP = PP.armarDatos({ nro: p.nro, lead: store.lead(tel), cliente: (store.presupuesto(p.token) || p).cliente, ahora: new Date(p.creado) });
-        const nombre = datosP ? PP.nombreArchivo(datosP) : `Presupuesto ${p.nro}.pdf`;
-        const ruta = `/presupuesto/${p.token}/${encodeURIComponent(nombre)}`;
-        const link = `${BASE_URL()}${ruta}`;
-        if (url.pathname === '/presupuesto-ver') { res.writeHead(303, { location: ruta }); return res.end(); }
-        const c = store.chats().find((x) => x.telefono === tel);
-        if (!c || Date.now() - (c.ultimoClienteEn || 0) > 24 * 3600e3) return volver('&error=' + encodeURIComponent('pasaron más de 24 h desde su último mensaje'));
-        const texto = `Te paso el presupuesto formal N° ${p.nro}. Cualquier duda, te la respondo por acá.`;
-        try { await enviarDocumento(tel, link, nombre, texto); } catch (e) { return volver('&error=' + encodeURIComponent(String(e.message).slice(0, 120))); }
-        store.agregar(tel, 'assistant', `[Gustavo] ${texto} (PDF)`);
-        store.pausar(tel, 'gustavo_respondio');
-        const ahora = Date.now();
-        if (store.marcar) store.marcar(tel, { gustavoRespondioEn: ahora, recordatorios: 0, presupuestoEnviadoEn: ahora, ...(c.derivadoEn ? {} : { derivadoEn: ahora - 1, derivadoMotivo: 'listo_para_cerrar', derivadoResumen: 'Le mandaste el presupuesto formal.' }) });
-        store.actualizarPresupuesto(p.token, { enviado: new Date(ahora).toISOString() });
-        require('./certeza').registrar(store, tel, p.token);
+        const r = await presupuestoFormal(tel, { nombre: f.get('nombre'), doc: f.get('doc'), dom: f.get('dom'), iva: f.get('iva') }, url.pathname === '/presupuesto-ver');
+        if (r.error) return volver('&error=' + encodeURIComponent(r.error));
+        if (url.pathname === '/presupuesto-ver') { res.writeHead(303, { location: r.ruta }); return res.end(); }
         return volver('&ok=1');
       });
     }
@@ -967,7 +1043,7 @@ function servidor() {
       return correrEscenarios().then((txt) => { res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }); res.end(txt); })
         .catch((e) => { res.writeHead(500); res.end('Error: ' + e.message); });
     }
-    if ((req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) || (req.method === 'POST' && url.pathname === '/nomenclador/api/clasificar')) return servirNomenclador(req, res, url);
+    if ((req.method === 'GET' && (url.pathname === '/nomenclador' || url.pathname.startsWith('/nomenclador/'))) || (req.method === 'POST' && (url.pathname === '/nomenclador/api/clasificar' || url.pathname === '/nomenclador/api/presupuesto'))) return servirNomenclador(req, res, url);
     if (req.method === 'GET' || req.method === 'HEAD') {
       const pag = paginas.servir(url.pathname, url.searchParams);
       if (pag) { res.writeHead(200, { 'content-type': pag.tipo, 'cache-control': 'public, max-age=60, s-maxage=60' }); return res.end(req.method === 'HEAD' ? undefined : pag.cuerpo); }

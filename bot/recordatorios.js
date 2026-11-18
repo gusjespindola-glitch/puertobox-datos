@@ -222,7 +222,7 @@ function paginaPendientes(store, owner, linkAtendido, ahora = Date.now(), linkBo
   const bloque = (titulo, lista, conBoton) => lista.length ? `<h2>${titulo} (${lista.length})</h2><ul>${lista.map((p) => fila(p, conBoton)).join('')}</ul>` : '';
   const cuerpo = bloque('Esperan tu respuesta', esperando, true) + bloque('Dudas para confirmar', dudas, true) + bloque('Presupuesto enviado, no volvieron a escribir', seguimiento, true);
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>Pendientes PuertoBox</title>
-<style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f5f5f5;color:#111}h1{font-size:20px}h2{font-size:16px;margin-top:24px}ul{list-style:none;padding:0}li{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px}p{margin:6px 0 0;font-size:14px;color:#444}small{color:#666}button{width:100%;padding:12px;font-size:16px;border:0;border-radius:10px;background:#1a7f37;color:#fff}button.bot{background:#1a5fb4}.wa{display:inline-block;margin-top:8px;font-size:14px}</style></head>
+<style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f5f5f5;color:#111}h1{font-size:20px}h2{font-size:16px;margin-top:24px}ul{list-style:none;padding:0}li{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px}p{margin:6px 0 0;font-size:14px;color:#444}small{color:#666}button{width:100%;padding:12px;font-size:16px;border:0;border-radius:10px;background:#1a7f37;color:#fff}button.bot{background:#1a5fb4}.wa{display:inline-block;margin-top:8px;font-size:14px}a.cotizar{display:block;text-align:center;margin:10px 0;padding:14px;background:#1f4e79;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;font-size:16px}</style></head>
 <body><h1>Pendientes PuertoBox</h1>${cuerpo || '<p>No tenés clientes pendientes. Todo al día.</p>'}</body></html>`;
 }
 
@@ -332,6 +332,8 @@ ${pos}
     const pasoPresu = c.presupuestoPasadoEn || c.presupuestoEnviadoEn || null;
     const botCotizo = !pasoPresu && l.estado === 'cotizado';
     const marcaPresu = pasoPresu ? `<span class="badge pasado">✅ Le pasaste presupuesto · ${esc(hace(ahora - pasoPresu))}</span><br>` : botCotizo ? '<span class="badge bot">📄 El bot le pasó presupuesto</span><br>' : '';
+    // 17/11 21:21 (Gustavo: "desde el mismo chat entrar a mi base de datos, hacer el presupuesto, apretar un botón y que se suba").
+    const botonCotizar = linkPresu ? `<a class="cotizar" href="/nomenclador/${esc(linkPresu(c.telefono).replace('?tel=', '?para=').replace('&t=', '&pt='))}#cot">🧮 Hacer presupuesto y mandarlo a este chat</a>` : '';
     const botonPresu = linkMarcarPresu ? `<form class="marcar" method="post" action="${esc(linkMarcarPresu(c.telefono, pasoPresu ? 0 : 1))}"><button class="${pasoPresu ? 'no' : 'si'}">${pasoPresu ? 'Sacar la marca de presupuesto' : '✅ Ya le pasé presupuesto'}</button></form>` : '';
     // 16/11 (Gustavo: "si intervengo, quiero poner una opción para que la sigas vos"): con el bot callado en el chat
     // (porque contestó Gustavo o porque el bot se lo pasó), un botón lo devuelve al bot.
@@ -347,7 +349,7 @@ ${pos}
     const etiquetaArch = arch ? `<span class="badge arch">🗄️ ${esc(MOTIVOS_ARCHIVO[c.archivoMotivo] || 'Archivada')} · ${esc(hace(ahora - c.archivadoEn))}</span><br>` : '';
     const marca = etiquetaArch + volvio + (c.nuevos ? `<span class="badge">🔴 ${c.nuevos === 1 ? '1 mensaje nuevo' : `${c.nuevos} mensajes nuevos`}</span><br>` : '') + marcaPresu + estadoBot;
     return `<li id="c-${esc(c.telefono)}"${c.nuevos ? ' class="nuevo"' : arch ? ' class="archivada"' : pasoPresu ? ' class="pasado"' : ''}${linkVisto ? ` data-visto="${esc(linkVisto(c.telefono))}"` : ''}><details${abierto === c.telefono ? ' open' : ''}><summary>${marca}<b>+${esc(c.telefono)}${l.nombre ? ' · ' + esc(l.nombre) : ''}</b>${l.producto ? '<br>' + esc(l.producto) : ''}<br><small>${esc(cabecera)}</small>${ultimoCliente ? `<p>“${esc(resumenVista(ultimoCliente.txt))}”</p>` : ''}<span class="ver">Ver charla ▾</span></summary>
-<div class="chat">${msgs.map((m) => `<div class="m ${m.quien}${m.nuevo ? ' nuevo' : ''}">${m.quien === 'vos' ? '<b>Vos:</b> ' : ''}${conArchivos(esc(m.txt)).replace(/\n/g, '<br>')}${m.noEntregado ? '<br><b style="color:#c8102e">⚠️ No se entregó: reenvialo.</b>' : ''}</div>`).join('')}</div>${caja}${botonBot}${botonPresu}${corregir}${presu(c, l)}${botonArchivar}</details></li>`;
+<div class="chat">${msgs.map((m) => `<div class="m ${m.quien}${m.nuevo ? ' nuevo' : ''}">${m.quien === 'vos' ? '<b>Vos:</b> ' : ''}${conArchivos(esc(m.txt)).replace(/\n/g, '<br>')}${m.noEntregado ? '<br><b style="color:#c8102e">⚠️ No se entregó: reenvialo.</b>' : ''}</div>`).join('')}</div>${caja}${botonCotizar}${botonBot}${botonPresu}${corregir}${presu(c, l)}${botonArchivar}</details></li>`;
   };
   const delAnuncio = chats.filter((c) => c.origen === 'anuncio').length;
   const activas = chats.filter((c) => !archivada(c)); const archivadas = chats.filter((c) => archivada(c));
