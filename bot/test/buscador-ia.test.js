@@ -59,7 +59,8 @@ test('buscador con IA estilo NotebookLM: consulta la bibliografía, cita la fuen
     assert.ok(resultado.fragmentos.some((f) => f.fuente === 'Vademécum – Módulo 4, pág. 802' && /Parachoques/.test(f.texto)));
     assert.strictEqual(r.posicion, '8708.10.00.000C');
     assert.strictEqual(r.die, 18); // el 5,50 de la tabla del libro no es el DIE: manda ARCA
-    assert.match(r.informe, /\[Vademécum – Módulo 4, pág\. 802\]/);
+    assert.ok(Array.isArray(r.informe));
+    assert.match(r.informe.join(' '), /\[Vademécum – Módulo 4, pág\. 802\]/);
   } finally { srv.close(); delete servirNomenclador.fetchImpl; B._usar(null); }
 });
 
@@ -77,9 +78,15 @@ test('consultar_bibliografia también busca en el Tarifar (criterios de ARCA, in
   B._usar([{ f: 'Vademécum – Módulo 4', p: 1, t: 'texto sin relación' }]);
   try {
     const r = await B.consultar('libro con rompecabezas de cartón');
-    assert.match(r.fragmentos[0].fuente, /^Tarifar – Criterio de clasificación ARCA/);
+    assert.match(r.fragmentos[0].fuente, /^Base de datos – Criterio de clasificación ARCA/);
     assert.match(r.fragmentos[0].texto, /4901\.99\.00/);
     const u = await B.consultar('ropa usada');
     assert.ok(u.fragmentos.some((f) => /Res\. 461\/2026/.test(f.fuente + f.texto)));
   } finally { B._usar(null); }
+});
+
+test('informe: si la IA lo manda corrido "1) … 2) …", sale como lista de pasos', () => {
+  const { pasosInforme } = require('../clasificador');
+  assert.deepStrictEqual(pasosInforme('1) Qué es: un paragolpes. 2) Partida: 87.08 [V]'), ['Qué es: un paragolpes.', 'Partida: 87.08 [V]']);
+  assert.deepStrictEqual(pasosInforme(['a', ' b ']), ['a', 'b']);
 });
