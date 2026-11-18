@@ -607,15 +607,18 @@ function servirNomenclador(req, res, url) {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
     return res.end(JSON.stringify(cotizarAMano(url.searchParams)));
   }
-  // Presupuesto para un cliente de /charlas (17/11): datos del cliente y envío del PDF a su chat. Link firmado por cliente.
-  if (rel === 'api/cliente' || (rel === 'api/presupuesto' && req.method === 'POST')) {
+  // Charla marcada para presupuestar en /charlas (17/11 21:32): el cotizador muestra a quién va y manda el PDF a ese chat.
+  if (rel === 'api/marcado') { res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); return res.end(JSON.stringify(marcado() || {})); }
+  if (rel === 'api/presupuesto' && req.method === 'POST') {
     const tel = soloDigitos(url.searchParams.get('tel') || '');
-    if (!tel || !firmaOk('presu:' + tel, url.searchParams.get('pt'))) { res.writeHead(401, { 'content-type': 'application/json; charset=utf-8' }); return res.end('{"error":"Link vencido: volvé a entrar desde la charla."}'); }
-    if (rel === 'api/cliente') { res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); return res.end(JSON.stringify(clienteParaCotizador(tel))); }
     let raw = ''; req.on('data', (c) => { raw += c; if (raw.length > 20000) req.destroy(); });
     req.on('end', async () => {
       let body = {}; try { body = JSON.parse(raw || '{}'); } catch { body = {}; }
-      let r; try { r = await presupuestoDesdeCotizador(tel, body); } catch (e) { r = { error: String(e.message).slice(0, 160) }; }
+      const m = marcado();
+      let r;
+      if (!m) r = { error: 'No hay ninguna charla marcada. Marcala en /charlas con 🎯.' };
+      else if (m.tel !== tel) r = { error: 'Cambiaste la charla marcada: recargá esta página para ver a quién va.' };
+      else { try { r = await presupuestoDesdeCotizador(tel, body); } catch (e) { r = { error: String(e.message).slice(0, 160) }; } }
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
       res.end(JSON.stringify(r));
     });
@@ -683,26 +686,15 @@ async function presupuestoFormal(tel, cli, soloVer) {
 }
 
 /**
- * 17/11 21:21 (Gustavo: "desde el mismo chat poder entrar a mi base de datos, hacer el presupuesto, apretar un botón y que se suba"):
- * el cotizador del nomenclador, abierto desde una charla, carga los datos del cliente y manda el PDF a ese chat.
+ * 17/11 21:32 (Gustavo: "tengo que poder ver la charla… marcar la que quiero presupuestar, entrar por otro lado, y cuando pongo
+ * enviar presupuesto, que se envíe al que tiene la marca"). Una sola charla marcada a la vez; el cotizador abre en blanco.
  */
-function clienteParaCotizador(tel) {
-  const l = store.lead(tel) || {};
-  const c = store.chats().find((x) => x.telefono === tel) || {};
-  const i = (l.cotizacion && l.cotizacion.input) || {};
-  const fija = l.posicion_fija || {};
-  const p = l.presupuesto && store.presupuesto ? store.presupuesto(l.presupuesto) : null;
-  const cli = (p && p.cliente) || {};
-  return {
-    tel, nombre: cli.nombre || l.nombre || c.nombre || '', doc: cli.doc || '', dom: cli.dom || '', iva: cli.iva || '',
-    producto: l.producto || '', posicion: fija.posicion || l.posicion || '',
-    valor: i.valor_factura_usd || l.valor_usd || '', kg: i.kg || l.kg || '', unidades: i.unidades || '',
-    cajas: i.cantidad_cajas || '', largo: i.largo_cm || '', ancho: i.ancho_cm || '', alto: i.alto_cm || '',
-    bultos: Array.isArray(i.bultos) ? i.bultos.map((b) => [b.cantidad, b.largo_cm, b.ancho_cm, b.alto_cm]) : [],
-    regimen: i.regimen || '', litio: !!i.con_bateria_litio, cuit_pb: !!i.con_cuit_puertobox,
-    abierta: !!c.ultimoClienteEn && Date.now() - c.ultimoClienteEn <= 24 * 3600e3,
-    volver: `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}`,
-  };
+function marcado() {
+  const m = store.meta('aPresupuestar');
+  if (!m || !m.tel) return null;
+  const l = store.lead(m.tel) || {};
+  const c = store.chats().find((x) => x.telefono === m.tel) || {};
+  return { tel: m.tel, nombre: l.nombre || c.nombre || '', producto: l.producto || '', abierta: !!c.ultimoClienteEn && Date.now() - c.ultimoClienteEn <= 24 * 3600e3, volver: `/charlas?t=${firma('charlas')}&abierto=${m.tel}#c-${m.tel}` };
 }
 
 async function presupuestoDesdeCotizador(tel, body) {
@@ -720,6 +712,7 @@ async function presupuestoDesdeCotizador(tel, body) {
   const r = require('./tools').ejecutar('cotizar', input, { telefono: tel, store, derivaciones: [], manual: true });
   if (r.error) return { error: String(r.error).replace(/\s*No cotices[^.]*\.?/gi, '').replace(/pregunt[aá]selo[s]? al cliente[^.]*\.?/gi, '').trim() || 'Faltan datos para calcular.' };
   const out = await presupuestoFormal(tel, body.cliente || {}, body.modo === 'ver');
+  if (!out.error && body.modo !== 'ver') store.meta('aPresupuestar', null); // ya se mandó: se saca la marca
   return out.error ? out : { ...out, total: r.total_puertobox_usd, volver: `/charlas?t=${firma('charlas')}&abierto=${tel}&ok=1#c-${tel}` };
 }
 
@@ -862,7 +855,7 @@ function servidor() {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'set-cookie': cookiePanel() });
       const abierto = soloDigitos(url.searchParams.get('abierto') || '') || null;
       const aviso = url.searchParams.get('siguebot') ? (url.searchParams.get('siguebot') === '2' ? 'Listo: el bot sigue con este cliente y ya le está contestando su último mensaje.' : 'Listo: el bot sigue con este cliente. Contesta apenas el cliente escriba.') : url.searchParams.get('corregido') === '1' ? 'Corrección guardada. El bot la aplica desde su próximo mensaje.' : url.searchParams.get('ok') === '1' ? 'Mensaje enviado. El bot quedó callado en ese chat.' : url.searchParams.get('error') ? `No se pudo enviar: ${url.searchParams.get('error')}` : '';
-      const htmlCharlas = require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`, (tel) => `/visto?tel=${tel}&t=${firma('visto:' + tel)}`, (tel, v) => `/marcar-presu?tel=${tel}&v=${v}&t=${firma('marcarpresu:' + tel)}`, (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&a=charlas`, (tel, v) => `/archivar?tel=${tel}&v=${v}&t=${firma('archivar:' + tel)}`);
+      const htmlCharlas = require('./recordatorios').paginaCharlas(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), Date.now(), 3, (tel) => `/responder?tel=${tel}&t=${firma('responder:' + tel)}`, abierto, aviso, (tel) => `?tel=${tel}&t=${firma('presu:' + tel)}`, (tel) => `/corregir?tel=${tel}&t=${firma('corregir:' + tel)}`, (tel) => `/visto?tel=${tel}&t=${firma('visto:' + tel)}`, (tel, v) => `/marcar-presu?tel=${tel}&v=${v}&t=${firma('marcarpresu:' + tel)}`, (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&a=charlas`, (tel, v) => `/archivar?tel=${tel}&v=${v}&t=${firma('archivar:' + tel)}`, (tel, v) => `/marcar-cotizar?tel=${tel}&v=${v}&t=${firma('cotizar:' + tel)}`);
       if (abierto && store.marcarVisto) store.marcarVisto(abierto); // la abrió desde un aviso: ya la ve
       if (abierto) borrarAvisosNtfy(abierto);
       return res.end(htmlCharlas);
@@ -901,6 +894,14 @@ function servidor() {
       res.writeHead(303, { location: `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}` }); return res.end();
     }
     // Archivar una charla (17/11, Gustavo): desistió, no le interesa o no sirve. v=0 la saca de archivadas.
+    if (req.method === 'POST' && url.pathname === '/marcar-cotizar') {
+      const tel = soloDigitos(url.searchParams.get('tel') || '');
+      if (!tel || !firmaOk('cotizar:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
+      const m = store.meta('aPresupuestar');
+      if (url.searchParams.get('v') === '1') store.meta('aPresupuestar', { tel, en: Date.now() });
+      else if (m && m.tel === tel) store.meta('aPresupuestar', null);
+      res.writeHead(303, { location: `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}` }); return res.end();
+    }
     if (req.method === 'POST' && url.pathname === '/archivar') {
       const tel = soloDigitos(url.searchParams.get('tel') || '');
       if (!tel || !firmaOk('archivar:' + tel, url.searchParams.get('t'))) { res.writeHead(401, { 'content-type': 'text/plain; charset=utf-8' }); return res.end('Link vencido o incorrecto.'); }
