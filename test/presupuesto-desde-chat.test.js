@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-test('presupuesto desde la charla: el botón abre el cotizador con los datos del cliente y el PDF llega a su chat', async () => {
+test('presupuesto desde la charla: marca la charla, cotiza en otra pestaña (en blanco) y el PDF llega a la marcada', async () => {
   const os = require('os'); const path = require('path'); const fs = require('fs');
   const archivo = path.join(os.tmpdir(), `pb-pdc-${process.pid}.json`);
   const TEL = '5492364652566';
@@ -21,17 +21,21 @@ test('presupuesto desde la charla: el botón abre el cotizador con los datos del
   globalThis.fetch = async (url, opt) => { if (String(url).includes('ycloud')) { enviados.push(JSON.parse(opt.body)); return { ok: true, text: async () => '' }; } return fetchReal(url, opt); };
   try {
     const cookie = 'pbk=clave-secreta';
-    // 1) En /charlas, cada cliente tiene el botón que abre el cotizador para ese chat.
-    const charlas = await (await fetchReal(`${base}/charlas?t=${srv.firma('charlas')}`)).text();
-    const m = charlas.match(/href="(\/nomenclador\/\?para=5492364652566&amp;pt=[^"#]+)#cot"/);
-    assert.ok(m, 'botón "Hacer presupuesto" en la charla');
-    const pt = decodeURIComponent(m[1].split('pt=')[1]);
-    // 2) El cotizador trae lo que dijo el cliente.
-    const c = await (await fetchReal(`${base}/nomenclador/api/cliente?tel=${TEL}&pt=${encodeURIComponent(pt)}`, { headers: { cookie } })).json();
-    assert.strictEqual(c.nombre, 'Juan Pérez'); assert.strictEqual(c.kg, 40); assert.strictEqual(c.valor, 600); assert.strictEqual(c.abierta, true);
-    assert.strictEqual((await fetchReal(`${base}/nomenclador/api/cliente?tel=${TEL}&pt=mal`, { headers: { cookie } })).status, 401);
-    // 3) Sin posición no manda.
-    const pide = async (cuerpo) => (await fetchReal(`${base}/nomenclador/api/presupuesto?tel=${TEL}&pt=${encodeURIComponent(pt)}`, { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) })).json();
+    const pide = async (cuerpo, tel = TEL) => (await fetchReal(`${base}/nomenclador/api/presupuesto?tel=${tel}`, { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) })).json();
+    // 1) Sin marca, el cotizador no manda a nadie.
+    assert.deepStrictEqual(await (await fetchReal(`${base}/nomenclador/api/marcado`, { headers: { cookie } })).json(), {});
+    assert.match((await pide({ modo: 'enviar' })).error, /ninguna charla marcada/);
+    // 2) En /charlas, Gustavo marca la charla (🎯) y sigue viéndola; el cotizador (otra pestaña) muestra a quién va.
+    let charlas = await (await fetchReal(`${base}/charlas?t=${srv.firma('charlas')}`)).text();
+    assert.match(charlas, /🎯 Marcar para presupuestar/);
+    assert.ok(!/nomenclador\/\?para=/.test(charlas), 'ya no abre el cotizador cargado con lo del chat');
+    assert.strictEqual((await fetchReal(`${base}/marcar-cotizar?tel=${TEL}&v=1&t=mal`, { method: 'POST', redirect: 'manual' })).status, 401);
+    assert.strictEqual((await fetchReal(`${base}/marcar-cotizar?tel=${TEL}&v=1&t=${srv.firma('cotizar:' + TEL)}`, { method: 'POST', redirect: 'manual' })).status, 303);
+    charlas = await (await fetchReal(`${base}/charlas?t=${srv.firma('charlas')}`)).text();
+    assert.match(charlas, /🎯 Marcada para presupuestar: <a href="#c-5492364652566"><b>Juan Pérez/);
+    const c = await (await fetchReal(`${base}/nomenclador/api/marcado`, { headers: { cookie } })).json();
+    assert.strictEqual(c.tel, TEL); assert.strictEqual(c.nombre, 'Juan Pérez'); assert.strictEqual(c.abierta, true);
+    assert.match((await pide({ modo: 'enviar' }, '5491100000000')).error, /Cambiaste la charla marcada/);
     const params = new URLSearchParams({ valor: 600, kg: 40, cajas: 2, largo: 120, ancho: 30, alto: 30, unidades: 10, regimen: 'comercial', die: 18 }).toString();
     assert.match((await pide({ modo: 'enviar', params })).error, /posición/);
     // 4) Ver el PDF antes (no manda nada).
@@ -56,5 +60,6 @@ test('presupuesto desde la charla: el botón abre el cotizador con los datos del
     assert.strictEqual(db.leads[TEL].cotizacion.input.kg, 40);
     assert.match(db.chats[TEL].mensajes.slice(-1)[0].content, /\[Gustavo\] Te paso el presupuesto formal/);
     assert.ok(db.chats[TEL].presupuestoEnviadoEn);
+    assert.strictEqual(db.meta.aPresupuestar, null, 'después de mandar se saca la marca');
   } finally { globalThis.fetch = fetchReal; s.close(); }
 });

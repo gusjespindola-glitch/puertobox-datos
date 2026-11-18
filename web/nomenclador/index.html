@@ -504,42 +504,31 @@ $('ia_btn').addEventListener('click', async () => {
   }));
 });
 
-// ---- Presupuesto para un cliente de /charlas (17/11 21:21, Gustavo: "desde el mismo chat… apretar un botón y que se suba") ----
-const PARA = (() => { const q = new URLSearchParams(location.search); const tel = (q.get('para') || '').replace(/\D/g, ''); return tel && q.get('pt') ? { tel, pt: q.get('pt') } : null; })();
-if (PARA) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* sin historial */ } }
-async function cargarCliente() {
-  if (!PARA) return;
-  const qs = `?tel=${PARA.tel}&pt=${encodeURIComponent(PARA.pt)}`;
-  let c;
-  try { c = await fetch('api/cliente' + qs).then((x) => x.json()); } catch (e) { c = { error: 'No se pudieron traer los datos del cliente.' }; }
-  if (c.error) { $('para').hidden = false; $('para').innerHTML = esc(c.error); return; }
-  PARA.c = c;
-  const quien = c.nombre || ('+' + c.tel);
-  $('para').hidden = false;
-  $('para').innerHTML = `📋 Presupuesto para <b>${esc(quien)}</b>${c.producto ? ' · ' + esc(c.producto) : ''}<br><small>Cargué lo que dijo en el chat. Revisá, elegí la posición arriba y tocá <b>Mandar</b>.${c.abierta ? '' : ' ⚠️ Pasaron más de 24 h desde su último mensaje: WhatsApp no deja mandarle nada hasta que vuelva a escribir.'}</small> · <a href="${esc(c.volver)}">Volver a la charla</a>`;
-  $('para_bt').hidden = false;
+// ---- Charla marcada para presupuestar (17/11 21:32, Gustavo: "marcar la que quiero presupuestar… y cuando pongo enviar, que se envíe a esa") ----
+// El cotizador abre en blanco; solo muestra a quién va el presupuesto. Se actualiza al volver a esta pestaña.
+let PARA = null;
+async function verMarcada() {
+  let m = {};
+  try { m = await fetch('api/marcado', { cache: 'no-store' }).then((x) => x.json()); } catch (e) { m = {}; }
+  PARA = m && m.tel ? m : null;
+  $('para').hidden = !PARA; $('para_bt').hidden = !PARA;
+  if (!PARA) { $('para').innerHTML = ''; return; }
+  const quien = PARA.nombre || ('+' + PARA.tel);
+  $('para').innerHTML = `🎯 El presupuesto va a <b>${esc(quien)}</b> (+${esc(PARA.tel)})${PARA.abierta ? '' : '<br>⚠️ Pasaron más de 24 h desde su último mensaje: WhatsApp no deja mandarle nada hasta que vuelva a escribir.'}<br><small>Lo marcaste en la charla. Para otro cliente, marcalo allá y volvé a esta pestaña.</small>`;
   $('pa_env').textContent = `📤 Mandar el presupuesto a ${quien}`;
-  const pon = (id, v) => { if (v !== '' && v != null) $(id).value = v; };
-  pon('c_valor', c.valor); pon('c_kg', c.kg); pon('c_unid', c.unidades); pon('p_cli', c.nombre); pon('p_doc', c.doc); pon('p_dom', c.dom); pon('p_prod', c.producto);
-  if (c.iva) $('p_iva').value = c.iva;
-  if (c.regimen) $('c_reg').value = c.regimen;
-  $('c_litio').checked = !!c.litio; $('c_cuit').checked = !!c.cuit_pb;
-  if (c.bultos && c.bultos.length > 1) {
-    c.bultos.forEach((b, i) => { if (i) agregarCaja(); const f = document.querySelectorAll('#c_otras .fila')[i].querySelectorAll('input'); b.forEach((v, k) => { f[k].value = v; }); });
-  } else { pon('c_cajas', c.cajas); pon('c_largo', c.largo); pon('c_ancho', c.ancho); pon('c_alto', c.alto); }
-  if (c.posicion) { const f = N.buscar(c.posicion, 1)[0]; if (f) { $('q').value = f.c; buscar(); abrir(f.c); } }
-  $('cot').scrollIntoView({ block: 'start' });
-  cotizar();
 }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') verMarcada(); });
+window.addEventListener('focus', verMarcada);
 async function mandarAlChat(modo) {
   const res = $('pa_res'); res.className = 'note';
+  if (!PARA) { res.className = 'note mal'; res.textContent = 'No hay ninguna charla marcada.'; return; }
   if (!cotizar.ultimo) { res.className = 'note mal'; res.textContent = 'Completá el cotizador primero (lo marcado en rojo).'; return; }
   if (!sel) { res.className = 'note mal'; res.textContent = 'Elegí la posición arancelaria arriba.'; return; }
   const b = modo === 'ver' ? $('pa_ver') : $('pa_env'); const txt = b.textContent;
   b.disabled = true; b.textContent = modo === 'ver' ? 'Armando el PDF…' : 'Mandando…';
   let r;
   try {
-    r = await fetch(`api/presupuesto?tel=${PARA.tel}&pt=${encodeURIComponent(PARA.pt)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
+    r = await fetch(`api/presupuesto?tel=${PARA.tel}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
       modo, params: paramsCot().toString(), posicion: sel, producto: $('p_prod').value.trim(),
       cliente: { nombre: $('p_cli').value.trim(), doc: $('p_doc').value.trim(), dom: $('p_dom').value.trim(), iva: $('p_iva').value },
     }) }).then((x) => x.json());
@@ -548,11 +537,13 @@ async function mandarAlChat(modo) {
   if (r.error) { res.className = 'note mal'; res.textContent = '⚠️ ' + r.error; return; }
   if (modo === 'ver') { res.innerHTML = `<a href="${esc(r.ruta)}" target="_blank" rel="noopener">📄 Abrir el PDF N° ${esc(r.nro)}</a>. Si está bien, tocá Mandar.`; return; }
   res.className = 'note ok';
-  res.innerHTML = `✅ Mandado al chat: presupuesto N° ${esc(r.nro)}, total a PuertoBox USD ${esc(r.total)}. <a href="${esc(r.volver)}">Volver a la charla</a>`;
+  res.innerHTML = `✅ Mandado a ${esc(PARA.nombre || '+' + PARA.tel)}: presupuesto N° ${esc(r.nro)}, total a PuertoBox USD ${esc(r.total)}. Ya le saqué la marca.`;
+  PARA = null; $('para').hidden = true; $('pa_env').parentNode.querySelectorAll('button').forEach((x) => { x.hidden = true; });
+  setTimeout(() => { $('pa_env').parentNode.querySelectorAll('button').forEach((x) => { x.hidden = false; }); verMarcada(); }, 8000);
 }
 $('pa_env').addEventListener('click', () => mandarAlChat('enviar'));
 $('pa_ver').addEventListener('click', () => mandarAlChat('ver'));
-cargar().then(cotizar).then(cargarCliente).catch((e) => { $('src').textContent = 'No se pudieron cargar los datos (' + e.message + '). Recargá la página.'; });
+cargar().then(cotizar).then(verMarcada).catch((e) => { $('src').textContent = 'No se pudieron cargar los datos (' + e.message + '). Recargá la página.'; });
 </script>
 </body>
 </html>
