@@ -123,7 +123,7 @@ button.ghost{background:transparent;color:var(--acc)}
 @media (max-width:600px){#doc{padding:18px 14px}#doc .hd{grid-template-columns:1fr 70px}#doc .hd .cp{grid-column:1/-1;border-top:1.5px solid #1b2333}#doc .lt{border-right:0}#doc .bx{grid-template-columns:1fr}}
 @media print{body>*:not(#pres){display:none!important}#pres{position:static;background:none;padding:0;display:block;overflow:visible}#pres .bar{display:none}html,body{background:#fff!important;height:auto}#doc{-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:none;width:100%;padding:12mm 14mm;border-radius:0;font-size:12px}#doc table,#doc .total,#doc .imp,#doc .bx{break-inside:avoid}#doc h3{break-after:avoid}#doc .hd{grid-template-columns:1fr 84px 1fr}#doc h3{margin:12px 0 5px}#doc td{padding:5px 4px}@page{size:A4;margin:0}}
 @media (prefers-reduced-motion:no-preference){.res{transition:border-color .12s}}
-input.falta{border:2px solid #c8102e;background:#fff5f5}.ia textarea{width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;margin:6px 0;resize:vertical}.ia button{width:100%}.ia .card{margin-top:10px;padding:10px;border-radius:8px;background:var(--acc-soft);line-height:1.45;font-size:.88rem}.ia .card.baja{background:#fff6e5;color:#4a3200}.ia .card.baja .mut{color:#6b5a3a}.ia .card{color:inherit}.ia .pos{font:700 1.05rem var(--f-mono,monospace);color:var(--acc);cursor:pointer;text-decoration:underline}.ia .mut{color:var(--mut)}.charla{background:#eef5ff;border-left:4px solid #0b4f8a;padding:12px;border-radius:10px;margin:10px 0;line-height:1.5}.charla.mal{background:#fff1f0;border-color:#c8102e}.charla.bien{background:#eefaf0;border-color:#1a7f37}button.enviar{background:#1a7f37;color:#fff;font-size:17px;padding:14px 18px;width:100%;margin-bottom:8px}
+input.falta{border:2px solid #c8102e;background:#fff5f5}.para{background:#eef5ff;color:#123a6b;border-left:4px solid #1f4e79;padding:10px 12px;border-radius:8px;margin:0 0 12px;font-size:.95rem}.para b{font-size:1.05rem}button.enviar{background:#1a7f37;color:#fff;font-size:17px;padding:14px 18px;width:100%}#pa_res.ok{color:#1a7f37;font-weight:700}#pa_res.mal{color:#c8102e;font-weight:700}.ia textarea{width:100%;box-sizing:border-box;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;margin:6px 0;resize:vertical}.ia button{width:100%}.ia .card{margin-top:10px;padding:10px;border-radius:8px;background:var(--acc-soft);line-height:1.45;font-size:.88rem}.ia .card.baja{background:#fff6e5;color:#4a3200}.ia .card.baja .mut{color:#6b5a3a}.ia .card{color:inherit}.ia .pos{font:700 1.05rem var(--f-mono,monospace);color:var(--acc);cursor:pointer;text-decoration:underline}.ia .mut{color:var(--mut)}.charla{background:#eef5ff;border-left:4px solid #0b4f8a;padding:12px;border-radius:10px;margin:10px 0;line-height:1.5}.charla.mal{background:#fff1f0;border-color:#c8102e}.charla.bien{background:#eefaf0;border-color:#1a7f37}button.enviar{background:#1a7f37;color:#fff;font-size:17px;padding:14px 18px;width:100%;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -152,6 +152,7 @@ input.falta{border:2px solid #c8102e;background:#fff5f5}.ia textarea{width:100%;
     <section class="panel ficha" id="ficha"><div class="empty">Elegí una posición de la lista.</div></section>
     <section class="panel cot" id="cot">
       <h2>Cotizador PuertoBox (presupuesto a mano)</h2>
+      <div id="para" class="para" hidden></div>
       <p class="note">Mismo cálculo que el bot: flete por kilo entero (real o volumétrico, el mayor), gestión, recargos e impuestos estimados. La posición y el DIE se toman de la ficha de arriba.</p>
       <div class="form">
         <div><label for="c_valor">Valor al proveedor (USD)</label><input id="c_valor" type="number" min="0" step="0.01" placeholder="ej. 300"></div>
@@ -183,6 +184,7 @@ input.falta{border:2px solid #c8102e;background:#fff5f5}.ia textarea{width:100%;
           <div><label for="p_vali">Validez (días)</label><input id="p_vali" type="number" min="1" value="7"></div>
         </div>
       </details>
+      <div class="row" id="para_bt" hidden><button id="pa_env" type="button" class="enviar">📤 Mandar el presupuesto a este chat</button><button id="pa_ver" type="button" class="ghost">👁 Ver el PDF antes</button><div class="note" id="pa_res" style="width:100%"></div></div>
       <div class="row"><button id="c_pres" type="button">Generar presupuesto (PDF)</button><button id="c_copy" type="button" class="ghost">Copiar para WhatsApp</button><span class="note" id="c_copied"></span></div>
     </section>
     <section class="panel calc" id="calc">
@@ -340,15 +342,18 @@ function agregarCaja() {
 
 // ---- Cotizador a mano (mismo motor que el bot, en el servidor) ----
 const kgs = (n) => Number(n).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' kg';
+function paramsCot() {
+  return new URLSearchParams({ valor: $('c_valor').value, kg: $('c_kg').value, cajas: $('c_cajas').value || 1, largo: $('c_largo').value, ancho: $('c_ancho').value, alto: $('c_alto').value, bultos: bultosTexto(),
+    unidades: $('c_unid').value, regimen: $('c_reg').value, die: $('c_die').value || 0, internos: $('c_ii').value || 0,
+    litio: $('c_litio').checked ? 1 : 0, cuit_pb: $('c_cuit').checked ? 1 : 0, sin_franquicia: $('c_sinfr').checked ? 1 : 0 });
+}
 async function cotizar() {
   // 17/11 (Gustavo): los campos abren en blanco; sin valor, peso y DIE no se muestra ningún número.
   const faltan = [!(parseFloat($('c_valor').value) > 0) && 'el valor al proveedor (USD)', !(parseFloat($('c_kg').value) > 0) && 'el peso', $('c_die').value === '' && 'el DIE (elegí la posición arriba o escribilo)'].filter(Boolean);
   ['c_valor', 'c_kg'].forEach((id) => $(id).classList.toggle('falta', !(parseFloat($(id).value) > 0)));
   $('c_die').classList.toggle('falta', $('c_die').value === '');
   if (faltan.length) { cotizar.n = (cotizar.n || 0) + 1; $('c_pesos').innerHTML = ''; $('c_tabla').innerHTML = ''; $('c_avisos').innerHTML = `<div>Para calcular, cargá ${faltan.join(', ').replace(/, ([^,]*)$/, ' y $1')} (marcado en rojo).</div>`; cotizar.ultimo = null; return; }
-  const p = new URLSearchParams({ valor: $('c_valor').value, kg: $('c_kg').value, cajas: $('c_cajas').value || 1, largo: $('c_largo').value, ancho: $('c_ancho').value, alto: $('c_alto').value, bultos: bultosTexto(),
-    unidades: $('c_unid').value, regimen: $('c_reg').value, die: $('c_die').value || 0, internos: $('c_ii').value || 0,
-    litio: $('c_litio').checked ? 1 : 0, cuit_pb: $('c_cuit').checked ? 1 : 0, sin_franquicia: $('c_sinfr').checked ? 1 : 0 });
+  const p = paramsCot();
   const pedido = (cotizar.n = (cotizar.n || 0) + 1);
   let r;
   try { r = await fetch('api/cotizar?' + p).then((x) => x.json()); } catch (e) { $('c_avisos').innerHTML = '<div>No se pudo calcular (sin conexión).</div>'; return; }
@@ -498,7 +503,56 @@ $('ia_btn').addEventListener('click', async () => {
     const f = N.buscar(el.dataset.pos, 1)[0]; if (f) { $('q').value = f.c; buscar(); abrir(f.c); }
   }));
 });
-cargar().then(cotizar).catch((e) => { $('src').textContent = 'No se pudieron cargar los datos (' + e.message + '). Recargá la página.'; });
+
+// ---- Presupuesto para un cliente de /charlas (17/11 21:21, Gustavo: "desde el mismo chat… apretar un botón y que se suba") ----
+const PARA = (() => { const q = new URLSearchParams(location.search); const tel = (q.get('para') || '').replace(/\D/g, ''); return tel && q.get('pt') ? { tel, pt: q.get('pt') } : null; })();
+if (PARA) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* sin historial */ } }
+async function cargarCliente() {
+  if (!PARA) return;
+  const qs = `?tel=${PARA.tel}&pt=${encodeURIComponent(PARA.pt)}`;
+  let c;
+  try { c = await fetch('api/cliente' + qs).then((x) => x.json()); } catch (e) { c = { error: 'No se pudieron traer los datos del cliente.' }; }
+  if (c.error) { $('para').hidden = false; $('para').innerHTML = esc(c.error); return; }
+  PARA.c = c;
+  const quien = c.nombre || ('+' + c.tel);
+  $('para').hidden = false;
+  $('para').innerHTML = `📋 Presupuesto para <b>${esc(quien)}</b>${c.producto ? ' · ' + esc(c.producto) : ''}<br><small>Cargué lo que dijo en el chat. Revisá, elegí la posición arriba y tocá <b>Mandar</b>.${c.abierta ? '' : ' ⚠️ Pasaron más de 24 h desde su último mensaje: WhatsApp no deja mandarle nada hasta que vuelva a escribir.'}</small> · <a href="${esc(c.volver)}">Volver a la charla</a>`;
+  $('para_bt').hidden = false;
+  $('pa_env').textContent = `📤 Mandar el presupuesto a ${quien}`;
+  const pon = (id, v) => { if (v !== '' && v != null) $(id).value = v; };
+  pon('c_valor', c.valor); pon('c_kg', c.kg); pon('c_unid', c.unidades); pon('p_cli', c.nombre); pon('p_doc', c.doc); pon('p_dom', c.dom); pon('p_prod', c.producto);
+  if (c.iva) $('p_iva').value = c.iva;
+  if (c.regimen) $('c_reg').value = c.regimen;
+  $('c_litio').checked = !!c.litio; $('c_cuit').checked = !!c.cuit_pb;
+  if (c.bultos && c.bultos.length > 1) {
+    c.bultos.forEach((b, i) => { if (i) agregarCaja(); const f = document.querySelectorAll('#c_otras .fila')[i].querySelectorAll('input'); b.forEach((v, k) => { f[k].value = v; }); });
+  } else { pon('c_cajas', c.cajas); pon('c_largo', c.largo); pon('c_ancho', c.ancho); pon('c_alto', c.alto); }
+  if (c.posicion) { const f = N.buscar(c.posicion, 1)[0]; if (f) { $('q').value = f.c; buscar(); abrir(f.c); } }
+  $('cot').scrollIntoView({ block: 'start' });
+  cotizar();
+}
+async function mandarAlChat(modo) {
+  const res = $('pa_res'); res.className = 'note';
+  if (!cotizar.ultimo) { res.className = 'note mal'; res.textContent = 'Completá el cotizador primero (lo marcado en rojo).'; return; }
+  if (!sel) { res.className = 'note mal'; res.textContent = 'Elegí la posición arancelaria arriba.'; return; }
+  const b = modo === 'ver' ? $('pa_ver') : $('pa_env'); const txt = b.textContent;
+  b.disabled = true; b.textContent = modo === 'ver' ? 'Armando el PDF…' : 'Mandando…';
+  let r;
+  try {
+    r = await fetch(`api/presupuesto?tel=${PARA.tel}&pt=${encodeURIComponent(PARA.pt)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
+      modo, params: paramsCot().toString(), posicion: sel, producto: $('p_prod').value.trim(),
+      cliente: { nombre: $('p_cli').value.trim(), doc: $('p_doc').value.trim(), dom: $('p_dom').value.trim(), iva: $('p_iva').value },
+    }) }).then((x) => x.json());
+  } catch (e) { r = { error: 'No se pudo conectar. Probá de nuevo.' }; }
+  b.disabled = false; b.textContent = txt;
+  if (r.error) { res.className = 'note mal'; res.textContent = '⚠️ ' + r.error; return; }
+  if (modo === 'ver') { res.innerHTML = `<a href="${esc(r.ruta)}" target="_blank" rel="noopener">📄 Abrir el PDF N° ${esc(r.nro)}</a>. Si está bien, tocá Mandar.`; return; }
+  res.className = 'note ok';
+  res.innerHTML = `✅ Mandado al chat: presupuesto N° ${esc(r.nro)}, total a PuertoBox USD ${esc(r.total)}. <a href="${esc(r.volver)}">Volver a la charla</a>`;
+}
+$('pa_env').addEventListener('click', () => mandarAlChat('enviar'));
+$('pa_ver').addEventListener('click', () => mandarAlChat('ver'));
+cargar().then(cotizar).then(cargarCliente).catch((e) => { $('src').textContent = 'No se pudieron cargar los datos (' + e.message + '). Recargá la página.'; });
 </script>
 </body>
 </html>
