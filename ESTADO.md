@@ -9,7 +9,7 @@ Versión corta, con lo vigente. Lo anterior completo (13/11 al 17/11, con el det
 - **Regla:** no correr pruebas con la IA real (prueba completa, simulador, autopruebas, subir `VERSION` de intervenciones o `VERSION_PRUEBA` de links) sin avisarle a Gustavo cuánto cuesta.
 
 ## Tareas programadas (consumen el saldo del chat de Claude)
-- Activas: **Mejora diaria del bot** (8:47), **Criterios de clasificación ARCA** (3:17), **Novedades y precios** (lunes 6:59). Todas con Opus.
+- Activas, todas con Sonnet desde el 22/11 (antes Opus; Gustavo: "dale"): **Mejora diaria del bot** (todos los días 8:47), **Criterios de clasificación ARCA** (miércoles 3:17; antes todos los días), **Novedades y precios** (lunes 6:59).
 - Pausada: **Reunión diaria del equipo** (22/11). Diseño en `docs/equipo/README.md`.
 
 ## Bot de WhatsApp (andando)
