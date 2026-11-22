@@ -206,7 +206,10 @@ async function revisar({ store, owner, avisar, empujar, ahora = Date.now() }) {
     const pend = textoPendientes(store, owner, ahora);
     const e = embudo(store, owner, ahora);
     if (pend !== 'No tenés clientes pendientes. Todo al día.' || e.consultas || e.anuncio.chats) {
-      await avisar(`${e.texto}\n\n${pend}`, 'PuertoBox: resumen del dia', 'default');
+      // 22/11 (Gustavo: "se me está gastando todo el saldo"): cuánto gastó la IA ayer.
+      const G = require('./gasto'); const ayer = G.delDia(store, G.diaAR(ahora - 24 * H));
+      const lineaGasto = `\n\nGasto de IA ayer: USD ${ayer.total.toFixed(2).replace('.', ',')}${ayer.total >= G.tope() ? ' (llegó al tope)' : ''}`;
+      await avisar(`${e.texto}\n\n${pend}${lineaGasto}`, 'PuertoBox: resumen del dia', 'default');
       enviados.push('resumen');
     }
   }

@@ -159,6 +159,20 @@ function pasosInforme(x) {
   return String(x).split(/\n+|\s(?=\d\)\s)/).map((t) => t.replace(/^\d\)\s*/, '').trim()).filter(Boolean).slice(0, 7);
 }
 
+/**
+ * 22/11 (Gustavo: "se me está gastando todo el saldo"): en cada vuelta se reenvía todo lo anterior (búsquedas web, notas de
+ * capítulo, bibliografía). Con la marca de caché en el último mensaje, lo ya mandado se cobra al 5% en la vuelta siguiente.
+ */
+function conCache(messages) {
+  const ult = messages[messages.length - 1];
+  // El primer mensaje (texto del producto) no lleva marca: todavía no hay nada para reusar.
+  if (!ult || ult.role !== 'user' || !Array.isArray(ult.content)) return messages;
+  const bloques = ult.content.map((b) => ({ ...b }));
+  if (!bloques.length) return messages;
+  bloques[bloques.length - 1] = { ...bloques[bloques.length - 1], cache_control: { type: 'ephemeral' } };
+  return [...messages.slice(0, -1), { role: 'user', content: bloques }];
+}
+
 async function clasificarConIA(producto, fetchImpl, conWeb = true) {
   const BIB = require('./bibliografia'); const conBiblio = BIB.disponible();
   const tools = [herramientaBiblio, herramientaNotas, herramientaCodigo];
@@ -168,7 +182,7 @@ async function clasificarConIA(producto, fetchImpl, conWeb = true) {
   for (let vuelta = 0; vuelta < 14; vuelta++) {
     let res;
     try {
-      res = await llamar({ model: MODELO, max_tokens: 3000, system: [{ type: 'text', text: SYSTEM(), cache_control: { type: 'ephemeral' } }], tools, messages }, fetchImpl);
+      res = await llamar({ model: MODELO, max_tokens: 3000, system: [{ type: 'text', text: SYSTEM(), cache_control: { type: 'ephemeral' } }], tools, messages: conCache(messages) }, fetchImpl);
     } catch (e) {
       // Si la búsqueda web no está habilitada en la cuenta, se clasifica igual con el arancel.
       if (conWeb && /web_search|server tool|not enabled|not allowed/i.test(e.message)) return clasificarConIA(producto, fetchImpl, false);
@@ -315,4 +329,4 @@ async function clasificarManual(texto, fetchImpl = fetch) {
   return r;
 }
 
-module.exports = { pasosInforme, clasificarManual, clasificar, aperturas, exacta, clave, clasificarConIA, notasDe, INSTRUCCIONES };
+module.exports = { conCache, pasosInforme, clasificarManual, clasificar, aperturas, exacta, clave, clasificarConIA, notasDe, INSTRUCCIONES };
