@@ -1,12 +1,15 @@
 # Instrucciones para Claude en este repo
 
 Antes de hacer cualquier cosa, leé en este orden:
-1. `ESTADO.md`: qué está andando y qué falta.
-2. `docs/APRENDIZAJES.md`: decisiones de Gustavo, cómo trabajar con él y errores a no repetir.
+1. `ESTADO.md` (corto): qué está andando y qué falta.
+2. `docs/APRENDIZAJES.md`: leé entera solo la sección "Cómo trabajar con Gustavo" y las últimas 15 líneas; para el resto, buscá con `grep` el tema de la tarea (decisiones de Gustavo y errores a no repetir). Es larga: leerla entera gasta el saldo de Gustavo (22/11).
 3. `docs/curso/README.md`: material del curso de despachante ya revisado y qué se aplicó.
+El historial completo está en `docs/historial/`: solo `grep`, nunca entero.
+
+Gasto (22/11, Gustavo: "se me está gastando todo el saldo"): no correr pruebas con la IA real (prueba completa, simulador, autopruebas) sin avisarle antes cuánto cuestan. ESTADO.md tiene que seguir corto: lo resuelto o viejo pasa a `docs/historial/`.
 
 Después de cada cambio o cada cosa nueva que aprendas:
-- Actualizá `ESTADO.md` (estado y pendientes).
+- Actualizá `ESTADO.md` (estado y pendientes), en pocas líneas.
 - Anotá en `docs/APRENDIZAJES.md` toda decisión o corrección de Gustavo, con fecha.
 - Si leíste material del curso, agregá o completá su resumen en `docs/curso/` y marcalo en el índice.
 - Corré los tests: `npm test`.

@@ -824,8 +824,9 @@ function servidor() {
       const html = require('./recordatorios').paginaPendientes(store, soloDigitos(process.env.OWNER_NUMBER || OWNER_NUMBER), (tel) => `/atendido?tel=${tel}&t=${firma('atendido:' + tel)}&volver=${t}`, Date.now(), (tel) => `/seguir-bot?tel=${tel}&t=${firma('bot:' + tel)}&volver=${t}`, (tel) => `/charlas?t=${firma('charlas')}&abierto=${tel}#c-${tel}`);
       const di = require('../src/dolar').info();
       const lineaDolar = `<p style="color:#666;font-size:14px">Dólar que usa el bot para la ganancia en pesos: $${di.ars} ${di.automatico ? `(oficial, se actualiza solo; último: ${new Date(di.fecha).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })})` : '(fijo de negocio.json: todavía no se actualizó solo)'}</p>`;
-      const botonPrueba = `<h2>Prueba completa del bot</h2><p>Prueba posiciones arancelarias y charlas reales con la IA. Tarda unos 10 minutos y gasta unos USD 2 a 3 del saldo de Anthropic. Cuando termina te llega un aviso con el informe.</p><form method="post" action="/prueba-completa?t=${firma('prueba')}"><button class="bot">${pruebaEnCurso ? 'Prueba en curso…' : 'Correr prueba completa'}</button></form>`;
-      return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`).replace('</body>', `${botonPrueba}${lineaDolar}</body>`));
+      const lineaGasto = `<p style="color:#666;font-size:14px">${require('./gasto').resumen(store)}</p>`;
+      const botonPrueba = `<h2>Prueba completa del bot</h2><p>Prueba posiciones arancelarias y charlas reales con la IA. Tarda unos 10 minutos y gasta unos USD 3 a 5 del saldo de Anthropic (usala solo si hace falta). Cuando termina te llega un aviso con el informe.</p><form method="post" action="/prueba-completa?t=${firma('prueba')}"><button class="bot">${pruebaEnCurso ? 'Prueba en curso…' : 'Correr prueba completa'}</button></form>`;
+      return res.end(html.replace('<h1>Pendientes PuertoBox</h1>', `<h1>Pendientes PuertoBox</h1><p><a href="/charlas?t=${firma('charlas')}">Ver todas las charlas con el bot →</a></p>`).replace('</body>', `${lineaGasto}${botonPrueba}${lineaDolar}</body>`));
     }
     if (url.pathname === '/difusion') {
       // Mensaje a clientes anteriores del 698 (plantilla de WhatsApp). Con ?key=ADMIN_KEY o link firmado.
@@ -1058,6 +1059,8 @@ function servidor() {
 }
 
 if (require.main === module) {
+  // 22/11 (Gustavo: "se me está gastando todo el saldo"): medidor y tope diario de gasto de IA (bot/gasto.js).
+  require('./gasto').envolver({ store, instalar: true, avisar: (t, titulo, prioridad) => avisarNtfy(t, titulo, prioridad) });
   servidor().listen(PORT, () => console.log(`Bot escuchando en :${PORT}`));
   require('./bibliografia').precargar();
   // 15/11: los links vencen a los 7 días; al arrancar, si hace más de 20 h que no recibió accesos nuevos, le llegan por ntfy
