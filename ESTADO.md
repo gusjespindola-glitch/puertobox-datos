@@ -1,4 +1,4 @@
-# PuertoBox — estado al 22/11/2026
+# PuertoBox — estado al 23/11/2026
 
 Versión corta, con lo vigente. Lo anterior completo (13/11 al 17/11, con el detalle de cada arreglo) está en `docs/historial/ESTADO-hasta-2026-11-17.md`. **No leerlo entero:** buscar ahí con `grep` solo el tema que haga falta.
 
@@ -32,7 +32,8 @@ Versión corta, con lo vigente. Lo anterior completo (13/11 al 17/11, con el det
 - Recargo por batería de litio (número exacto de Howard). Mensaje armado: `docs/howard/consultas-2026-11-15.md`.
 - Factura B por el 100% y cargadores de 220 V; scrubs (textiles: ¿derivar?); casco de marca 1 unidad; calzado (cap. 64) con etiquetado en courier.
 - Buscador con IA: confirmar en Railway que cita 📖 Vademécum o Manual.
-- Antidumping de anteojos de sol (Res. 588/2012) y las 3 propuestas de precio de `docs/precios/2026-11-16.md`.
+- Antidumping de anteojos de sol (Res. 588/2012) y las propuestas de precio de `docs/precios/2026-11-16.md` y `2026-11-23.md` (gestión USD 30 hasta 5 kg, etc.).
+- Juguetes squishy Pinch Family (Disp. 804/2026, 14/10): ¿aviso en el bot? Ver `docs/novedades/2026-11-23.md`.
 - Archivar posteos viejos con precios anteriores (Facebook/Instagram).
 
 ## Pendientes
