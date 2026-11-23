@@ -4,6 +4,9 @@
 - La competencia se carga en `data/referencias_mercado.json` (la tarea de los lunes la revisa y actualiza).
 - Informes por fecha en esta carpeta. Lo más nuevo, arriba.
 
+## Revisión del 23/11/2026 ([informe](2026-11-23.md))
+Precios sin cambios. Poca ganancia en el peor caso (menos de USD 10) en 0,5-1, 2, 3 y 5 kg; ningún tramo da pérdida. MiamiGO leído (USD 36 China + USD 13 de gastos por envío); competidor nuevo solo marítimo (Galeón). Variantes: gestión de USD 30 hasta 5 kg, tramos chicos arriba o +USD 2/kg desde 10 kg.
+
 ## Revisión del 16/11/2026 ([informe](2026-11-16.md))
 Con el kilo entero (15/11), el peor caso bajó en pesos chicos: 3 kg deja USD 9,24 y 7 kg USD 9,60 si la caja llega 15% más pesada. Ninguno da pérdida. Siguen los saltos 9→10 kg y 19→20 kg. Competidores comerciales nuevos (Argencargo, MBComex) en USD 19-20/kg + gestión: en 40-50 kg estamos parejos. Propuestas: 3-5 kg a USD 30; +USD 2/kg desde 10 kg; tope de tramo.
 
