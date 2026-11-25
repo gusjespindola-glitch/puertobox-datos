@@ -1,7 +1,7 @@
 {
  "_meta": {
   "que": "Criterios de clasificación arancelaria de ARCA (Res. Gral. 1618 y sucesivas), por posición NCM. La descripción es un resumen: el texto oficial está en el anexo de cada norma.",
-  "actualizado": "2026-11-17"
+  "actualizado": "2026-11-25"
  },
  "normas": [
   {
@@ -57,6 +57,18 @@
    "anexo": "IF-2025-02650522-ARCA-DETNCA#SDGTLA",
    "fecha_anexo": "2025-07-14",
    "url": "https://www.cira.org.ar/wp-content/uploads/anexo_7416384_1.pdf"
+  },
+  {
+   "id": "RG 5653/2025",
+   "anexo": "IF-2025-00623416-AFIP-DETNCA#SDGTLA",
+   "fecha_anexo": "2025-02-26",
+   "url": "https://www.cira.org.ar/wp-content/uploads/anexo_7314271_1-5.pdf"
+  },
+  {
+   "id": "RG 5654/2025",
+   "anexo": "IF-2025-00596835-AFIP-DETNCA#SDGTLA",
+   "fecha_anexo": "2025-02-26",
+   "url": "https://www.cira.org.ar/wp-content/uploads/anexo_7314274_1.pdf"
   }
  ],
  "criterios": [
@@ -850,6 +862,146 @@
    "criterio": "50/25",
    "expediente": "EX-2024-00319949",
    "norma": "RG 5726/2025"
+  },
+  {
+   "pos": "6104.63.00",
+   "desc": "Pantalón largo de mujer, ceñido al cuerpo, de tejido de punto 100% fibras sintéticas (poliéster), con elástico",
+   "criterio": "11/25",
+   "expediente": "EX-2024-03122804",
+   "norma": "RG 5653/2025"
+  },
+  {
+   "pos": "2106.90.90",
+   "desc": "Preparación alimenticia cremosa a base de agua, aceite de palma y leche en polvo, entre otros",
+   "criterio": "12/25",
+   "expediente": "EX-2024-02057507",
+   "norma": "RG 5653/2025"
+  },
+  {
+   "pos": "4901.99.00",
+   "desc": "Manufactura compuesta: libro en español de tapa blanda de 72 páginas con rompecabezas de 300 piezas",
+   "criterio": "13/25",
+   "expediente": "EX-2023-01651283",
+   "norma": "RG 5653/2025"
+  },
+  {
+   "pos": "1806.90.00",
+   "desc": "Confitería a base de azúcar, aceites vegetales y cacao, en envase de 10 g",
+   "criterio": "14/25",
+   "expediente": "EX-2024-00838576",
+   "norma": "RG 5653/2025"
+  },
+  {
+   "pos": "9405.11.90",
+   "desc": "Aparato eléctrico de alumbrado LED para colgar del techo, unos 380 mm de diámetro, 200 W, 26.000 lm",
+   "criterio": "15/25",
+   "expediente": "EX-2024-03233192",
+   "norma": "RG 5653/2025"
+  },
+  {
+   "pos": "0712.31.00",
+   "desc": "Champiñón seco, troceado, tratado térmicamente para eliminar bacterias, en bolsa de 15 kg",
+   "criterio": "16/25",
+   "expediente": "EX-2024-04497881",
+   "norma": "RG 5653/2025"
+  },
+  {
+   "pos": "9401.71.00",
+   "desc": "Sillón reclinable de un cuerpo, relleno y tapizado de plástico, estructura de metal y madera",
+   "criterio": "17/25",
+   "expediente": "EX-2023-02025577",
+   "norma": "RG 5653/2025"
+  },
+  {
+   "pos": "3004.39.29",
+   "desc": "Medicamento inyectable con corifolitropina alfa, en jeringa de 0,5 ml, acondicionado para la venta",
+   "criterio": "18/25",
+   "expediente": "EX-2023-01085368",
+   "norma": "RG 5653/2025"
+  },
+  {
+   "pos": "7019.69.00",
+   "desc": "Tejido de fibra de vidrio, ligamento sarga, de malla cerrada, ignífugo",
+   "criterio": "19/25",
+   "expediente": "EX-2024-03516596",
+   "norma": "RG 5653/2025"
+  },
+  {
+   "pos": "4420.90.00",
+   "desc": "Mueble de madera: cilindro hueco de 50 cm de diámetro con cuatro patas",
+   "criterio": "20/25",
+   "expediente": "EX-2023-01751893",
+   "norma": "RG 5653/2025"
+  },
+  {
+   "pos": "8424.89.90",
+   "desc": "Aparato de plástico para proyectar líquidos, con pulsador y boquilla",
+   "criterio": "1/25",
+   "expediente": "EX-2023-00757232",
+   "norma": "RG 5654/2025"
+  },
+  {
+   "pos": "8504.40.90",
+   "desc": "Convertidor estático, entrada 100-240 Vca, salida 24 Vcc / 1 A",
+   "criterio": "2/25",
+   "expediente": "EX-2024-03791628",
+   "norma": "RG 5654/2025"
+  },
+  {
+   "pos": "9503.00.39",
+   "desc": "Robot con forma de perro, de plástico y aluminio, unos 9 kg, con sensores, cámaras, WiFi y Bluetooth",
+   "criterio": "3/25",
+   "expediente": "EX-2024-01499517",
+   "norma": "RG 5654/2025"
+  },
+  {
+   "pos": "4822.90.00",
+   "desc": "Tubo de cartón usado, 101,6 mm de diámetro y 1.800 mm de largo",
+   "criterio": "4/25",
+   "expediente": "EX-2024-03570581",
+   "norma": "RG 5654/2025"
+  },
+  {
+   "pos": "4901.99.00",
+   "desc": "Manufactura compuesta: libro en español de tapa dura de 96 páginas con rompecabezas de 100 piezas",
+   "criterio": "5/25",
+   "expediente": "EX-2023-02421549",
+   "norma": "RG 5654/2025"
+  },
+  {
+   "pos": "8526.91.00",
+   "desc": "Equipo para localizar canalizaciones metálicas subterráneas, con receptor GPS portátil",
+   "criterio": "6/25",
+   "expediente": "EX-2023-00453456",
+   "norma": "RG 5654/2025"
+  },
+  {
+   "pos": "9406.90.20",
+   "desc": "Construcción prefabricada de acero galvanizado, con estructura, paredes y techo, para armar",
+   "criterio": "7/25",
+   "expediente": "EX-2024-02879907",
+   "norma": "RG 5654/2025"
+  },
+  {
+   "pos": "9021.90.19",
+   "desc": "Neuroestimulador cerebral programable, para implantar en el organismo",
+   "criterio": "8/25",
+   "expediente": "EX-2024-00071465",
+   "norma": "RG 5654/2025"
+  },
+  {
+   "pos": "8517.62.49",
+   "desc": "Ruteador digital para montar en gabinete (rack), hasta 40 Gbps, redes con cable",
+   "criterio": "9/25",
+   "expediente": "EX-2023-02656774",
+   "norma": "RG 5654/2025"
+  },
+  {
+   "pos": "4421.99.00",
+   "desc": "Panel decorativo rectangular de fieltro de poliéster con listones chapados en madera tropical",
+   "criterio": "10/25",
+   "expediente": "EX-2024-04096760",
+   "norma": "RG 5654/2025"
   }
  ]
 }
