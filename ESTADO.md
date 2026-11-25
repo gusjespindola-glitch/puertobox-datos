@@ -11,6 +11,7 @@ Versión corta, con lo vigente. Lo anterior completo (13/11 al 17/11, con el det
 ## Tareas programadas (consumen el saldo del chat de Claude)
 - Activas, todas con Sonnet desde el 22/11 (antes Opus; Gustavo: "dale"): **Mejora diaria del bot** (todos los días 8:47), **Criterios de clasificación ARCA** (miércoles 3:17; antes todos los días), **Novedades y precios** (lunes 6:59).
 - Pausada: **Reunión diaria del equipo** (22/11). Diseño en `docs/equipo/README.md`.
+- Criterios ARCA cargados: 133 de 11 normas (25/11). Llegué hasta RG 5653/2025 y 5654/2025 (criterios 01/25 a 20/25). Falta: RG 5636/2025 (161/24 a 170/24, anexo no se pudo leer) y 2024 hacia atrás. Nada nuevo después de la RG 5901/2026.
 
 ## Bot de WhatsApp (andando)
 - Línea del bot **+54 9 221 682-6773**; Gustavo (avisos y WhatsApp Business) 221 698-2199.
